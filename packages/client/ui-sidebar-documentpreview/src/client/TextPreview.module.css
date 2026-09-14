@@ -332,3 +332,46 @@
   color: var(--dsw-alias-label-tertiary);
   font: var(--dsw-font-xs-13);
 }
+
+/* The editing surface: the editor alone while the pane is narrow, and the
+   editor beside the preview once the pane is fullscreen, where there is room
+   for both. The split is a fixed half each — no divider to drag, so neither
+   side can be left in a size the reader cannot undo. */
+.editSurface {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editSurface[data-textpreview-split] {
+  flex-direction: row;
+}
+
+.editSurface[data-textpreview-split] > * {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+/* Narrow editing has room for one view, so the editor takes the column and the
+   preview steps aside — hidden rather than unmounted, because the body's
+   scroller holds the reader's place and rebinding it would lose that. */
+.editSurface[data-textpreview-edit]:not([data-textpreview-split]) > [data-textpreview-body] {
+  display: none;
+}
+
+/* The preview half keeps the ordinary body's own scrolling; the rule marks
+   where one side of the split ends and the other begins. */
+.editSurface[data-textpreview-split] > [data-textpreview-body] {
+  border-left: 0.5px solid var(--dsw-alias-border-l3);
+}
+
+/* The unsaved-changes mark sits with the controls, quiet until it matters. */
+.dirtyMark {
+  flex: none;
+  padding: 0 2px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+}

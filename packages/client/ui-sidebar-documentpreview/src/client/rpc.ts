@@ -1,17 +1,30 @@
 /**
- * The paged read this type performs, bound to the Client Remote.
+ * The reads and the one write this type performs, bound to the Client Remote.
  *
  * Content is the consumer's business: the `file` resource carries metadata only,
  * and the text arrives here one page of lines at a time. The endpoint takes a
  * session and a workspace path while a tab carries a `dsh-resource://file/`
  * session address, so this module also owns that translation.
+ *
+ * Editing reads the file a second way. A page is a lossy view — its text is
+ * lines joined back together, so a file that ends in a newline and one that does
+ * not arrive identical — and seeding an editor from it would silently drop that
+ * newline on the next save. The editor's draft therefore comes from the whole
+ * file instead, and the two reads are kept as separate bindings so neither can
+ * be mistaken for the other.
  */
 import type { RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { WorkspaceFileBytes, WorkspaceFileRange, WorkspaceFileText } from '@deepseek-ai/dsh-api-workspace-files/types'
+import type {
+  WorkspaceFileBytes,
+  WorkspaceFileRange,
+  WorkspaceFileText,
+  WorkspaceFileWriteRequest,
+  WorkspaceFileWriteResult,
+} from '@deepseek-ai/dsh-api-workspace-files/types'
 import { parseFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
 
-/** The slice of the Client Remote this package calls. */
+/** The read slice of the Client Remote this package calls. */
 export interface WorkspaceFilesReadRemote {
   readonly workspaceFiles: {
     /**
@@ -28,6 +41,38 @@ export interface WorkspaceFilesReadRemote {
       range: WorkspaceFileRange,
       signal?: AbortSignal,
     ): Promise<RemoteResult<WorkspaceFileText>>
+  }
+}
+
+/** The whole-file read and the write the editor needs from the Client Remote. */
+export interface WorkspaceFilesEditRemote {
+  readonly workspaceFiles: {
+    /**
+     * Read one file complete, for a draft that can be saved back unchanged.
+     * @param sessionId - the session whose workspace resolves `path`.
+     * @param path - workspace path, absolute or relative to the workspace root.
+     * @param signal - cancels the call.
+     * @returns the whole file, or the failure the Host declares.
+     */
+    readAll(
+      sessionId: SessionId,
+      path: string,
+      signal?: AbortSignal,
+    ): Promise<RemoteResult<WorkspaceFileBytes>>
+    /**
+     * Replace one file's contents.
+     * @param sessionId - the session whose workspace resolves `path`.
+     * @param path - workspace path, absolute or relative to the workspace root.
+     * @param request - the new contents and, when guarded, the version they came from.
+     * @param signal - cancels the call.
+     * @returns the new version and the prior content, or the refusal the Host declares.
+     */
+    write(
+      sessionId: SessionId,
+      path: string,
+      request: WorkspaceFileWriteRequest,
+      signal?: AbortSignal,
+    ): Promise<RemoteResult<WorkspaceFileWriteResult>>
   }
 }
 
@@ -99,4 +144,41 @@ export type ReadDocumentBytes = (file: SessionFile, signal: AbortSignal) => Prom
  */
 export function documentFileBytes(file: WorkspaceFileBytes): DocumentFileBytes {
   return { ...file, data: Uint8Array.from(atob(file.data), character => character.charCodeAt(0)) }
+}
+
+/**
+ * Decode one whole-file result into editor text.
+ *
+ * `ignoreBOM` keeps a leading byte-order mark in the text instead of letting
+ * `TextDecoder` swallow it, so a file that carries one round-trips through a
+ * save. Decoding never throws — malformed bytes become U+FFFD — which is why
+ * editing is offered only for a file the paged read already accepted as text.
+ * @param file - Host byte result with base64 data.
+ * @returns the file as text, byte-order mark included.
+ */
+export function documentFileText(file: WorkspaceFileBytes): string {
+  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(documentFileBytes(file).data)
+}
+
+/** Replace one file's contents through the Host endpoint. */
+export type WriteWorkspaceFile = (
+  file: SessionFile,
+  text: string,
+  expectedVersion: string | undefined,
+  signal: AbortSignal,
+) => Promise<RemoteResult<WorkspaceFileWriteResult>>
+
+/**
+ * Bind the guarded whole-file write to one Remote face.
+ * @param remote - the Client Remote carrying the `workspaceFiles` namespace.
+ * @returns the write the face performs.
+ */
+export function createWriteFile(remote: WorkspaceFilesEditRemote): WriteWorkspaceFile {
+  return (file, text, expectedVersion, signal) => remote.workspaceFiles.write(
+    file.sessionId,
+    file.path,
+    // Omitting the guard is the forced overwrite the conflict prompt offers.
+    expectedVersion === undefined ? { text } : { text, expectedVersion },
+    signal,
+  )
 }

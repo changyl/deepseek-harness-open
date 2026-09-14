@@ -1,0 +1,49 @@
+/* The editing surface fills whatever the body's layout gives it: the whole
+   column while the tab is narrow, and the left half of the split when the tab
+   is fullscreen. */
+.editor {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The textarea is the scroller. Its own border, outline, and resize handle are
+   the browser's defaults, not this product's, so all three are dropped.
+   `pre` keeps columns aligned as the file wrote them; `.wrap` adds soft
+   wrapping without changing the value the reader is editing. */
+.surface {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--dsw-font-mono, ui-monospace, monospace);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+  outline: none;
+  resize: none;
+  /* The preview body's scroller rebinds the thumb indirection; the editor sits
+     beside it and must match. */
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+.surface::-webkit-scrollbar-track {
+  margin: 2px;
+}
+
+.wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

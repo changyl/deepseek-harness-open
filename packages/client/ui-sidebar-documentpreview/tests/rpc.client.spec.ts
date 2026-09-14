@@ -6,8 +6,12 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import { sessionFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
-import { createReadPage, documentFileBytes, hostFileOf } from '../src/client/rpc.ts'
-import type { ReadWorkspaceFilePage, WorkspaceFilesReadRemote } from '../src/client/index.ts'
+import { createReadPage, createWriteFile, documentFileBytes, documentFileText, hostFileOf } from '../src/client/rpc.ts'
+import type {
+  ReadWorkspaceFilePage,
+  WorkspaceFilesEditRemote,
+  WorkspaceFilesReadRemote,
+} from '../src/client/index.ts'
 import { ADDRESS, FILE, PATH, SESSION, page } from './fixtures.client.ts'
 
 describe('hostFileOf', () => {
@@ -51,5 +55,55 @@ describe('documentFileBytes', () => {
 
   it('rejects malformed wire base64', () => {
     expect(() => documentFileBytes({ absolutePath: '/workspace/a.bin', version: 'v1', offset: 0, data: '!!!', eof: true })).toThrow()
+  })
+})
+
+describe('createWriteFile', () => {
+  /** One bound write over a recorded Remote call. */
+  function bound() {
+    const write = vi.fn<WorkspaceFilesEditRemote['workspaceFiles']['write']>(
+      () => Promise.resolve({ ok: true, value: { absolutePath: '/w/a.md', version: 'v2', operation: 'update', before: '' } }),
+    )
+    return { write, run: createWriteFile({ workspaceFiles: { write, readAll: vi.fn() } }) }
+  }
+
+  it('carries the guard version the draft was read from', async () => {
+    const { write, run } = bound()
+    const signal = new AbortController().signal
+    await run(FILE, '# two\n', 'v1', signal)
+    expect(write).toHaveBeenCalledExactlyOnceWith(SESSION, PATH, { text: '# two\n', expectedVersion: 'v1' }, signal)
+  })
+
+  it('omits the guard entirely for a forced overwrite, rather than sending an empty one', async () => {
+    const { write, run } = bound()
+    const signal = new AbortController().signal
+    await run(FILE, '# mine\n', undefined, signal)
+    expect(write).toHaveBeenCalledExactlyOnceWith(SESSION, PATH, { text: '# mine\n' }, signal)
+  })
+})
+
+describe('documentFileText', () => {
+  const file = (data: Uint8Array) => ({
+    absolutePath: '/workspace/a.md', version: 'v1', offset: 0, eof: true,
+    data: btoa(String.fromCharCode(...data)),
+  })
+
+  it('decodes UTF-8 and keeps the trailing newline a page read would drop', () => {
+    expect(documentFileText(file(new TextEncoder().encode('a\nb\n')))).toBe('a\nb\n')
+  })
+
+  it('keeps a leading byte-order mark, so a save writes the file back unchanged', () => {
+    const bytes = new Uint8Array([0xEF, 0xBB, 0xBF, 0x23, 0x20, 0x78])
+    expect(documentFileText(file(bytes))).toBe('\uFEFF# x')
+  })
+
+  it('preserves CRLF line endings rather than normalizing the file under the editor', () => {
+    expect(documentFileText(file(new TextEncoder().encode('a\r\nb\r\n')))).toBe('a\r\nb\r\n')
+  })
+
+  it('rejects malformed wire base64', () => {
+    expect(() => documentFileText({
+      absolutePath: '/workspace/a.md', version: 'v1', offset: 0, data: '!!!', eof: true,
+    })).toThrow()
   })
 })

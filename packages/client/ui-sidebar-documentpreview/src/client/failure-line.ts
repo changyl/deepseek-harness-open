@@ -28,6 +28,12 @@ export function failureLine(t: TranslateNS<'sidebarDocumentPreview'>, failure: R
       return t('error.tooLarge', { limit: humanBytes(failure.details.limit) })
     case 'workspace-file/not-text': return t('error.notText')
     case 'workspace-file/not-regular-file': return t('error.notRegularFile')
+    // The write-only refusals: each names a different next step, and the
+    // stale-version one is also what the conflict bar is resolving.
+    case 'workspace-file/read-only': return t('error.readOnly')
+    case 'workspace-file/session-not-live': return t('error.sessionNotLive')
+    case 'workspace-file/stale-version': return t('error.staleVersion')
+    case 'workspace-file/write-failed': return t('error.writeFailed', { message: failure.message })
     // Carrier and unclassified host failures reach the reader as themselves:
     // this panel knows nothing useful to add to a transport-level message.
     default: return t('error.unavailable', { message: failure.message })

@@ -46,3 +46,10 @@
 
 - Viewer: Plain text
 - Text: UNKNOWN_SUFFIX | Plain fallback.
+
+## Editing
+
+- Draft seeded whole: true
+- Saved through the version guard: true
+- External write refused, file intact: true
+- Forced overwrite wins: true

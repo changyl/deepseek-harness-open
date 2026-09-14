@@ -142,10 +142,42 @@ export type WorkspaceFileWatchFrame =
   | { readonly kind: 'ready' }
   | { readonly kind: 'change'; readonly change: WorkspaceFileChange }
 
+/**
+ * One full-file replacement requested by the Client editor.
+ *
+ * The guard is the reader's own `version`, not an instruction to compare: a
+ * Client that loaded the file sends what it loaded, and a file that moved on
+ * since — the Agent edited it, another tab saved it — is refused rather than
+ * overwritten. Omitting the guard is the explicit "overwrite regardless" the
+ * conflict prompt offers, never the default.
+ */
+export interface WorkspaceFileWriteRequest {
+  /** Complete new content; the file is replaced, not patched. */
+  readonly text: string
+  /** Freshness guard taken from the stat the loaded content belongs to; omitted writes unconditionally. */
+  readonly expectedVersion?: string
+}
+
+/** The file after one Client write, plus the basis for showing what changed. */
+export interface WorkspaceFileWriteResult extends WorkspaceFileStat {
+  /** Whether the write created the file or replaced an existing one; an edited preview always updates. */
+  readonly operation: 'create' | 'update'
+  /** Content before the write, LF-normalized, or `null` when the backend declined a basis. */
+  readonly before: string | null
+}
+
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     /** No entry exists at that path inside the workspace. */
     'workspace-file/not-found': { readonly path: string }
+    /** The Session's sandbox mode forbids writes, so the Client editor is refused. */
+    'workspace-file/read-only': { readonly path: string; readonly mode: string }
+    /** The Session is not live, so its sandbox policy cannot be resolved; writing fails closed. */
+    'workspace-file/session-not-live': { readonly path: string }
+    /** The file moved on since the content being saved was read; nothing was written. */
+    'workspace-file/stale-version': { readonly path: string; readonly expectedVersion: string }
+    /** The backend refused the write for a reason with no more specific code. */
+    'workspace-file/write-failed': { readonly path: string }
     /** The directory listing path resolves outside the session's workspace root. */
     'workspace-file/outside-workspace': { readonly path: string }
     /** The requested page exceeds the configured byte cap; nothing is returned. */

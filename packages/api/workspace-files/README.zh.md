@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-使用本包可从 Web Client 预览 Session 文件系统允许读取的文件。它按页读取 UTF-8 文本、按有界窗口或完整文件读取原始字节、从基文件目录解析关联文件，并报告文件元数据。文件读取可以指向工作区外路径；目录列举与已埋点的文件系统观察仍限定于工作区。本服务不提供修改操作。
+使用本包可从 Web Client 预览 Session 文件系统允许读取的文件。它按页读取 UTF-8 文本、按有界窗口或完整文件读取原始字节、从基文件目录解析关联文件、报告文件元数据，并代 Client 编辑器替换某个文件的内容。文件读取可以指向工作区外路径；目录列举与已埋点的文件系统观察仍限定于工作区。`write` 是本服务唯一的修改操作，且仅在 Session 存活且其沙箱策略允许写入时才被接受。
 
 ## 目录
 
@@ -34,12 +34,13 @@ kind: "package-reference"
 | `readBytes(path, { offset?, length? })` | `WorkspaceFileBytes` = stat + `{ offset, data, eof }` | 任意普通文件的一个原始字节窗口，base64 编码 |
 | `readAll(path)` | `WorkspaceFileBytes`，其中 `offset: 0`、`eof: true` | `maxFileBytes` 内的完整原始字节；超大文件失败，不截断 |
 | `readRelated(path, relativePath)` | `WorkspaceFileBytes` | Host 从基文件目录解析出的文件的完整字节 |
+| `write(path, { text, expectedVersion? })` | `WorkspaceFileWriteResult` = stat + `{ operation, before }` | 替换某个普通文件的全部内容；除省略守卫外，以其读取时的版本作为守卫 |
 | `list(path)` | `WorkspaceDirectoryListing { path, entries, truncated }` | 一个目录的直接子项 |
 | `changes()` | `WorkspaceFileWatchFrame` 流 | 订阅就绪确认，随后为工作区根内的文件系统观察 |
 
 ### 寻址与路径
 
-`read`、`readBytes`、`readAll`、`readRelated` 与 `stat` 接受绝对路径或相对于所选 Session 工作区根的路径。组合文件系统决定路径是否可读；本服务不额外要求文件读取限定于工作区。`readRelated` 从基文件所在目录解析相对文件系统路径，基文件或目标文件位于工作区外时同样适用。这些方法以文件系统执行环境中的绝对路径报告文件。`list` 仍限定于工作区，并以相对于该根的路径报告被列举目录。`changes` 同样只报告工作区根内已埋点的文件系统观察。
+`read`、`readBytes`、`readAll`、`readRelated`、`stat` 与 `write` 接受绝对路径或相对于所选 Session 工作区根的路径。组合文件系统决定路径是否可读；本服务不额外要求文件读取限定于工作区。`readRelated` 从基文件所在目录解析相对文件系统路径，基文件或目标文件位于工作区外时同样适用。这些方法以文件系统执行环境中的绝对路径报告文件。`list` 仍限定于工作区，并以相对于该根的路径报告被列举目录。`changes` 同样只报告工作区根内已埋点的文件系统观察。
 
 ### 分页
 
@@ -48,6 +49,12 @@ kind: "package-reference"
 ### 字节窗口
 
 `read` 按行分页，绝不按字节；字节窗口走 `readBytes`。`range.offset` 是 0 起算的首字节，缺省为 0；`range.length` 是窗口最多的字节数，缺省为 `maxBytes` 且不得超过它——更长的窗口以 `too-large` 失败而不是被截短，不是整数或越界的 offset / length 则是 `gateway/bad-request`。窗口以 base64 的 `data` 返回，到文件末尾时短于 `length`，位于或越过末尾时为空；窗口含文件最后一个字节时 `eof` 为 true。不做任何解码，也不按二进制拒绝，因此图片或含 NUL 的文件在 `read` 以 `not-text` 失败之处仍可读出。与页一样附带同一 `version` 与 `bytes`。
+
+### 写入
+
+`write` 替换某个文件的全部内容；它从不创建文件。它原样执行读取门禁——路径必须解析为已存在的普通文件——并新增两道自己的门禁，二者都在触碰任何路径之前。Session 必须**存活**：已结束的 Session 没有可解析的沙箱策略，写入以 `session-not-live` 失败关闭，而不是回退到部署默认值。随后解析出的策略必须允许写入；`read-only` 以 `read-only` 拒绝。Client 无法指定模式，因此浏览器永远不会提升自己的权限。顺序是刻意的：即将被该端点拒绝的调用者，无法把它当作路径探测器。
+
+`request.text` 是完整的新内容，`request.expectedVersion` 是可选的守卫。存在守卫时，后端把它重新标记到文件系统的版本 token 上，并对此后已变更的文件以 `stale-version` 拒绝，不写入任何内容也不做任何合并；省略守卫则写入是无条件的，这正是 Client 在向读者展示冲突之后提供的强制覆盖。结果报告新的 `version`、本次操作是 `create` 还是 `update`（对已存在文件的带守卫编辑总是 `update`），以及 `before`——后端以 LF 规范化的 diff 基准形式给出的旧内容，后端放弃提供时为 `null`。成功写入会发出与工具写入相同的 `fs/observed` 观察，因此每一个打开的 `changes` 世代都会得知它。
 
 ### 文件读取与目录检查
 
@@ -70,7 +77,7 @@ kind: "package-reference"
 
 ### 失败
 
-每种失败都是一个带类型化 details 的 `RemoteError` 代码，声明于 [`src/types.ts`](src/types.ts)：`workspace-file/not-found`、`workspace-file/outside-workspace`（仅目录列举）、`workspace-file/too-large`（带 `limit`，即适用的页、窗口或完整文件上限）、`workspace-file/not-text`、`workspace-file/not-regular-file`（`kind` 为 `directory`、`symlink` 或 `other`）以及 `workspace-file/not-directory`（`kind` 为 `file`、`symlink` 或 `other`）。调用方按代码分支，绝不按消息文本。
+每种失败都是一个带类型化 details 的 `RemoteError` 代码，声明于 [`src/types.ts`](src/types.ts)：`workspace-file/not-found`、`workspace-file/outside-workspace`（仅目录列举）、`workspace-file/too-large`（带 `limit`，即适用的页、窗口或完整文件上限）、`workspace-file/not-text`、`workspace-file/not-regular-file`（`kind` 为 `directory`、`symlink` 或 `other`）以及 `workspace-file/not-directory`（`kind` 为 `file`、`symlink` 或 `other`）。`write` 另加四个：`workspace-file/read-only`（含 `mode`）、`workspace-file/session-not-live`、`workspace-file/stale-version`（含 `expectedVersion`），以及用于没有更具体代码的拒绝的 `workspace-file/write-failed`。调用方按代码分支，绝不按消息文本。
 
 ### Client 文件资源
 
@@ -141,6 +148,8 @@ Typert 生成 `./typert` 与 `./remote` 暴露的 Host 与 Client Remote 产物�
 - **没有总行数**——页只报告 `eof`，不报告后面还有多少行；需要总数的消费方要翻到末尾或按 `bytes` 估算。
 - **超长单行没有页**——超过 `maxBytes` 的单行在包含它的每个窗口都以 `too-large` 失败，因为页按行而非按字节切。
 - **读取不具备事务性**——结果元数据来自内容读取之前的 stat；并发写入可能使报告版本与返回内容不一致。
+- **`write` 只能整文件替换**——没有补丁、追加或部分写入端点，新内容受调用方传输能承载的同一完整文件上限约束。它也无法创建文件：尚未解析为普通文件的路径以 `not-found` 失败。
+- **`write` 写入 UTF-8 文本**——`request.text` 在线路上是字符串，因此以字节读取文件的调用方自行承担编码决定；本服务既不探测也不保留非 UTF-8 编码。
 - **generation 队列无界**——一个 `changes` generation 会缓冲每一条被包含的观察直到消费方 pull；停滞的消费方会在流的生命期内持续增长 Host 内存。
 - **`maxEntries` 限制的是答案，不是列举**——`list` 让 `ctx.fs.listDir` 列出全部子项后再截断数组，远超上限的目录仍让 Host 付出整个列举的代价（`fs-local` 上每个子项一次 stat）；要限制这份工作，需要文件系统 seam 的 `listDir` 支持上限。
 - **失效流保留元数据**——Host 结束 `changes` 或流终态失败后，已打开的值保持最后已知状态，直到重新打开。

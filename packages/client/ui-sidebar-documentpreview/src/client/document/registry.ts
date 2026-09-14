@@ -18,6 +18,14 @@ export interface DocumentPreviewDefinition {
   readonly loading: DocumentLoadMode
   /** Whether the implementation consumes the document's wrap preference. */
   readonly wrap?: boolean
+  /**
+   * Whether this implementation's file can be edited in place.
+   *
+   * Stated rather than inferred from {@link loading}: a paged renderer is not
+   * automatically a text one, and only an implementation that knows its file is
+   * UTF-8 text should offer to write it back.
+   */
+  readonly editable?: boolean
 }
 
 /**

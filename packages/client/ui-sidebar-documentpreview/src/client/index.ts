@@ -25,7 +25,7 @@ import type { TextPreviewInjected } from './TextPreview.tsx'
 import { TextTitle } from './TextTitle.tsx'
 import { TEXTPREVIEW_ID, textDefinition } from './definition.ts'
 import { textFace } from './face.ts'
-import { createReadPage } from './rpc.ts'
+import { createReadPage, createWriteFile } from './rpc.ts'
 import { createTextStore } from './store.ts'
 import { en, zh } from './locales.ts'
 import { DocumentPreviewRegistry } from './document/registry.ts'
@@ -43,8 +43,8 @@ import { apply as registerCode } from './code/index.ts'
 export type { SidebarDocumentPreviewKey } from './locales.ts'
 export type { TextPreviewProps } from './TextPreview.tsx'
 export type { TextInjected } from './face.ts'
-export type { ReadWorkspaceFilePage, SessionFile, WorkspaceFilesReadRemote } from './rpc.ts'
-export type { TextPage, TextState, TextStore, TextTabState } from './store.ts'
+export type { ReadWorkspaceFilePage, SessionFile, WorkspaceFilesEditRemote, WorkspaceFilesReadRemote, WriteWorkspaceFile } from './rpc.ts'
+export type { TextPage, TextState, TextStore, TextTabEdit, TextTabState } from './store.ts'
 export type { DocumentContent, DocumentPreviewProps, DocumentTextPage } from './document/contract.ts'
 export type { DocumentLoadMode, DocumentPreviewDefinition } from './document/registry.ts'
 export type { SessionFileChange, SessionFileChanges, SessionFileReview } from './session-file-changes.ts'
@@ -94,6 +94,7 @@ export function apply(ctx: ClientContext): void {
   const face = textFace(
     createReadPage(ctx.remote),
     (file, signal) => ctx.remote.workspaceFiles.readAll(file.sessionId, file.path, signal),
+    createWriteFile(ctx.remote),
   )
   const source = { getSnapshot: previews.getSnapshot, subscribe: previews.subscribe }
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(

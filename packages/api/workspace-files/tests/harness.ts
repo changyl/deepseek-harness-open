@@ -24,12 +24,29 @@ function fileScope(workspaceRoot: string): WorkspaceFileScope {
 
 export const signal = (): AbortSignal => new AbortController().signal
 
+/** The sandbox modes the harness's fake policy can resolve. */
+export type HarnessMode = 'read-only' | 'workspace-write'
+
 /** One temp workspace and the context serving it. */
 export interface Harness {
   readonly workspace: string
   readonly outside: string
   readonly ctx: Context
   readonly scope: WorkspaceFileScope
+  /**
+   * Mode the fake policy resolves for every call. Reads ignore it; a write must
+   * refuse under `read-only`, which is the only way to exercise that gate from a
+   * direct service call.
+   */
+  mode: HarnessMode
+  /**
+   * Whether the fake session registry still holds {@link Harness.scope}'s
+   * Session. Dropping it models a Session that has gone cold, where the policy
+   * cannot be resolved and a write has to fail closed.
+   */
+  live: boolean
+  /** The session objects the fake policy was handed, in call order. */
+  readonly policySessions: unknown[]
   /**
    * The service under test, at the given caps. One per test: the service key is
    * global to the Context, so a second call with caps is a defect in the test.
@@ -52,9 +69,23 @@ export async function openWorkspace(prefix: string): Promise<Harness> {
   await mkdir(outside, { recursive: true })
   const ctx = new Context()
   const fiber = await ctx.plugin(LocalFileSystem, { cwd: workspace })
+  const state = {
+    mode: 'workspace-write' as HarnessMode,
+    live: true,
+    policySessions: [] as unknown[],
+  }
+  // The Session the scope names, present only while `live`; a write resolves its
+  // policy from exactly this object, so the assertion surface is the identity.
+  const session = { id: 's-test', header: { cwd: workspace } }
+  ctx.provide('sessions', {
+    get: (id: string) => state.live && id === 's-test' ? session : undefined,
+  } as never)
   ctx.provide('sandboxPolicy', {
     workspaceRoot: workspace,
-    resolve: () => ({ mode: 'workspace-write', workspaceRoot: workspace }),
+    resolve: (request?: { session?: unknown }) => {
+      if (request?.session !== undefined) state.policySessions.push(request.session)
+      return { mode: state.mode, workspaceRoot: workspace }
+    },
   } as never)
   let service: WorkspaceFiles | undefined
   return {
@@ -62,6 +93,11 @@ export async function openWorkspace(prefix: string): Promise<Harness> {
     outside,
     ctx,
     scope: fileScope(workspace),
+    get mode() { return state.mode },
+    set mode(mode: HarnessMode) { state.mode = mode },
+    get live() { return state.live },
+    set live(live: boolean) { state.live = live },
+    policySessions: state.policySessions,
     endpoint: (caps) => {
       if (service !== undefined) {
         if (caps !== undefined) throw new Error('the harness serves one WorkspaceFiles per test; hoist the endpoint')

@@ -22,8 +22,7 @@
 import { posix, win32 } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type {} from '@deepseek-ai/dsh-fs'
-import type { FsDirEntry, FsInfo, FsPathInfo, FsTarget } from '@deepseek-ai/dsh-fs'
+import type { FsDirEntry, FsInfo, FsPathInfo, FsTarget, FsVersion, FsWriteOutcome } from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import type {} from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-session-persistence'
@@ -39,6 +38,8 @@ import type {
   WorkspaceFileStat,
   WorkspaceFileText,
   WorkspaceFileWatchFrame,
+  WorkspaceFileWriteRequest,
+  WorkspaceFileWriteResult,
 } from './types.ts'
 
 export type * from './types.ts'
@@ -364,6 +365,91 @@ export class WorkspaceFiles extends TypertRemoteService {
   @Remote({ mode: 'stream' })
   changes(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<WorkspaceFileWatchFrame> {
     return this.feed.follow(workspaceFileScope.workspaceRoot, signal)
+  }
+
+  /**
+   * Replace one regular file from the Client editor.
+   *
+   * This is the service's only mutation, so it is gated twice beyond the read
+   * gates: the Session must be live — a cold Session has no policy override to
+   * resolve, and writing fails closed rather than falling back to a deployment
+   * default — and the resolved sandbox policy must permit writing at all. A
+   * Client can never ask for a wider mode: the escalation vocabulary the Agent
+   * tools carry has no counterpart on the wire here. Containment and symlink
+   * handling stay the backend's, exactly as they are for a tool write.
+   *
+   * The capability gate runs before the path gates, so a refusal resolves
+   * nothing. The path is then resolved with the same gates as a read, so the
+   * file has to exist and be a regular file; this method edits, it does not
+   * create.
+   *
+   * @param workspaceFileScope - header-derived workspace root for the Session identity on the wire.
+   * @param path - absolute path or path relative to the workspace root.
+   * @param request - the new contents, and the version they were read from when guarded.
+   * @param signal - caller cancellation.
+   * @returns the file's new version, and the content it carried before the write.
+   */
+  @Remote
+  async write(
+    workspaceFileScope: WorkspaceFileScope,
+    path: string,
+    request: WorkspaceFileWriteRequest,
+    signal: AbortSignal,
+  ): Promise<WorkspaceFileWriteResult> {
+    // The capability gate comes first, before any path is touched: an
+    // unauthorized caller must not be able to use this endpoint as a path
+    // oracle, and a refusal costs no resolution.
+    const session = this.ctx.sessions.get(workspaceFileScope.sessionId)
+    if (session === undefined) {
+      throw new RemoteError(
+        'workspace-file/session-not-live',
+        `session "${workspaceFileScope.sessionId}" is not live, so its sandbox policy cannot be resolved`,
+        { path },
+      )
+    }
+    const policy = this.ctx.sandboxPolicy.resolve({ session })
+    if (policy.mode === 'read-only') {
+      throw new RemoteError('workspace-file/read-only', `"${path}" is not writable in read-only mode`, { path, mode: policy.mode })
+    }
+    const { target } = await this.locateFile(workspaceFileScope, path, signal)
+    // The guard is the reader's own version: a stale one is refused, never
+    // merged. The token is re-branded, not manufactured — it is the one this
+    // service issued to the reader, on its way back to the backend that owns it.
+    // The brand is type-only here on purpose: the runtime constructor belongs to
+    // the filesystem package, and this service has no business importing it.
+    const guard = request.expectedVersion === undefined
+      ? undefined
+      : { kind: 'replaceIfVersion' as const, version: request.expectedVersion as FsVersion }
+    let outcome: FsWriteOutcome
+    try {
+      outcome = await this.ctx.fs.writeText(target, request.text, guard, signal, policy)
+    } catch (error: unknown) {
+      throw this.writeFailure(error, path, request.expectedVersion)
+    }
+    // Same observation a tool write emits, so every `changes` reader learns of it.
+    this.ctx.emit('fs/observed', target, { kind: 'present', version: outcome.version }, undefined)
+    const info = await this.ctx.fs.stat(target, signal)
+    const stat: WorkspaceFileStat = info === undefined
+      ? { absolutePath: this.ctx.fs.processPath(target), version: outcome.version }
+      : this.statOf(target, info)
+    return { ...stat, operation: outcome.operation, before: outcome.before }
+  }
+
+  /**
+   * Keep a guarded write's refusal recognizable to the editor; every other
+   * backend failure collapses into one code that still carries its message.
+   */
+  private writeFailure(error: unknown, path: string, expectedVersion: string | undefined): RemoteError {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'FS_STALE_VERSION') {
+      return new RemoteError(
+        'workspace-file/stale-version',
+        `"${path}" changed after the content being saved was read`,
+        { path, expectedVersion: expectedVersion ?? '' },
+        { cause: error },
+      )
+    }
+    const message = error instanceof Error ? error.message : String(error)
+    return new RemoteError('workspace-file/write-failed', `writing "${path}" failed: ${message}`, { path }, { cause: error })
   }
 
   /** Apply the page defaults and caps here, so the request never carries them implicitly. */

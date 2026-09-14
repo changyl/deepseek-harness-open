@@ -1,5 +1,5 @@
 /** Keyless document-preview smoke through a real Session, Files tab, and shipped renderers. */
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -455,6 +455,46 @@ describe.skipIf(MODE === 'record')('web e2e: document preview through Files', ()
     const fallback = (await plainLines.allTextContents()).map(line => line.trim())
     expect(fallback).toEqual(['UNKNOWN_SUFFIX', 'Plain fallback.'])
     sections.push(['## Unknown suffix', '', `- Viewer: ${await viewer.innerText()}`, `- Text: ${fallback.join(' | ')}`].join('\n'))
+    // Editing is the one mutation the preview performs, so it is exercised
+    // against the real workspace file rather than against the rendered text.
+    await openFile('smoke.md')
+    if (await viewer.innerText() !== 'Markdown') {
+      await viewer.click()
+      await page.getByRole('menuitem', { name: 'Markdown', exact: true }).click()
+      await expect.poll(() => viewer.innerText()).toBe('Markdown')
+    }
+    await expect.poll(() => preview.locator('[data-textpreview-tool="edit"]').count()).toBe(1)
+    await preview.locator('[data-textpreview-tool="edit"]').click()
+    const editor = preview.locator('[data-textpreview-editor] textarea')
+    await editor.waitFor({ timeout: 15_000 })
+    // The draft is the file itself: a page is a lossy view, so a draft built
+    // from one would have already lost the trailing newline.
+    const seeded = await editor.inputValue()
+    const seedFaithful = seeded === markdownText
+    const firstEdit = `${markdownText}\nFirst reader edit.\n`
+    await editor.fill(firstEdit)
+    await expect.poll(() => preview.locator('[data-textpreview-dirty]').count()).toBe(1)
+    await preview.locator('[data-textpreview-tool="save"]').click()
+    await expect.poll(() => preview.locator('[data-textpreview-dirty]').count()).toBe(0)
+    const savedThroughGuard = await readFile(join(cwd, 'smoke.md'), 'utf8') === firstEdit
+    // Another writer moves the file on while the reader keeps typing; the save
+    // must be refused rather than silently winning.
+    const secondEdit = `${firstEdit}Second reader edit.\n`
+    await editor.fill(secondEdit)
+    await writeFile(join(cwd, 'smoke.md'), `${firstEdit}THEIRS\n`)
+    await preview.locator('[data-textpreview-tool="save"]').click()
+    await preview.locator('[data-textpreview-save-failed="workspace-file/stale-version"]').waitFor({ timeout: 15_000 })
+    const refusedIntact = (await readFile(join(cwd, 'smoke.md'), 'utf8')).endsWith('THEIRS\n')
+    await preview.locator('[data-textpreview-overwrite]').click()
+    await expect.poll(async () => readFile(join(cwd, 'smoke.md'), 'utf8')).toBe(secondEdit)
+    await expect.poll(() => preview.locator('[data-textpreview-dirty]').count()).toBe(0)
+    sections.push([
+      '## Editing', '',
+      `- Draft seeded whole: ${String(seedFaithful)}`,
+      `- Saved through the version guard: ${String(savedThroughGuard)}`,
+      `- External write refused, file intact: ${String(refusedIntact)}`,
+      `- Forced overwrite wins: ${String(await readFile(join(cwd, 'smoke.md'), 'utf8') === secondEdit)}`,
+    ].join('\n'))
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
     await compareOrRefreshGolden(EXPECTED, sections.join('\n\n'), MODE)

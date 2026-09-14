@@ -55,6 +55,40 @@ export interface TextTabState {
   wrap: boolean
   /** The `navigation.revision` the body already answered; absent before the first. */
   revision: number | undefined
+  /**
+   * This tab's editing session; absent while the tab is only previewing.
+   *
+   * One object rather than a handful of flags, so entering and leaving edit mode
+   * is a single assignment: a draft, a version, and a saving flag that outlive
+   * each other would otherwise have to agree about whether the tab is editing.
+   */
+  edit: TextTabEdit | undefined
+  /** The editor's seed read is in flight; the session exists only once it lands. */
+  editLoading: boolean
+}
+
+/**
+ * One tab's editing session: the draft, the text it is measured against, and
+ * the version a save is guarded by.
+ *
+ * The draft comes from a whole-file read rather than from the loaded pages,
+ * because a page is a lossy view of the file. `saved` is kept beside it instead
+ * of being recomputed from the pages, so a reload that rebuilds the preview
+ * cannot make an untouched draft read as dirty.
+ */
+export interface TextTabEdit {
+  /** The editor's current text. */
+  text: string
+  /** The text `text` is compared against to decide whether this tab is dirty. */
+  saved: string
+  /** File version the draft was read from; the guard the next save sends. */
+  version: string
+  /** A save is in flight. */
+  saving: boolean
+  /** Why the draft could not be read, or why the last save failed. */
+  failure: RemoteFailure | undefined
+  /** The last save was refused because the file moved on; the reader chooses how to resolve it. */
+  conflict: boolean
 }
 
 /** Every tab's state, keyed by tab id. */
@@ -77,6 +111,8 @@ export function fresh(): TextTabState {
     scrollTop: 0,
     wrap: true,
     revision: undefined,
+    edit: undefined,
+    editLoading: false,
   }
 }
 
@@ -96,6 +132,14 @@ type TextActions = {
   scrolled: (draft: TextState, tabId: TabId, scrollTop: number) => void
   toggledWrap: (draft: TextState, tabId: TabId) => void
   navigated: (draft: TextState, tabId: TabId, revision: number) => void
+  editOpening: (draft: TextState, tabId: TabId) => void
+  editOpened: (draft: TextState, tabId: TabId, text: string, version: string) => void
+  editFailed: (draft: TextState, tabId: TabId, failure: RemoteFailure) => void
+  drafted: (draft: TextState, tabId: TabId, text: string) => void
+  saving: (draft: TextState, tabId: TabId) => void
+  saved: (draft: TextState, tabId: TabId, text: string, version: string) => void
+  saveFailed: (draft: TextState, tabId: TabId, failure: RemoteFailure, conflict: boolean) => void
+  editClosed: (draft: TextState, tabId: TabId) => void
   forget: (draft: TextState, tabId: TabId) => void
 }
 
@@ -207,6 +251,114 @@ export function createTextStore(): EngineStoreHandle<TextState, TextActions> {
        */
       navigated: (d, tabId: TabId, revision: number) => {
         bucket(d, tabId).revision = revision
+      },
+      /**
+       * Start an editing session: the tab is editing from now on, even though
+       * its draft is still being read.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       */
+      editOpening: (d, tabId: TabId) => {
+        const state = bucket(d, tabId)
+        state.editLoading = true
+        state.edit = undefined
+      },
+      /**
+       * Seed the session with the file's whole text.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       * @param text - the file's complete text, as it will be saved back.
+       * @param version - the version that text was read from.
+       */
+      editOpened: (d, tabId: TabId, text: string, version: string) => {
+        const state = bucket(d, tabId)
+        state.editLoading = false
+        state.edit = { text, saved: text, version, saving: false, failure: undefined, conflict: false }
+      },
+      /**
+       * Record a draft that could not be read. The session is not opened: a tab
+       * with nothing to edit shows the failure and the preview behind it.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       * @param failure - the settled Remote failure.
+       */
+      editFailed: (d, tabId: TabId, failure: RemoteFailure) => {
+        const state = bucket(d, tabId)
+        state.editLoading = false
+        state.edit = undefined
+        state.failure = failure
+      },
+      /**
+       * Keep the reader's latest keystrokes.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       * @param text - the editor's current text.
+       */
+      drafted: (d, tabId: TabId, text: string) => {
+        const state = bucket(d, tabId).edit
+        /* v8 ignore next -- the editor renders only inside a live session */
+        if (state === undefined) return
+        state.text = text
+      },
+      /**
+       * Mark a save as in flight, clearing the previous refusal so a retry
+       * starts from a clean slate.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       */
+      saving: (d, tabId: TabId) => {
+        const state = bucket(d, tabId).edit
+        /* v8 ignore next -- the save control renders only inside a live session */
+        if (state === undefined) return
+        state.saving = true
+        state.failure = undefined
+        state.conflict = false
+      },
+      /**
+       * Accept a completed save: the written text becomes the clean baseline and
+       * the new version becomes the guard for the next one. The session stays
+       * open, because saving is not the same as stopping.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       * @param text - the text that was written.
+       * @param version - the version the Host reported after the write.
+       */
+      saved: (d, tabId: TabId, text: string, version: string) => {
+        const state = bucket(d, tabId).edit
+        /* v8 ignore next -- a settlement for a session the reader already closed writes nothing */
+        if (state === undefined) return
+        state.saving = false
+        state.failure = undefined
+        state.conflict = false
+        state.saved = text
+        state.version = version
+      },
+      /**
+       * Record why a save failed. A stale refusal is flagged as a conflict, which
+       * is the one failure the reader resolves rather than merely retries.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       * @param failure - the settled Remote failure.
+       * @param conflict - whether the Host refused the save as stale.
+       */
+      saveFailed: (d, tabId: TabId, failure: RemoteFailure, conflict: boolean) => {
+        const state = bucket(d, tabId).edit
+        /* v8 ignore next -- a settlement for a session the reader already closed writes nothing */
+        if (state === undefined) return
+        state.saving = false
+        state.failure = failure
+        state.conflict = conflict
+      },
+      /**
+       * Drop the editing session and go back to previewing. Anything unsaved is
+       * discarded, so the controls that call this are the ones that say so.
+       * @param d - draft state.
+       * @param tabId - the tab being edited.
+       */
+      editClosed: (d, tabId: TabId) => {
+        const state = bucket(d, tabId)
+        state.edit = undefined
+        state.editLoading = false
       },
       /**
        * Drop one tab's state, for a tab record that is gone.

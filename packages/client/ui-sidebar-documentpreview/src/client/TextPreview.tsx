@@ -9,6 +9,14 @@
  * workspace unknown — takes the same bar's place over the pages already loaded,
  * with the same reload. The type's controls, viewer choice, wrap and reload, sit at the end of
  * the path row; the Sidebar's strip carries none of them.
+ *
+ * A renderer that declares itself editable also gets an editing session, which
+ * is the only place this type writes anything. The draft is read whole rather
+ * than assembled from the pages on screen, because a page is a lossy view of the
+ * file; the save is guarded by the version the draft came from, so a file that
+ * moved on is refused instead of overwritten. While the pane is narrow the
+ * session replaces the preview — there is no room for both — and once it is
+ * fullscreen the two share the column.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
@@ -28,6 +36,7 @@ import { diffBlockLabels } from './diff-labels.ts'
 import { failureLine } from './failure-line.ts'
 import { IconNowrapFill16, IconWrapFill16 } from './icons.tsx'
 import { LoadingIndicator } from './LoadingIndicator.tsx'
+import { TextEditor } from './TextEditor.tsx'
 import { hostFileOf } from './rpc.ts'
 import type { TextStore } from './store.ts'
 import type { DocumentContent } from './document/contract.ts'
@@ -127,9 +136,9 @@ export type TextPreviewProps =
 export function TextPreview({
   useTabInfo, useResource, useStore, actions, loadPage, reloadPages,
   loadAll, reloadAll, useDocumentPreviews, readFileChange, reviewChange, readReview,
-  readNeighbourChange, readHunkRange, renderSlot, t,
+  readNeighbourChange, readHunkRange, renderSlot, t, openDraft, closeDraft, saveDraft,
 }: TextPreviewProps): ReactNode {
-  const { tab } = useTabInfo()
+  const { tab, sidebar } = useTabInfo()
   const { navigation, signal } = tab
   const meta = useResource<'file'>(tab.contentId)
   const canRead = meta.status !== 'none'
@@ -144,6 +153,10 @@ export function TextPreview({
   const selected = candidates.find(candidate => candidate.id === state?.rendererId) ?? candidates[0]
   const mode = selected?.loading
   const current = (state?.mode ?? 'text-pages') === mode ? state : undefined
+  // Whether an editing session is open, or opening. Read here rather than beside
+  // the other edit derivations because the paging effects below ask it too: a
+  // fullscreen split keeps filling the preview half while the reader types.
+  const editing = current?.editLoading === true || current?.edit !== undefined
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const scrollportRef = useRef<HTMLElement | null>(null)
   const storedScrollTopRef = useRef(0)
@@ -210,13 +223,16 @@ export function TextPreview({
   // The two-column layout draws the change among the file's own lines, so its
   // reader needs the whole file and pages keep loading while it is selected —
   // the walk scrolling the file body would make, without the scrolling. The
-  // comparison stays change-only until the file is complete.
+  // comparison stays change-only until the file is complete. The fullscreen
+  // editing split asks the same thing of the preview half: it is on screen the
+  // whole time the reader types, so it fills in behind them.
+  const previewVisible = viewMode === 'split' || (editing && sidebar.fullscreen)
   useEffect(() => {
-    if (viewMode !== 'split' || !canRead || mode !== 'text-pages' || current === undefined) return
+    if (!previewVisible || !canRead || mode !== 'text-pages' || current === undefined) return
     if (current.eof || current.loading || current.failure !== undefined || loaded.length === 0) return
     loadPage(tab.id, file, loadedThrough + 1, signal, meta.value?.version)
   }, [
-    viewMode, canRead, mode, current, loaded.length, loadedThrough, tab.id, file, signal, loadPage, meta.value?.version,
+    previewVisible, canRead, mode, current, loaded.length, loadedThrough, tab.id, file, signal, loadPage, meta.value?.version,
   ])
 
   // Come back where the reader was once there is content to scroll: on a remount,
@@ -320,6 +336,14 @@ export function TextPreview({
     if (mode === 'text-pages') reloadPages(tab.id, file, signal, meta.value?.version)
     else reloadAll(tab.id, file, signal, meta.value?.version)
   }
+  // An editing session replaces two sources at once: the pages, and the change
+  // view. Both are answers to "show me this file", and the editor is a third.
+  const edit = current?.edit
+  const editable = current !== undefined && selected.editable === true && viewMode === 'file' && canRead
+  const dirty = edit !== undefined && edit.text !== edit.saved
+  // Fullscreen is the one layout with room for the file and the draft at once;
+  // narrow shows whichever the reader is working in.
+  const splitEdit = sidebar.fullscreen && edit !== undefined
   const reviewKey = `${String(changeSeq)}:${file.path}`
   // This look's own decision wins; a decision an earlier look recorded is the
   // state the controls start on, so a reload does not offer the same choice twice.
@@ -384,10 +408,47 @@ export function TextPreview({
     }
   }
   return (
-    <div className={css.preview} data-textpreview-state="text" data-textpreview-url={tab.contentId} data-document-preview={selected.id}>
+    <div
+      className={css.preview}
+      data-textpreview-state="text"
+      data-textpreview-url={tab.contentId}
+      data-document-preview={selected.id}
+      data-textpreview-editing={editing ? '' : undefined}
+    >
+      {/* A failed save takes the banner slot outright: it is the newest thing
+          that happened to this file, and the one with a decision attached. */}
+      {edit?.failure !== undefined && (
+        <p className={css.changed} data-textpreview-save-failed={edit.failure.code}>
+          <span>{failureLine(t, edit.failure)}</span>
+          {edit.conflict && (
+            // The two ways out of a conflict, and the only place a save travels
+            // without its guard: the reader is choosing to lose the other side.
+            <>
+              <button
+                type="button"
+                className={css.action}
+                data-textpreview-overwrite
+                onClick={() => { saveDraft(tab.id, file, edit.text, undefined, signal) }}
+              >
+                {t('edit.overwrite')}
+              </button>
+              <button
+                type="button"
+                className={css.action}
+                data-textpreview-reopen
+                onClick={() => { openDraft(tab.id, file, signal) }}
+              >
+                {t('edit.reload')}
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {/* The change view is history, not a file read: a stale-metadata banner
-          would report a version the diff does not depend on. */}
-      {viewMode === 'file' && (meta.failure !== undefined && hasContent
+          would report a version the diff does not depend on. An open editing
+          session speaks for the file instead: its save is the one that can
+          refuse a changed file, and it says so when it does. */}
+      {!editing && viewMode === 'file' && (meta.failure !== undefined && hasContent
         ? (
           // The file's metadata failed — gone, or its workspace unknown — which
           // outranks a pending change; the pages already read stay under it.
@@ -514,6 +575,66 @@ export function TextPreview({
             </Tooltip>
           </>
         )}
+        {editable && !editing && (
+          <Tooltip label={t('edit.start')} side="bottom" delayMs={500}>
+            <button
+              type="button"
+              className={clsx(css.tool, css.changeTool)}
+              aria-label={t('edit.startAria')}
+              data-textpreview-tool="edit"
+              onClick={() => { openDraft(tab.id, file, signal) }}
+            >
+              {t('edit.start')}
+            </button>
+          </Tooltip>
+        )}
+        {edit !== undefined && (
+          <>
+            {/* Narrow has room for one of the two views, so leaving the editor
+                is a control. A dirty draft is not thrown away by it: the reader
+                saves or discards first, and both have their own button. */}
+            {!splitEdit && (
+              <Tooltip label={t('edit.preview')} side="bottom" delayMs={500}>
+                <button
+                  type="button"
+                  className={clsx(css.tool, css.changeTool)}
+                  aria-label={t('edit.previewAria')}
+                  disabled={dirty}
+                  data-textpreview-tool="preview"
+                  onClick={() => { closeDraft(tab.id) }}
+                >
+                  {t('edit.preview')}
+                </button>
+              </Tooltip>
+            )}
+            <Tooltip label={t('edit.save')} side="bottom" delayMs={500}>
+              <button
+                type="button"
+                className={clsx(css.tool, css.changeTool)}
+                aria-label={t('edit.save')}
+                disabled={!dirty || edit.saving}
+                data-textpreview-tool="save"
+                onClick={() => { saveDraft(tab.id, file, edit.text, edit.version, signal) }}
+              >
+                {edit.saving ? t('edit.saving') : t('edit.save')}
+              </button>
+            </Tooltip>
+            {dirty && (
+              <Tooltip label={t('edit.discard')} side="bottom" delayMs={500}>
+                <button
+                  type="button"
+                  className={clsx(css.tool, css.changeTool)}
+                  aria-label={t('edit.discard')}
+                  data-textpreview-tool="discard"
+                  onClick={() => { closeDraft(tab.id) }}
+                >
+                  {t('edit.discard')}
+                </button>
+              </Tooltip>
+            )}
+            {dirty && <span className={css.dirtyMark} data-textpreview-dirty>{t('edit.dirty')}</span>}
+          </>
+        )}
         <Menu
           open={menuOpen}
           anchor={(
@@ -557,84 +678,110 @@ export function TextPreview({
           </button>
         </Tooltip>
       </div>
+      {/* One surface holds both views. The preview stays mounted while the
+          reader edits — the editor is drawn above it and the preview is hidden
+          rather than unmounted — so its scroller keeps the reader's place, and
+          a fullscreen pane simply shows both side by side. */}
       <div
-        ref={bindBody}
-        className={clsx(css.body, state.wrap && css.wrap)}
-        data-textpreview-body
-        data-textpreview-wrap={state.wrap ? '' : undefined}
-        onScrollCapture={(event) => {
-          const body = scrollportRef.current
-          /* v8 ignore next -- callback refs bind the scrollport during commit, before user input. */
-          if (body === null) return
-          if (event.target !== body) return
-          actions.scrolled(tab.id, body.scrollTop)
-          // The change view is one finite surface: reaching its bottom must not
-          // page the file the reader is not looking at.
-          if (viewMode === 'file' && mode === 'text-pages' && current?.failure === undefined && body.clientHeight > 0
-            && body.scrollTop + body.clientHeight >= body.scrollHeight - 1) loadNext()
-        }}
+        className={css.editSurface}
+        data-textpreview-edit={editing ? '' : undefined}
+        data-textpreview-split={splitEdit ? '' : undefined}
       >
-        {diffSurface !== undefined
+        {editing && (edit === undefined
+          // The draft is being read whole, which is the one moment a session
+          // exists with nothing to put in it.
           ? (
-            <div className={css.change} data-textpreview-change data-change-mode={viewMode}>
-              {diffSurface}
+            <div className={css.status} data-textpreview-state="draft-loading">
+              <LoadingIndicator className={css.statusLine} label={t('loading')} />
             </div>
           )
           : (
-            <>
-              {!hasContent && current?.failure === undefined && (
-                <LoadingIndicator className={css.statusLine} label={t('loading')} />
-              )}
-              {content !== undefined && renderSlot('sidebar.right.tab.document', {
-                resourceAddress: tab.contentId, content, wrap: state.wrap, scrollportRef: bindScrollport,
-              }, {
-                entryKey: selected.id, hookContext: useTabInfo,
-                fallback: <p className={css.statusLine}>{t('rendererUnavailable', { name: selected.title() })}</p>,
-              })}
-              {current?.failure !== undefined && (hasContent
-                ? (
-                  <p className={css.statusLine} data-textpreview-failed={current.failure.code}>
-                    <span>{failureLine(t, current.failure)}</span>
-                    <button
-                      type="button"
-                      className={css.action}
-                      data-textpreview-retry
-                      onClick={loadNext}
-                    >
-                      {t('retry')}
-                    </button>
-                  </p>
-                )
-                : (
-                  // With no content, retry the selected renderer's read; metadata
-                  // observation remains owned by the resource provider.
-                  <div className={css.empty} data-textpreview-failed={current.failure.code}>
-                    <FileTypeIcon kind={classifyFileType(name)} size={36} className={css.emptyIcon} />
-                    <p className={css.emptyLine}>{failureLine(t, current.failure)}</p>
-                    <button
-                      type="button"
-                      className={css.retry}
-                      data-textpreview-retry
-                      onClick={reload}
-                    >
-                      <IconRefreshOutline16 size={14} />
-                      {t('retry')}
-                    </button>
-                  </div>
-                ))}
-              {mode === 'text-pages' && current !== undefined && loaded.length > 0 && !current.eof && current.failure === undefined && (
-                <button
-                  type="button"
-                  className={css.more}
-                  disabled={current.loading}
-                  data-textpreview-more
-                  onClick={loadNext}
-                >
-                  {current.loading ? <LoadingIndicator label={t('loading')} /> : t('loadMore')}
-                </button>
-              )}
-            </>
-          )}
+            <TextEditor
+              value={edit.text}
+              onChange={(text) => { actions.drafted(tab.id, text) }}
+              wrap={state.wrap}
+              label={t('edit.editorAria')}
+            />
+          ))}
+        <div
+          ref={bindBody}
+          className={clsx(css.body, state.wrap && css.wrap)}
+          data-textpreview-body
+          data-textpreview-wrap={state.wrap ? '' : undefined}
+          onScrollCapture={(event) => {
+            const body = scrollportRef.current
+            /* v8 ignore next -- callback refs bind the scrollport during commit, before user input. */
+            if (body === null) return
+            if (event.target !== body) return
+            actions.scrolled(tab.id, body.scrollTop)
+            // The change view is one finite surface: reaching its bottom must not
+            // page the file the reader is not looking at.
+            if (viewMode === 'file' && mode === 'text-pages' && current?.failure === undefined && body.clientHeight > 0
+              && body.scrollTop + body.clientHeight >= body.scrollHeight - 1) loadNext()
+          }}
+        >
+          {diffSurface !== undefined
+            ? (
+              <div className={css.change} data-textpreview-change data-change-mode={viewMode}>
+                {diffSurface}
+              </div>
+            )
+            : (
+              <>
+                {!hasContent && current?.failure === undefined && (
+                  <LoadingIndicator className={css.statusLine} label={t('loading')} />
+                )}
+                {content !== undefined && renderSlot('sidebar.right.tab.document', {
+                  resourceAddress: tab.contentId, content, wrap: state.wrap, scrollportRef: bindScrollport,
+                }, {
+                  entryKey: selected.id, hookContext: useTabInfo,
+                  fallback: <p className={css.statusLine}>{t('rendererUnavailable', { name: selected.title() })}</p>,
+                })}
+                {current?.failure !== undefined && (hasContent
+                  ? (
+                    <p className={css.statusLine} data-textpreview-failed={current.failure.code}>
+                      <span>{failureLine(t, current.failure)}</span>
+                      <button
+                        type="button"
+                        className={css.action}
+                        data-textpreview-retry
+                        onClick={loadNext}
+                      >
+                        {t('retry')}
+                      </button>
+                    </p>
+                  )
+                  : (
+                    // With no content, retry the selected renderer's read; metadata
+                    // observation remains owned by the resource provider.
+                    <div className={css.empty} data-textpreview-failed={current.failure.code}>
+                      <FileTypeIcon kind={classifyFileType(name)} size={36} className={css.emptyIcon} />
+                      <p className={css.emptyLine}>{failureLine(t, current.failure)}</p>
+                      <button
+                        type="button"
+                        className={css.retry}
+                        data-textpreview-retry
+                        onClick={reload}
+                      >
+                        <IconRefreshOutline16 size={14} />
+                        {t('retry')}
+                      </button>
+                    </div>
+                  ))}
+                {mode === 'text-pages' && current !== undefined && loaded.length > 0 && !current.eof && current.failure === undefined && (
+                  <button
+                    type="button"
+                    className={css.more}
+                    disabled={current.loading}
+                    data-textpreview-more
+                    onClick={loadNext}
+                  >
+                    {current.loading ? <LoadingIndicator label={t('loading')} /> : t('loadMore')}
+                  </button>
+                )}
+              </>
+            )}
+        </div>
       </div>
     </div>
   )

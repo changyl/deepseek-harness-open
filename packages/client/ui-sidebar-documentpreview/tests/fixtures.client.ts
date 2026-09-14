@@ -14,13 +14,18 @@ import { createElement, useSyncExternalStore } from 'react'
 import type { RemoteFailure, RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ResourceSnapshot } from '@deepseek-ai/dsh-client-resources/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { WorkspaceFileStat, WorkspaceFileText } from '@deepseek-ai/dsh-api-workspace-files/types'
+import type {
+  WorkspaceFileBytes,
+  WorkspaceFileStat,
+  WorkspaceFileText,
+  WorkspaceFileWriteResult,
+} from '@deepseek-ai/dsh-api-workspace-files/types'
 import type { DiffHunk } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionFileChange } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
 import type { TextPreviewProps } from '../src/client/TextPreview.tsx'
 import { textFace } from '../src/client/face.ts'
 import type { TextInjected } from '../src/client/face.ts'
-import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile } from '../src/client/rpc.ts'
+import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile, WriteWorkspaceFile } from '../src/client/rpc.ts'
 import { createTextStore } from '../src/client/store.ts'
 import type { TextStore } from '../src/client/store.ts'
 import type { DocumentPreviewProps } from '../src/client/document/contract.ts'
@@ -47,6 +52,39 @@ export function page(offset: number, lines: readonly string[], eof: boolean, ver
 /** One failed page read. */
 export function failure(code: string, details: Record<string, unknown> = {}): RemoteResult<WorkspaceFileText> {
   return { ok: false, error: { code, message: 'boom', details } as unknown as RemoteFailure }
+}
+
+/** One failed whole-file read, in whichever result shape the reader expects. */
+export function wholeFailure<T>(code: string, details: Record<string, unknown> = {}): RemoteResult<T> {
+  return { ok: false, error: { code, message: 'boom', details } as unknown as RemoteFailure }
+}
+
+/** One whole-file read: the complete text the editor's draft is seeded from. */
+export function wholeText(text: string, version = 'v1'): RemoteResult<WorkspaceFileBytes> {
+  const data = new TextEncoder().encode(text)
+  return {
+    ok: true,
+    value: {
+      absolutePath: ABSOLUTE_PATH, version, offset: 0, eof: true, bytes: data.byteLength,
+      data: btoa(String.fromCharCode(...data)),
+    },
+  }
+}
+
+/** One refused write, typed so a spec can script a mock's settled value. */
+export function writeRefused(
+  code: string,
+  details: Record<string, unknown> = {},
+): RemoteResult<WorkspaceFileWriteResult> {
+  return wholeFailure<WorkspaceFileWriteResult>(code, details)
+}
+
+/** One accepted write of `text`. */
+export function written(text: string, version = 'v2'): RemoteResult<WorkspaceFileWriteResult> {
+  return {
+    ok: true,
+    value: { absolutePath: ABSOLUTE_PATH, version, bytes: text.length, operation: 'update', before: '' },
+  }
 }
 
 /** The `file` resource's metadata: live, or failed beside the last live value. */
@@ -94,16 +132,18 @@ export interface Harness {
   face: TextInjected
   /** The scripted paged read. */
   read: Mock<ReadWorkspaceFilePage>
-  /** The complete byte reader. */
+  /** The complete byte reader, also the editor's draft read. */
   bytes: Mock<ReadDocumentBytes>
+  /** The guarded whole-file write. */
+  write: Mock<WriteWorkspaceFile>
   /** The tab record's lifetime. */
   controller: AbortController
   /** Current file metadata. */
   readonly file: WorkspaceFileStat | undefined
   /** The scripted `useResource`. */
   useResource: Mock<() => ResourceSnapshot<WorkspaceFileStat>>
-  /** Composed props for one navigation state. */
-  props: (navigation?: { params?: unknown; revision: number }) => TextPreviewProps
+  /** Composed props for one navigation state, in the given pane presentation. */
+  props: (navigation?: { params?: unknown; revision: number }, pane?: { fullscreen?: boolean }) => TextPreviewProps
   /** Script what one offset resolves to from now on. */
   script(offset: number, result: RemoteResult<WorkspaceFileText>): void
   /** Publish another metadata version without acknowledging any tab's content. */
@@ -140,8 +180,9 @@ export function harness(script: Record<number, RemoteResult<WorkspaceFileText>> 
   const pages: Record<number, RemoteResult<WorkspaceFileText>> = { ...script }
   const read = vi.fn<ReadWorkspaceFilePage>((_session, _path, offset) =>
     Promise.resolve(pages[offset] ?? failure('workspace-file/not-found', { path: PATH })))
-  const bytes = vi.fn<ReadDocumentBytes>()
-  const face = textFace(read, bytes)(SESSION, instance.actions)
+  const bytes = vi.fn<ReadDocumentBytes>(() => Promise.resolve(wholeFailure('workspace-file/not-found', { path: PATH })))
+  const write = vi.fn<WriteWorkspaceFile>(() => Promise.resolve(wholeFailure('workspace-file/write-failed', { path: PATH })))
+  const face = textFace(read, bytes, write)(SESSION, instance.actions)
   const current = { version: 'v1' as string | undefined, failure: undefined as RemoteFailure | undefined, snapshot: meta('v1', undefined) }
   const refresh = (): void => { current.snapshot = meta(current.version, current.failure) }
   const useResource = vi.fn<() => ResourceSnapshot<WorkspaceFileStat>>(() => current.snapshot)
@@ -162,9 +203,12 @@ export function harness(script: Record<number, RemoteResult<WorkspaceFileText>> 
   const renderSlot: TextPreviewProps['renderSlot'] = (_key, owner, opts) => createElement(TextBody, {
     ...owner, useTabInfo: opts.hookContext, sessionId: SESSION, useResource,
   } as unknown as DocumentPreviewProps)
-  const props = (navigation: { params?: unknown; revision: number } = { revision: 1 }) => ({
+  const props = (
+    navigation: { params?: unknown; revision: number } = { revision: 1 },
+    pane: { fullscreen?: boolean } = {},
+  ) => ({
     useTabInfo: () => ({
-      sidebar: { expanded: true, fullscreen: false },
+      sidebar: { expanded: true, fullscreen: pane.fullscreen ?? false },
       panel: { id: 'pane-1' },
       tab: {
         id: tabId, kind: 'text', contentId: ADDRESS, title: 'notes.md', visible: true,
@@ -181,6 +225,9 @@ export function harness(script: Record<number, RemoteResult<WorkspaceFileText>> 
     reloadPages: face.reloadPages,
     loadAll: face.loadAll,
     reloadAll: face.reloadAll,
+    openDraft: face.openDraft,
+    closeDraft: face.closeDraft,
+    saveDraft: face.saveDraft,
     useDocumentPreviews: () => definitions,
     readFileChange: (address: string, seq: number) => publish.get(changeKey(address, seq)),
     reviewChange: review,
@@ -196,6 +243,7 @@ export function harness(script: Record<number, RemoteResult<WorkspaceFileText>> 
     face,
     read,
     bytes,
+    write,
     controller,
     get file() { return current.snapshot.value },
     useResource,
