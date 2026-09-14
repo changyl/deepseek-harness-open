@@ -1,0 +1,136 @@
+/* The two-column comparison surface: same card as DiffBlock, one grid row per
+   line band. The body holds the grid and every band is `display: contents`, so
+   the two columns are sized once for the whole surface: all bands share one
+   divider, the columns never shrink below their longest line, and the body
+   scrolls horizontally as a whole. A grid per band would size the columns from
+   that band's own lines instead, staggering the divider and letting a long new
+   line start inside the old side's range. */
+.block {
+  --dsl-diff-radius: 12px;
+  --dsl-diff-line-height: 22px;
+
+  position: relative;
+  margin: 16px 0;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-markdown-code-block);
+  border-radius: var(--dsl-diff-radius);
+}
+
+/* Floats over the body's top-right corner, like the unified surface's. */
+.copyButton {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 1;
+  padding: 0;
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font: var(--dsw-font-xs-13);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(min-content, 1fr) minmax(min-content, 1fr);
+  padding: 12px 0;
+  font: var(--dsw-font-markdown-code-block);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* `min-content` floors each column at its longest line across every band, so a
+   long line widens the grid and the body scrolls instead of clipping it; `1fr`
+   splits the free width evenly once both sides fit. */
+.row {
+  display: contents;
+}
+
+.cell {
+  min-height: var(--dsl-diff-line-height);
+  padding: 0 10px;
+  white-space: pre;
+}
+
+/* The gutter between the sides, drawn on the old side so the first column
+   carries it whether or not the new side has a cell. */
+.cell:first-child {
+  border-right: 0.5px solid var(--dsw-alias-border-l1);
+}
+
+/* The prefixes mirror the unified surface's, so a line reads the same in both
+   layouts and a copied line is attributable without colour. */
+.del {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.del::before {
+  content: '- ';
+}
+
+.add {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.add::before {
+  content: '+ ';
+}
+
+.context {
+  color: var(--dsw-alias-label-primary);
+}
+
+.context::before {
+  content: '  ';
+}
+
+/* Facing a one-sided change: the side that has no line here. */
+.empty {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* A file header, spanning both columns; the copy button floats over its end.
+   The band draws its own box again (`.row` is `display: contents`) so it spans
+   the grid instead of taking the first column alone. */
+.path {
+  display: block;
+  grid-column: 1 / -1;
+  padding: 0 14px;
+  padding-right: 56px;
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
+}
+
+/* A same-file second hunk's separator (a scattered edit), in the dim tone. */
+.gap {
+  display: block;
+  grid-column: 1 / -1;
+  padding: 0 14px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.expand {
+  display: block;
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: 0 14px;
+  color: var(--dsw-alias-label-tertiary);
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.expand:hover {
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* The change summary, dim under the body: the same footer the unified surface
+   and the TUI transcript's diff card draw. */
+.footer {
+  padding: 0 14px 12px;
+  font: var(--dsw-font-markdown-code-block);
+  color: var(--dsw-alias-label-tertiary);
+}
