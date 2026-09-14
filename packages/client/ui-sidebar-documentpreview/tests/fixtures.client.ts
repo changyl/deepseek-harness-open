@@ -27,6 +27,7 @@ import type { DocumentPreviewProps } from '../src/client/document/contract.ts'
 import { TextBody } from '../src/client/text/TextBody.tsx'
 import { textBodyDefinition } from '../src/client/text/index.ts'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
+import type { SidebarRightTabActions } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 
 export const TAB_ID = 'tab-1' as TabId
 export const SESSION = 's-1' as SessionId
@@ -78,6 +79,13 @@ export async function settle(): Promise<void> {
   })
 }
 
+/** The owner's tab actions as recording mocks. */
+interface MockedTabActions {
+  readonly openResource: Mock<SidebarRightTabActions['openResource']>
+  readonly openTab: Mock<SidebarRightTabActions['openTab']>
+  readonly close: Mock<SidebarRightTabActions['close']>
+}
+
 /** What one tab record's harness hands a spec. Named so the helper's declaration stays portable. */
 export interface Harness {
   /** The live store instance both components read. */
@@ -106,6 +114,8 @@ export interface Harness {
   setChange(address: string, seq: number, hunks: readonly DiffHunk[] | undefined): void
   /** The scripted reader-decision call the header's accept and revert controls make. */
   review: Mock<TextPreviewProps['reviewChange']>
+  /** The owner's tab actions, so a spec can assert what the header opened. */
+  readonly tabActions: MockedTabActions
   /** Script the decision a previous look already recorded for one change. */
   setReview(address: string, seq: number, decision: 'accepted' | 'reverted' | undefined): void
   /** Script the change next to one inside its Turn; `undefined` = the end of the Turn. */
@@ -137,7 +147,11 @@ export function harness(script: Record<number, RemoteResult<WorkspaceFileText>> 
   const useResource = vi.fn<() => ResourceSnapshot<WorkspaceFileStat>>(() => current.snapshot)
   const controller = new AbortController()
   onTestFinished(() => { controller.abort() })
-  const tabActions = { openResource: vi.fn(), openTab: vi.fn(), close: vi.fn(), replace: vi.fn() }
+  const tabActions: MockedTabActions = {
+    openResource: vi.fn<SidebarRightTabActions['openResource']>(),
+    openTab: vi.fn<SidebarRightTabActions['openTab']>(),
+    close: vi.fn<SidebarRightTabActions['close']>(),
+  }
   const definitions = [textBodyDefinition(() => t('viewer.text'))]
   const review = vi.fn<TextPreviewProps['reviewChange']>(async () => undefined)
   const publish = new Map<string, readonly DiffHunk[]>()
