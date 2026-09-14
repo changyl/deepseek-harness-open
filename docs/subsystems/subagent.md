@@ -461,6 +461,30 @@ The spawn and fork backends create an ordinary one-shot agent through `parent.ct
 - **Delegation depth** is durable `SessionHeader.delegationDepth` plus the merge-extensible runtime field `AgentOptions.subagentDepth`; absence means top-level depth zero, and the greater present value is authoritative. The seam owns both fields — the loop neither sets nor reads them — so an in-process child persists parent depth + 1, cold resume cannot lower it, and every start rejects a derived depth outside the safe-integer domain or above a defined absolute `request.maxDepth` cap.
 - **Fork seeding** uses [`CreateAgentOptions.seed`](core.md#creation-and-ownership) (a `SessionEvent[]` prefix threaded through `AgentLoop.createAgent` → `ctx.sessions.prepare({ seed })`, the same primitive `ctx.agents.resume()` uses). The fork backend passes a *balanced completed-turn prefix* of the parent's log — the parent's events up to and including its last `turn/end` — so the seed is contiguous-from-0 and the [invariants](../../packages/runtime-diagnostics/invariants) replay accepts it (the in-flight, unbalanced turn is excluded).
 
+## The agent-definition seam
+
+The agent-definition seam is separate from the delegation service: [`dsh-agent-definitions`](../../packages/subagent/agent-definitions/README.md) owns the `ctx.agentDefinitions` Service Definition, and [`dsh-agent-definitions-filesystem`](../../packages/subagent/agent-definitions-filesystem/README.md) is the local Service Provider that reads Markdown files. A definition names one specialized child and carries its persona prose, a tool allow-list, an optional child route, and an optional delegation-depth cap; the [`dsh-tool-subagent`](../../packages/subagent/tool-subagent/README.md) Consumer resolves one by name and applies it to a single start request.
+
+The registry layers providers by registration scope. An unscoped provider registers globally; a provider registered through an agent preset's scoped context serves that scope alone. A read merges the global layer with the viewing agent's scope chain, nearest layer first, so a nearer layer's same-name candidate replaces a farther one; within one layer, a candidate's `rank` decides a duplicate name before provider registration order, then the candidate's position in that provider's own list, then code-point name order. The losing candidates are logged and dropped. `list()` and `snapshot()` return name-sorted summaries, `snapshot()` additionally reports whether every provider observed its complete source set, and `get(name, options)` loads the winning definition body through the provider that owns it and validates it. Providers register synchronously during `apply()`; their discovery and loading work is awaited inside `list()` and `get()`, both of which accept caller `cwd` and `signal`.
+
+An `AgentDefinitionProvider` exposes `name`, `list(options)`, and `get(candidate, options)`. `list` returns candidates either as an array shorthand, which asserts complete observation, or as an explicit `{ definitions, complete }` observation; `get` reloads one candidate that the same provider returned from `list`, returning `undefined` when that definition cannot be loaded again. Registration is effect-scoped: the registry gives each provider a lifecycle `AbortSignal` aborted when its exact registration is disposed and an `invalidate` notifier that publishes `agent-definitions/change` while that registration stays active.
+
+The local filesystem provider scans flat Markdown files in five roots, each carrying a rank where the lower value wins:
+
+| Source | Root | Rank |
+|---|---|---|
+| `project-dsh` | `<git project root>/.dsh/agents` | 100 |
+| `project-agents` | `<git project root>/.agents/agents` | 200 |
+| `custom` | each configured `customAgentDirs` entry | 300 |
+| `user-dsh` | `<dshHome>/agents` | 400 |
+| `user-agents` | `<agentsHome>/agents` | 500 |
+
+`dshHome` defaults to `$DSH_HOME` or `~/.dsh`, and `agentsHome` to `$DSH_AGENTS_HOME` or `~/.agents`; the two project roots are resolved from the Git project root above the lookup `cwd`. `includeDefaultRoots: false` drops the project and user roots and leaves the custom ones.
+
+A definition file is Markdown whose YAML frontmatter carries `name` and `description` and may carry `tools`, `model`, `reasoning_effort`, and `max_depth`; the body is the persona prose. The provider ignores a file, logging a warning, when the frontmatter is missing or unparseable, when a key outside that set appears, when `name` or `description` is missing or invalid, when `tools` is empty or names an empty entry, when the body is empty, or when `max_depth` is not a non-negative safe integer. Unknown keys are rejected rather than ignored, because a silently dropped `tools` would run the child with its full inherited tool set. A root that cannot be listed makes the observation incomplete rather than empty, so an incomplete snapshot never reads as removal.
+
+A selected definition maps onto the one-shot start request fields: `instructions` becomes `persona`, `tools` becomes a `toolFilter` allow-list, `model` and `reasoningEffort` merge into `agentOptions` between the call's own route arguments and the configured `agentOptions`, and `maxDepth` combines with the configured cap as the smaller value. Every field narrows: a definition never widens the child's tools, route, depth, or authority beyond what the spawning agent and the tool instance already allow. The Consumer rejects a definition the provider cannot honor — a tool allow-list without the `toolFilter` capability, a depth cap without `depthLimit`, a tool name the spawning agent cannot see, or a route while model selection is disabled — before a child exists, and the definition name itself never reaches the child descriptor.
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>

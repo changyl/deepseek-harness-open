@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/cookbook/authoring-an-agent-definition.md
+authoring-an-agent-definition.md: 05b29448f24b4755982770875dfa44f80de67e77
+authoring-an-agent-definition.zh.md: 23736695a943026617b7dac029c710dbcd3d17af

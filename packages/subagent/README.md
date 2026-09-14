@@ -32,6 +32,8 @@ The subagent package family lets an agent delegate a task to a child, continue t
 | [`subagent-codex/`](subagent-codex/README.md) | Runs a real Codex child through the official app-server protocol | registers on `ctx.subagents` |
 | [`subagent-claude-code/`](subagent-claude-code/README.md) | Runs a real Claude Code child through the official Agent SDK | registers on `ctx.subagents` |
 | [`subagent-dsh-sdk/`](subagent-dsh-sdk/README.md) | Runs an out-of-process Harness child through the TypeScript SDK | registers on `ctx.subagents` |
+| [`agent-definitions/`](agent-definitions/README.md) | Defines the specialized-child agent-definition service: a named-provider registry that merges definition catalogs and resolves one definition by name | `ctx.agentDefinitions` |
+| [`agent-definitions-filesystem/`](agent-definitions-filesystem/README.md) | Discovers project, custom, and user Markdown definition files as the local definition provider | registers on `ctx.agentDefinitions` |
 | [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
 

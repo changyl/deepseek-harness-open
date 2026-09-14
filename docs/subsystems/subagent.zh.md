@@ -465,6 +465,30 @@ spawn 和 fork 后端通过 `parent.ctx` 创建一个普通的单次 agent，将
 - **委派深度**由持久 `SessionHeader.delegationDepth` 与可合并扩展的运行时字段 `AgentOptions.subagentDepth` 共同表示；缺失表示顶层深度为零，存在的较大值具有权威性。两个字段都归该 seam 所有——循环既不设置也不读取它们——因此进程内子 agent 会持久保存 parent 深度 + 1，冷恢复无法降低深度，而且每次 start 都会拒绝超出安全整数域、或高于已定义绝对 `request.maxDepth` 上限的派生深度。
 - **Fork 种子注入**使用 [`CreateAgentOptions.seed`](core.zh.md#creation-and-ownership)（一个 `SessionEvent[]` 前缀，经由 `AgentLoop.createAgent` → `ctx.sessions.prepare({ seed })` 传递，与 `ctx.agents.resume()` 使用的原语相同）。fork 后端传入父级日志的一段*平衡的已完成轮次前缀*——父级事件直到并包括其最后一个 `turn/end`——因此种子从 0 连续，[invariants](../../packages/runtime-diagnostics/invariants) 回放可以接受它（进行中的、未平衡的轮次被排除在外）。
 
+## agent 定义 seam
+
+agent 定义 seam 与委派服务彼此独立：[`dsh-agent-definitions`](../../packages/subagent/agent-definitions/README.zh.md) 拥有 `ctx.agentDefinitions` Service Definition，[`dsh-agent-definitions-filesystem`](../../packages/subagent/agent-definitions-filesystem/README.zh.md) 是读取 Markdown 文件的本地 Service Provider。一个定义命名一个专用子 agent，并携带其 persona 正文、工具允许列表、可选的子级路由与可选的委派深度上限；[`dsh-tool-subagent`](../../packages/subagent/tool-subagent/README.zh.md) 作为 Consumer 按名称解析一个定义，并将其应用于单次启动请求。
+
+注册表按注册作用域对提供方分层。未限定作用域的提供方全局注册；通过 agent preset 作用域上下文注册的提供方只服务该作用域。读取会合并全局层与观察 agent 的作用域链，最近层优先，因此更近层中同名的候选会替换更远层的候选；在同一层内，候选的 `rank` 优先于提供方注册顺序决定同名者，其后是该候选在其提供方自身列表中的位置，最后是名称的码点顺序。落选候选会被记录日志并丢弃。`list()` 与 `snapshot()` 返回按名称排序的摘要，`snapshot()` 额外报告每个提供方是否观察到其完整来源集合，`get(name, options)` 通过拥有该定义的提供方加载获胜定义的正文并加以校验。提供方在 `apply()` 期间同步注册；其发现与加载工作在 `list()` 与 `get()` 内被等待，两者都接受调用方的 `cwd` 与 `signal`。
+
+一个 `AgentDefinitionProvider` 暴露 `name`、`list(options)` 与 `get(candidate, options)`。`list` 可以以数组简写返回候选，表示观察完整，也可以返回显式的 `{ definitions, complete }` 观察；`get` 会重新加载同一提供方在 `list` 中返回的某个候选，当该定义无法再次加载时返回 `undefined`。注册是效果作用域的：注册表为每个提供方提供一个在其确切注册被释放时中止的生命周期 `AbortSignal`，以及一个 `invalidate` 通知器，在该注册保持活动期间发布 `agent-definitions/change`。
+
+本地文件系统提供方扫描五个根目录中的扁平 Markdown 文件，每个根目录带有一个排名，取值更低者获胜：
+
+| 来源 | 根目录 | 排名 |
+|---|---|---|
+| `project-dsh` | `<Git 项目根>/.dsh/agents` | 100 |
+| `project-agents` | `<Git 项目根>/.agents/agents` | 200 |
+| `custom` | 每个已配置的 `customAgentDirs` 条目 | 300 |
+| `user-dsh` | `<dshHome>/agents` | 400 |
+| `user-agents` | `<agentsHome>/agents` | 500 |
+
+`dshHome` 默认为 `$DSH_HOME` 或 `~/.dsh`，`agentsHome` 默认为 `$DSH_AGENTS_HOME` 或 `~/.agents`；两个项目根基于查找 `cwd` 之上的 Git 项目根解析。`includeDefaultRoots: false` 会去掉项目根与用户根，只保留自定义根。
+
+定义文件是 Markdown，其 YAML frontmatter 携带 `name` 与 `description`，并可携带 `tools`、`model`、`reasoning_effort` 与 `max_depth`；正文即 persona 正文。出现以下情况时提供方会忽略该文件并记录警告：frontmatter 缺失或无法解析、出现该集合之外的键、`name` 或 `description` 缺失或无效、`tools` 为空或包含空条目、正文为空，或 `max_depth` 不是非负安全整数。未知键会被拒绝而不是忽略，因为被静默丢弃的 `tools` 会让子 agent 以完整的继承工具集运行。无法列举的根目录会使观察结果不完整而非为空，因此不完整的快照绝不会被解读为移除。
+
+选中的定义映射到单次启动请求的字段：`instructions` 变为 `persona`，`tools` 变为 `toolFilter` 允许列表，`model` 与 `reasoningEffort` 合入 `agentOptions`，位于调用自身的路由参数与已配置的 `agentOptions` 之间，`maxDepth` 与已配置上限取较小值。每个字段都只做收窄：定义绝不会把子 agent 的工具、路由、深度或权限放宽到超出调用 agent 与该工具实例已允许的范围。对于提供方无法执行的定义——缺少 `toolFilter` 能力时的工具允许列表、缺少 `depthLimit` 时的深度上限、调用 agent 看不到的工具名，或模型选择被禁用时的路由——Consumer 会在子 agent 存在之前拒绝，且定义名称本身绝不会进入子 agent descriptor。
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>

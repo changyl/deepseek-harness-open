@@ -49,6 +49,30 @@ export interface Config {
 
 Source: [`packages/core/agent-default-model/src/index.ts:41`](../packages/core/agent-default-model/src/index.ts)
 
+<a id="deepseek-aidsh-agent-definitions-filesystem"></a>
+
+## `@deepseek-ai/dsh-agent-definitions-filesystem`
+
+Requires: `agentDefinitions`
+
+```ts config-catalog
+/** Local filesystem agent-definition provider configuration. */
+export interface Config {
+  /** Unique provider name. Defaults to `filesystem`. */
+  providerName?: string
+  /** Whether project and user roots are included around custom roots. */
+  includeDefaultRoots?: boolean
+  /** DeepSeek Harness config root. Defaults to `$DSH_HOME` or `~/.dsh`. */
+  dshHome?: string
+  /** Shared agent config root. Defaults to `$DSH_AGENTS_HOME` or `~/.agents`. */
+  agentsHome?: string
+  /** Additional definition roots scanned after project roots and before user roots. */
+  customAgentDirs?: string[]
+}
+```
+
+Source: [`packages/subagent/agent-definitions-filesystem/src/index.ts:50`](../packages/subagent/agent-definitions-filesystem/src/index.ts)
+
 <a id="deepseek-aidsh-agent-instructions"></a>
 
 ## `@deepseek-ai/dsh-agent-instructions`
@@ -2609,6 +2633,30 @@ export interface Config {
 
 Source: [`packages/core/system-prompt/src/index.ts:242`](../packages/core/system-prompt/src/index.ts)
 
+<a id="deepseek-aidsh-task-report"></a>
+
+## `@deepseek-ai/dsh-task-report`
+
+Requires: `sessionQuery` · `fs` · `commands`
+
+```ts config-catalog
+/** Deployment-varying report settings. */
+export interface Config {
+  /** Workspace-relative directory the Markdown reports are written to. */
+  directory: string
+  /** Case-insensitive substrings that mark a shell command as verification. */
+  verifyPatterns: string[]
+  /** Maximum characters kept from the request and the closing summary. */
+  maxTextLength: number
+  /** Maximum changed files listed in one report. */
+  maxChanges: number
+  /** Maximum verification commands listed in one report. */
+  maxVerifications: number
+}
+```
+
+Source: [`packages/session/task-report/src/index.ts:30`](../packages/session/task-report/src/index.ts)
+
 <a id="deepseek-aidsh-terminal-bash"></a>
 
 ## `@deepseek-ai/dsh-terminal-bash`
@@ -3062,12 +3110,22 @@ export interface Config {
    * budget belongs to the child runtime or its own deployment.
    */
   maxDepth?: number | 'provider-managed'
+  /**
+   * Publish the durable available-subagent catalog for this composition
+   * (default false). The catalog is emitted only while `ctx.agentDefinitions`
+   * is present and this instance's tool registration is the visible one, and
+   * its text is instance-independent, so enabling it on several instances
+   * still publishes one list.
+   */
+  agentCatalog?: boolean
+  /** Maximum normalized description length rendered in the catalog; minimum 3. */
+  catalogDescriptionMaxLength?: number
 }
 ```
 
 Depends on: [`AgentOptions`](subsystems/core.md)
 
-Source: [`packages/subagent/tool-subagent/src/index.ts:48`](../packages/subagent/tool-subagent/src/index.ts)
+Source: [`packages/subagent/tool-subagent/src/index.ts:61`](../packages/subagent/tool-subagent/src/index.ts)
 
 <a id="deepseek-aidsh-tool-terminal"></a>
 
@@ -3444,9 +3502,12 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 
 - `@deepseek-ai/dsh-acp-app` — requires `cmdlineArgs` ([`packages/bundle/acp-app/src/index.ts`](../packages/bundle/acp-app/src/index.ts))
 - `@deepseek-ai/dsh-agent` ([`packages/core/agent/src/index.ts`](../packages/core/agent/src/index.ts))
+- `@deepseek-ai/dsh-agent-definitions` ([`packages/subagent/agent-definitions/src/index.ts`](../packages/subagent/agent-definitions/src/index.ts))
 - `@deepseek-ai/dsh-api-remotes` — requires `typertGateway` ([`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts))
 - `@deepseek-ai/dsh-api-workspace-controller` — requires `typert` · `workspaceRegistry` ([`packages/api/workspace-controller/src/index.ts`](../packages/api/workspace-controller/src/index.ts))
 - `@deepseek-ai/dsh-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
+- `@deepseek-ai/dsh-change-review` — requires `connection` · `sessionQuery` · `fs` · `sessions` · `sandboxPolicy` ([`packages/fs/change-review/src/index.ts`](../packages/fs/change-review/src/index.ts))
+- `@deepseek-ai/dsh-change-review-context` — requires `agents` ([`packages/context/change-review-context/src/index.ts`](../packages/context/change-review-context/src/index.ts))
 - `@deepseek-ai/dsh-client-file-upload` — requires `agents` · `attachments` · `commands` · `connection` ([`packages/client/file-upload/src/index.ts`](../packages/client/file-upload/src/index.ts))
 - `@deepseek-ai/dsh-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
 - `@deepseek-ai/dsh-client-modules` — requires `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
@@ -3456,6 +3517,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-client-ui-attachment` ([`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-brand-official` ([`packages/client/ui-brand-official/src/index.ts`](../packages/client/ui-brand-official/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-chat` ([`packages/client/ui-chat/src/index.ts`](../packages/client/ui-chat/src/index.ts))
+- `@deepseek-ai/dsh-client-ui-command-palette` ([`packages/client/ui-command-palette/src/index.ts`](../packages/client/ui-command-palette/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-commands` ([`packages/client/ui-commands/src/index.ts`](../packages/client/ui-commands/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-conversation` ([`packages/client/ui-conversation/src/index.ts`](../packages/client/ui-conversation/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-cordis` ([`packages/extensions/ui-cordis/src/index.ts`](../packages/extensions/ui-cordis/src/index.ts))
@@ -3486,6 +3548,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-client-ui-sidebar-right` ([`packages/client/ui-sidebar-right/src/index.ts`](../packages/client/ui-sidebar-right/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-skill` ([`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-subagent` ([`packages/client/ui-subagent/src/index.ts`](../packages/client/ui-subagent/src/index.ts))
+- `@deepseek-ai/dsh-client-ui-task-report` ([`packages/client/ui-task-report/src/index.ts`](../packages/client/ui-task-report/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-theme` ([`packages/client/ui-theme/src/index.ts`](../packages/client/ui-theme/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-tool` ([`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-trajectory` ([`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts))
