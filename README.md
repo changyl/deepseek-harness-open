@@ -8,6 +8,10 @@ It is built on an **everything-is-a-plugin** architecture and powered by [Cordis
 
 Documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
 
+## About this repository
+
+`deepseek-harness-open` is a fork of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) with added diff review: the Web GUI renders each file change a tool applies as a diff card that you keep or revert, so agent edits can be reviewed without leaving the conversation. Commits from `deepseek-harness` are merged into this fork periodically.
+
 ## Developer preview
 
 DeepSeek Harness is in _developer preview_ and iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**

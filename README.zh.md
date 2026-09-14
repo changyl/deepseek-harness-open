@@ -8,6 +8,10 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 文档：[https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
 
+## 关于本仓库
+
+`deepseek-harness-open` 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 fork，增加了 diff（差异）评审：Web GUI 会把工具应用的每处文件改动渲染为 diff 卡片，你可以保留或回滚，从而无需离开对话即可评审 agent 的改动。`deepseek-harness` 的提交会定期合并进本 fork。
+
 ## 开发者预览
 
 DeepSeek Harness 处于 _开发者预览_ 阶段，正在快速迭代。**未来将出现破坏兼容性的变更。**
