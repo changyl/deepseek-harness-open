@@ -24,11 +24,11 @@ export { CommandUiRuntime } from './service.ts'
 export { CommandDirectory } from './directory.ts'
 export type { CommandDescriptor, DirectoryStatus } from './directory.ts'
 export { filterOptions, PopupSelectController } from './popup.ts'
-export type { PopupSelectDeps, PopupSpec, PopupState, TokenSegment } from './popup.ts'
+export type { ComposerTokenSegment, PopupSelectDeps, PopupSpec, PopupState, TokenSegment } from './popup.ts'
 export type { PopupSelectInjected, PopupSelectViewProps } from './PopupSelectView.tsx'
 export type {
-  ActionSpec, CommandContribution, CommandDecoration, CommandUiContract, CommandUiSpec, PopupSelectSpec,
-  SelectConfirmation, SelectOption,
+  ActionSpec, CommandContribution, CommandDecoration, CommandPaletteRow, CommandUiContract, CommandUiSpec,
+  PopupSelectSpec, SelectConfirmation, SelectOption,
 } from './contract.ts'
 export type { CommandKey } from './locales.ts'
 

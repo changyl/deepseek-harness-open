@@ -96,6 +96,24 @@ export interface CommandDecoration {
   readonly ui: CommandUiSpec
 }
 
+/**
+ * One palette row: the localized face of a command available to one session,
+ * before ranking. Icons are deliberately absent — a palette renders one glyph
+ * per entry kind, while the composer menu keeps the component-per-command
+ * rendering that contributions supply.
+ */
+export interface CommandPaletteRow {
+  /** Command name without the leading slash; the row's first search key. */
+  readonly name: string
+  /** Localized row title; the name itself when absent. The second search key. */
+  readonly label?: string
+  readonly description?: string
+  /** Argument hint of a command that takes arguments, e.g. `<preset>`. */
+  readonly hint?: string
+  /** Localized section heading the row belongs to. */
+  readonly section?: string
+}
+
 /** The `ctx.commandUi` service face visible to business packages. */
 export interface CommandUiContract {
   /**
@@ -110,4 +128,23 @@ export interface CommandUiContract {
   decorate(decoration: CommandDecoration): () => void
   /** Resolve the per-session popup controller for one session scope (wiring/overlay layer). */
   popupFor(actx: ClientContext): unknown
+  /**
+   * Every command row available to one session, in section order and before
+   * query filtering; the caller ranks. Rows are the ones the `/` menu shows
+   * at a leading position, so a palette offers exactly the composer menu's
+   * commands.
+   * @param session - session projection that gates availability and resolves the catalog.
+   * @param signal - cancellation for a superseded query.
+   * @returns the available rows; empty for an addressed subagent session.
+   */
+  palette(session: ClientSessionContext, signal: AbortSignal): Promise<readonly CommandPaletteRow[]>
+  /**
+   * Run one command by name as a bare palette pick. No composer token exists
+   * for this caller, so nothing is consumed from the draft: a client
+   * contribution or decorated host command opens its popup or runs its
+   * action, and every other host command runs detached as its bare line.
+   * @param name - command name without the leading slash.
+   * @param session - session projection the pick addresses.
+   */
+  run(name: string, session: ClientSessionContext): void
 }

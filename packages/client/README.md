@@ -54,6 +54,7 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-goal/`](ui-goal/README.md) | Presents and manages the current goal | — |
 | [`ui-trajectory/`](ui-trajectory/README.md) | Presents alternate views of agent activity | — |
 | [`ui-commands/`](ui-commands/README.md) | Provides session-aware command discovery and dispatch | — |
+| [`ui-command-palette/`](ui-command-palette/README.md) | Provides the global Cmd/Ctrl+K command palette and the keyboard-shortcut registry | `ctx.shortcuts` |
 | [`ui-input-trigger/`](ui-input-trigger/README.md) | Coordinates inline command and reference suggestions | — |
 | [`ui-skill/`](ui-skill/README.md) | Adds skill references to inline suggestions | — |
 | [`ui-reference/`](ui-reference/README.md) | Unified Web `@file` / `@session` reference source | — |

@@ -39,6 +39,10 @@ kind: "package-reference"
 
 composer 携带图片或通用文件提交时，只有声明了 `input.attachments` 的宿主命令继续。其余命令路径都会抛出本地化的 `attachmentsUnsupported` 拒绝，以瞬态 toast 呈现，草稿与附件卡保持原位。处理器出错时保留相同草稿状态供用户重试。
 
+### 无输入框界面
+
+不拥有命令 token 的界面通过 `palette(session, signal)` 读取某个会话可用的行——与 `/` 菜单在行首位置运行的合成完全一致，按分区顺序、在排序之前返回，且不含贡献项图标——并调用 `run(name, session)` 落实一次选择。`run` 优先使用可用的贡献项，其次是对可解析宿主行生效的装饰，最后是宿主行的裸命令行，以分离方式执行；以此方式打开的弹窗携带命令面板段，因此落实它不会从该界面本就未曾拥有的草稿中消费任何内容。[ui-command-palette](../ui-command-palette/README.zh.md) 是随包交付的消费方。
+
 -----
 
 <a id="understand-the-implementation"></a>

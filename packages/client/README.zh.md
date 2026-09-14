@@ -54,6 +54,7 @@ kind: "package-group"
 | [`ui-goal/`](ui-goal/README.zh.md) | 展示与管理当前目标 | — |
 | [`ui-trajectory/`](ui-trajectory/README.zh.md) | 提供 agent（智能体）活动的其他视图 | — |
 | [`ui-commands/`](ui-commands/README.zh.md) | 提供会话感知的命令发现与分发 | — |
+| [`ui-command-palette/`](ui-command-palette/README.zh.md) | 提供全局 Cmd/Ctrl+K 命令面板与快捷键注册表 | `ctx.shortcuts` |
 | [`ui-input-trigger/`](ui-input-trigger/README.zh.md) | 协调内联命令与引用建议 | — |
 | [`ui-skill/`](ui-skill/README.zh.md) | 向内联建议添加 skill（技能）引用 | — |
 | [`ui-reference/`](ui-reference/README.zh.md) | 统一的 Web `@file` / `@session` 引用 source | — |

@@ -300,6 +300,11 @@
     - id: ui-commands
       name: '@deepseek-ai/dsh-client-ui-commands'
 
+    # Command palette: Cmd/Ctrl+K over the command surface, plus the global
+    # keyboard-shortcut registry. Remove this row to turn both off.
+    - id: ui-command-palette
+      name: '@deepseek-ai/dsh-client-ui-command-palette'
+
     - id: ui-skill
       name: '@deepseek-ai/dsh-client-ui-skill'
 

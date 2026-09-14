@@ -25,13 +25,13 @@ import type {
   CandidateRequest, ClientSessionContext, CommandClaim, PickOutcome, InputTriggerCandidate, InputTriggerPick,
   SubmitAttachment, SubmitEnvelope, SubmitOutcome,
 } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import type { CommandContribution, CommandDecoration, CommandUiContract } from './contract.ts'
+import type { CommandContribution, CommandDecoration, CommandPaletteRow, CommandUiContract } from './contract.ts'
 import type { CommandDescriptor } from './directory.ts'
 import { CommandDirectory } from './directory.ts'
 import { PopupSelectController } from './popup.ts'
 import { builtinRowFace, sectionRows } from './presentation.ts'
 import { claimToken } from './resolution.ts'
-import type { TokenSegment } from './popup.ts'
+import type { ComposerTokenSegment, TokenSegment } from './popup.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
@@ -53,6 +53,22 @@ function submittedCommandName(line: string): string {
   const trimmed = line.trim()
   const separator = trimmed.search(/\s/u)
   return (separator === -1 ? trimmed : trimmed.slice(0, separator)).slice(1)
+}
+
+/**
+ * Consume the composer token one open-time segment owns.
+ * @param actx - session-scope ctx of the opening session.
+ * @param segment - the segment snapshotted at open time.
+ * @returns whether the token was consumed; a palette pick owns none, so it is
+ * consumed by definition and leaves the draft untouched.
+ */
+function consumeToken(actx: ClientContext, segment: TokenSegment): boolean {
+  if (segment.via === 'palette') return true
+  return actx.bail(actx, 'slash/input-consume-token', {
+    guard: segment.via === 'menu'
+      ? { kind: 'span', span: segment.span }
+      : { kind: 'bare-token', token: segment.token },
+  }) === true
 }
 
 /** Live mutable state in one holder (service methods run behind the caller-ctx tracker). */
@@ -157,11 +173,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     const existing = popups.get(id)
     if (existing !== undefined) return existing
     const controller = new PopupSelectController<ClientSessionContext>({
-      consume: segment => actx.bail(actx, 'slash/input-consume-token', {
-        guard: segment.via === 'menu'
-          ? { kind: 'span', span: segment.span }
-          : { kind: 'bare-token', token: segment.token },
-      }) === true,
+      consume: segment => consumeToken(actx, segment),
       focusComposer: () => { this.focusHooks.get(id)?.() },
     })
     popups.set(id, controller)
@@ -187,6 +199,69 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     return () => {
       if (this.focusHooks.get(id) === focus) this.focusHooks.delete(id)
     }
+  }
+
+  /**
+   * Every command row available to one session, in section order and before
+   * ranking: the same synthesis the `/` menu runs at a leading position, with
+   * the component icons dropped (a palette renders one glyph per entry kind).
+   * @param session - session projection that gates availability.
+   * @param signal - cancellation for a superseded query.
+   * @returns the available rows.
+   */
+  async palette(session: ClientSessionContext, signal: AbortSignal): Promise<readonly CommandPaletteRow[]> {
+    const rows = await this.candidates(session, { query: '', position: 'leading', drilled: false, signal })
+    return rows.map(row => ({
+      name: row.name,
+      ...(row.label === undefined ? {} : { label: row.label }),
+      ...(row.description === undefined ? {} : { description: row.description }),
+      ...(row.hint === undefined ? {} : { hint: row.hint }),
+      ...(row.section === undefined ? {} : { section: row.section }),
+    }))
+  }
+
+  /**
+   * Run one command by name for a surface that owns no composer token. The
+   * client contribution or decoration wins over the host descriptor exactly as
+   * it does for a menu pick; a host command without a client face runs
+   * detached as its bare line.
+   * @param name - command name without the leading slash.
+   * @param session - session projection the pick addresses.
+   */
+  run(name: string, session: ClientSessionContext): void {
+    const contribution = this.live.contributions.get(name)
+    if (contribution !== undefined && contribution.available(session)) {
+      this.invokeDetached(name, contribution.ui, session)
+      return
+    }
+    const desc = this.directory.resolve(session.sessionId, name)
+    // The catalog can change between listing and pick; a row that no longer
+    // resolves is a miss, never a fallback to a different command.
+    if (desc === undefined) return
+    const decoration = this.live.decorations.get(name)
+    if (decoration !== undefined && decoration.available(session)) {
+      this.invokeDetached(name, decoration.ui, session)
+      return
+    }
+    this.runDetached(desc, session, `/${desc.name}`)
+  }
+
+  /**
+   * Invoke one contribution or decoration from a composer-less surface: an
+   * action runs, a popupSelect opens with a segment that consumes nothing.
+   */
+  private invokeDetached(
+    name: string,
+    ui: CommandContribution['ui'],
+    session: ClientSessionContext,
+  ): void {
+    if (ui.kind === 'action') {
+      ui.run(session)
+      return
+    }
+    const actx = this.scopeFor(session.sessionId)
+    if (actx === undefined) return
+    this.popupFor(actx).open(name, ui, session, { via: 'palette' })
   }
 
   /**
@@ -330,7 +405,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     name: string,
     ui: CommandContribution['ui'],
     session: ClientSessionContext,
-    segment: TokenSegment,
+    segment: ComposerTokenSegment,
   ): void {
     if (ui.kind === 'action') {
       this.consumeVia(session.sessionId, segment)
@@ -433,14 +508,10 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
   }
 
   /** Dispatch a consume-token event to one session (menu-pick / bare-enter execute paths). */
-  private consumeVia(id: SessionId, segment: TokenSegment): void {
+  private consumeVia(id: SessionId, segment: ComposerTokenSegment): void {
     const actx = this.scopeFor(id)
     if (actx === undefined) return
-    actx.bail(actx, 'slash/input-consume-token', {
-      guard: segment.via === 'menu'
-        ? { kind: 'span', span: segment.span }
-        : { kind: 'bare-token', token: segment.token },
-    })
+    consumeToken(actx, segment)
   }
 
   /** Route an admission failure to the session's composer notice channel (scope gone = attempt died with it). */

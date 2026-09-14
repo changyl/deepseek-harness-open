@@ -1023,3 +1023,118 @@ describe('directory invalidation events', () => {
     expect(source.matchSpace!(proj('s2'), '/attach')).not.toBeUndefined()
   })
 })
+
+describe('palette (composer-less surface)', () => {
+  it('lists every leading row with its section and drops contribution icons', async () => {
+    const { command, listCalls } = await bench()
+    command.register(themeContribution({ icon: IconGoalOutline16, label: () => 'Theme' }))
+    const rows = await command.palette(proj('s1'), new AbortController().signal)
+
+    expect(listCalls).toEqual([{ sessionId: sid('s1') }])
+    expect(rows.map(row => row.name)).toEqual(['goal', 'plan', 'theme'])
+    expect(rows.every(row => !Object.hasOwn(row, 'icon'))).toBe(true)
+    expect(rows.find(row => row.name === 'theme')).toEqual({
+      name: 'theme',
+      label: 'Theme',
+      description: 'client popup kind',
+      section: 'command:section.commands',
+    })
+    expect(rows.find(row => row.name === 'goal')).toMatchObject({ hint: 'goal text', section: 'command:section.add' })
+  })
+
+  it('lists nothing for an addressed child', async () => {
+    const { command } = await bench({ addressed: sid('s1') })
+    expect(await command.palette(proj('s1'), new AbortController().signal)).toEqual([])
+  })
+
+  it('runs an action contribution without consuming a composer token', async () => {
+    const { command, mint, executeCalls } = await bench()
+    const scope = mint('s1')
+    const consumes: ConsumeTokenRequest[] = []
+    scope.ctx.on('slash/input-consume-token', (request) => {
+      consumes.push(request)
+      return true
+    })
+    const run = vi.fn()
+    command.register(themeContribution({ ui: { kind: 'action', run } }))
+
+    command.run('theme', proj('s1'))
+    expect(run).toHaveBeenCalledExactlyOnceWith(proj('s1'))
+    expect(consumes).toEqual([])
+    expect(executeCalls).toEqual([])
+  })
+
+  it('opens a contribution popup whose palette pick consumes nothing', async () => {
+    const { command, mint, warm, executeCalls } = await bench()
+    const scope = mint('s1')
+    const consumes: ConsumeTokenRequest[] = []
+    scope.ctx.on('slash/input-consume-token', (request) => {
+      consumes.push(request)
+      return true
+    })
+    await warm(proj('s1'))
+    command.register(themeContribution())
+
+    command.run('theme', proj('s1'))
+    const popup = command.popupFor(scope.ctx)
+    expect(popup.state.getSnapshot()).toMatchObject({ open: true, command: 'theme' })
+    await vi.waitFor(() => { expect(popup.state.getSnapshot().status).toBe('ready') })
+    void popup.select(0)
+    await vi.waitFor(() => { expect(popup.state.getSnapshot().open).toBe(false) })
+    expect(consumes).toEqual([])
+    expect(executeCalls).toEqual([])
+  })
+
+  it('runs a decoration action on a host command through its client face', async () => {
+    const { command, warm, executeCalls } = await bench()
+    await warm(proj('s1'))
+    const run = vi.fn()
+    command.decorate({ name: 'goal', available: () => true, ui: { kind: 'action', run } })
+
+    command.run('goal', proj('s1'))
+    expect(run).toHaveBeenCalledExactlyOnceWith(proj('s1'))
+    expect(executeCalls).toEqual([])
+  })
+
+  it('runs a plain host command detached as its bare line', async () => {
+    const { command, warm, executeCalls, executions } = await bench()
+    await warm(proj('s1'))
+
+    command.run('plan', proj('s1'))
+    await vi.waitFor(() => {
+      expect(executions).toEqual([{ sessionId: sid('s1'), name: 'plan', result: { kind: 'success' } }])
+    })
+    expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/plan', images: [] }])
+  })
+
+  it('runs a leadingInput host command as its bare line', async () => {
+    const { command, warm, executeCalls } = await bench()
+    await warm(proj('s1'))
+
+    command.run('goal', proj('s1'))
+    await vi.waitFor(() => {
+      expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/goal', images: [] }])
+    })
+  })
+
+  it('ignores a name the catalog no longer serves', async () => {
+    const { command, warm, executeCalls } = await bench()
+    await warm(proj('s1'))
+
+    command.run('gone', proj('s1'))
+    expect(executeCalls).toEqual([])
+  })
+
+  it('falls back to the host row when the decoration is unavailable', async () => {
+    const { command, warm, executeCalls } = await bench()
+    await warm(proj('s1'))
+    const run = vi.fn()
+    command.decorate({ name: 'goal', available: () => false, ui: { kind: 'action', run } })
+
+    command.run('goal', proj('s1'))
+    expect(run).not.toHaveBeenCalled()
+    await vi.waitFor(() => {
+      expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/goal', images: [] }])
+    })
+  })
+})

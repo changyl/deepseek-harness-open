@@ -24,6 +24,11 @@ import type { SelectOption } from './contract.ts'
 export type TokenSegment =
   | { readonly via: 'menu'; readonly span: TokenSpan }
   | { readonly via: 'enter'; readonly token: string }
+  /** A composer-less surface (the command palette) owns no token to consume. */
+  | { readonly via: 'palette' }
+
+/** Segments naming a composer token; a palette pick names none. */
+export type ComposerTokenSegment = Exclude<TokenSegment, { via: 'palette' }>
 
 /**
  * Structural business spec the shell settles against — the popupSelect half
