@@ -14,6 +14,8 @@
     "@deepseek-ai/dsh": "workspace:^",
     "@deepseek-ai/dsh-acp": "workspace:^",
     "@deepseek-ai/dsh-agent": "workspace:^",
+    "@deepseek-ai/dsh-agent-definitions": "workspace:^",
+    "@deepseek-ai/dsh-agent-definitions-filesystem": "workspace:^",
     "@deepseek-ai/dsh-agent-instructions": "workspace:^",
     "@deepseek-ai/dsh-agent-loop": "workspace:^",
     "@deepseek-ai/dsh-agent-tool-presentation": "workspace:^",

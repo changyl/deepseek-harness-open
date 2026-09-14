@@ -94,6 +94,17 @@
 - id: tool-skill
   name: '@deepseek-ai/dsh-tool-skill'
 
+# The agent-definition REGISTRY lives in the host composition for the same
+# reason the skill one does: it is a process-wide service whose registrations
+# file into the calling context's scope, so the provider below registers into
+# THIS preset's layer and the delegation rows resolve the definitions visible
+# here. `@deepseek-ai/dsh-agent-definitions` published from this plane would
+# land in the root realm, which `dsh-agent-presets` rejects at mount.
+# `agent-definitions-filesystem` discovers project, custom, and user roots; the
+# spawn row publishes their durable model-facing catalog.
+- id: agent-definitions-filesystem
+  name: '@deepseek-ai/dsh-agent-definitions-filesystem'
+
 # ── goals ───────────────────────────────────────────────────────────────────
 
 # The goal service and session driver stay on the host plane, where the Gateway
@@ -192,6 +203,7 @@
         toolName: subagent
         modelSelectionSettings: true
         backgroundMode: continuable
+        agentCatalog: true
 
     # Fork omits model selection so provider/model stay equal to the parent and
     # the inherited history remains eligible for KV Cache reuse. This preset

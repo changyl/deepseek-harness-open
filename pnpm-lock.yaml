@@ -1760,6 +1760,9 @@ importers:
 
   packages/bundle/web-app:
     dependencies:
+      '@deepseek-ai/dsh-agent-definitions':
+        specifier: workspace:^
+        version: link:../../subagent/agent-definitions
       '@deepseek-ai/dsh-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets

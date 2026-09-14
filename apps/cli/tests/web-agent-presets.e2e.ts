@@ -247,6 +247,11 @@ describe('the shipped Web composition', () => {
         'workflow', 'write',
       ])
       expect(ctx.commands.find(handle.agent, 'goal')).toBeDefined()
+      // The agent-definition registry is host-plane and the provider is
+      // preset-plane; a preset that declared the registry row would fail to
+      // mount, while one behind an entry-local realm would mount and then leave
+      // `agent_type` silently absent here.
+      expect(toolParameterNames(ctx, handle.agent, 'subagent')).toContain('agent_type')
     } finally {
       await handle.dispose()
     }
