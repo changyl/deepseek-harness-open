@@ -77,6 +77,8 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/client/ui-attachment': { kind: 'none', reason: 'Browser-side UI plugin layer; registers nothing model-facing.' },
   'packages/client/ui-primitives': { kind: 'none', reason: 'Browser-side UI plugin layer; registers nothing model-facing.' },
   'packages/client/store': { kind: 'none', reason: 'Browser-side state primitives; register nothing model-facing.' },
+  'packages/session/task-report': { kind: 'none', reason: 'Folds each closed turn after the fact and records a log-only report event; it adds no prompt, schema, or result of its own.' },
+  'packages/client/ui-task-report': { kind: 'none', reason: 'Browser-side turn-tail row over a recorded report event; registers nothing model-facing.' },
   'packages/client/ui-command-palette': { kind: 'none', reason: 'Browser-side command palette and keyboard registry; the commands it lists and runs are registered by their owning packages, so it adds no model-facing input of its own.' },
   'packages/client/ui-renderer': { kind: 'none', reason: 'Browser-side render assembly; registers nothing model-facing.' },
   'packages/client/ui-session': { kind: 'none', reason: 'Browser-side Session adapter; registers nothing model-facing.' },

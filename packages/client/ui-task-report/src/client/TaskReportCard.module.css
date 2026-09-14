@@ -1,0 +1,41 @@
+/* One compact row before the closing turn's action strip: a label, the
+ * report's facts, and the open control. Tokens only. */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.glyph {
+  display: inline-flex;
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.title {
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.facts {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.failure {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--dsw-alias-state-error-primary);
+}

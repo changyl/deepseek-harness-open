@@ -82,6 +82,7 @@
     { "path": "./packages/client/ui-input-trigger" },
     { "path": "./packages/client/ui-commands" },
     { "path": "./packages/client/ui-command-palette" },
+    { "path": "./packages/client/ui-task-report" },
     { "path": "./packages/client/ui-skill" },
     { "path": "./packages/client/ui-reference" },
     { "path": "./packages/client/ui-subagent" },

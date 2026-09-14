@@ -100,6 +100,13 @@
     - id: session-turn-outline
       name: '@deepseek-ai/dsh-session-turn-outline'
 
+    # Turn-end task report: fold each closed turn's own log window into a
+    # Markdown change summary plus its verification, write it under the
+    # session workspace, and record task-report/generated. `/report`
+    # regenerates the latest turn on demand. Remove this row to turn both off.
+    - id: task-report
+      name: '@deepseek-ai/dsh-task-report'
+
     # Resolve bind host, SSH launch, and display once at boot, then mount the
     # matching dual-face directory picker. Mount -native or -browse directly in
     # an overlay to pin the interaction.
@@ -287,6 +294,11 @@
     # Remove this entry to turn the surface off; the tail hole renders empty.
     - id: ui-deliverables
       name: '@deepseek-ai/dsh-client-ui-deliverables'
+
+    # Turn-end task report card: renders the durable report the host plugin
+    # recorded for the closing turn, with the open gesture for its Markdown.
+    - id: ui-task-report
+      name: '@deepseek-ai/dsh-client-ui-task-report'
 
 
     - id: ui-workspace

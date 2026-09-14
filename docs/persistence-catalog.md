@@ -874,6 +874,24 @@ Source: [`packages/subagent/tool-subagent/src/model-selection-state.ts:17`](../p
 
 Source: [`packages/core/session/src/types.ts:310`](../packages/core/session/src/types.ts)
 
+### `task-report/*`
+
+<a id="task-reportgenerated--log-only"></a>
+
+#### `task-report/generated` — log-only
+
+```ts persistence-catalog
+/**
+ * One task report generated for a closed turn: the request it answered, the
+ * files it changed, the verification it ran, and where the Markdown
+ * artifact was written. Log-only — it never enters the model surface or
+ * derived history.
+ */
+'task-report/generated': TaskReportEventData
+```
+
+Source: [`packages/session/task-report/src/types.ts:56`](../packages/session/task-report/src/types.ts)
+
 ### `team/*`
 
 <a id="teammember--log-only"></a>
