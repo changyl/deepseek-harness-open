@@ -30,6 +30,8 @@ let setupAgentCounter = 0
 type SetupConfig = tool.Config & {
   withModelSelection?: boolean
   parentAgentOptions?: AgentOptions
+  /** Mount extra services (for example the agent-definition registry) before the tool is installed. */
+  beforeTool?: (ctx: Context) => Promise<void>
 }
 
 const TEST_ALLOWED_MODELS = [
@@ -43,7 +45,7 @@ const TEST_ALLOWED_MODELS = [
 
 export async function setup(toolConfig: SetupConfig, mockConfig: Partial<mock.Config> = {}): Promise<Context> {
   const ctx = new Context()
-  const { withModelSelection, parentAgentOptions, ...config } = toolConfig
+  const { withModelSelection, parentAgentOptions, beforeTool, ...config } = toolConfig
   if (withModelSelection === true) {
     await ctx.plugin(SubagentModelSelectionConfig, {
       enabled: true,
@@ -54,6 +56,7 @@ export async function setup(toolConfig: SetupConfig, mockConfig: Partial<mock.Co
     await ctx.plugin(SubagentRuntime)
     const provider = await mock.mountScriptedProvider(ctx, { name: 'mock', ...mockConfig })
     setupProviders.set(ctx, provider)
+    if (beforeTool !== undefined) await beforeTool(ctx)
     const handle = await ctx.agents.create({
       sessionId: SessionId(`model-selection-setup-${++setupAgentCounter}`),
       ...parentAgentOptions !== undefined ? { agentOptions: parentAgentOptions } : {},
@@ -74,6 +77,7 @@ export async function setup(toolConfig: SetupConfig, mockConfig: Partial<mock.Co
   await ctx.plugin(SessionProjectionRegistry)
   const provider = await mock.mountScriptedProvider(ctx, { name: 'mock', ...mockConfig })
   setupProviders.set(ctx, provider)
+  if (beforeTool !== undefined) await beforeTool(ctx)
   await ctx.plugin(tool, config)
   return ctx
 }

@@ -12,7 +12,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { scopeChainOf, scopeOf } from '@deepseek-ai/dsh-scope'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
+import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import type { Agent, AgentOptions, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
@@ -24,7 +25,17 @@ import {
   settleRun,
 } from '@deepseek-ai/dsh-subagent'
 import type { SubagentProvider, SubagentResult, SubagentRun } from '@deepseek-ai/dsh-subagent'
+import type { AgentDefinition, AgentDefinitionsRegistry } from '@deepseek-ai/dsh-agent-definitions'
 import type { JobOutcome } from '@deepseek-ai/dsh-jobs'
+import {
+  agentCatalogEntries,
+  agentCatalogMessage,
+  digestAgentCatalog,
+  messageText,
+  pendingAgentCatalog,
+  renderAgentCatalog,
+  visibleAgentCatalog,
+} from './agent-catalog.ts'
 import {
   assertAllowedModelSelection,
   hasConfiguredLlmSelection,
@@ -43,6 +54,8 @@ import {
 
 export const name = 'tool-subagent'
 export const inject = ['tools', 'subagents', 'systemPrompt', 'sessionProjections']
+
+const DEFAULT_CATALOG_DESCRIPTION_MAX_LENGTH = 500
 
 /** Config: which registered provider this tool delegates to, plus child defaults. */
 export interface Config {
@@ -100,6 +113,16 @@ export interface Config {
    * budget belongs to the child runtime or its own deployment.
    */
   maxDepth?: number | 'provider-managed'
+  /**
+   * Publish the durable available-subagent catalog for this composition
+   * (default false). The catalog is emitted only while `ctx.agentDefinitions`
+   * is present and this instance's tool registration is the visible one, and
+   * its text is instance-independent, so enabling it on several instances
+   * still publishes one list.
+   */
+  agentCatalog?: boolean
+  /** Maximum normalized description length rendered in the catalog; minimum 3. */
+  catalogDescriptionMaxLength?: number
 }
 
 export const Config: z<Config> = z.object({
@@ -127,6 +150,8 @@ export const Config: z<Config> = z.object({
     deny: z.array(z.string()).default(undefined as unknown as string[]),
   }).default(undefined as unknown as { allow: string[]; deny: string[] }),
   maxDepth: z.union([z.natural().max(Number.MAX_SAFE_INTEGER), z.const('provider-managed' as const)]).default(3),
+  agentCatalog: z.boolean().default(false),
+  catalogDescriptionMaxLength: z.number().default(DEFAULT_CATALOG_DESCRIPTION_MAX_LENGTH),
 })
 
 /** Render text blocks from the canonical JSON block array without trusting arbitrary values. */
@@ -279,8 +304,84 @@ interface DelegationRunRequest {
   readonly run_in_background?: boolean
 }
 
+interface DelegationDefinitionRequest {
+  readonly agent_type?: string
+}
+
 interface DelegationRunSpec {
   readonly runInBackground: boolean
+}
+
+/**
+ * Resolve the model's optional specialized-agent selection.
+ * @param registry - agent-definition registry, or undefined when unavailable.
+ * @param name - requested `agent_type`, if any.
+ * @param parent - spawning agent whose workspace and scope select the definition.
+ * @param signal - tool-call cancellation signal.
+ * @returns the loaded definition, or undefined when no selection was made.
+ */
+async function resolveAgentDefinition(
+  registry: AgentDefinitionsRegistry | undefined,
+  name: string | undefined,
+  parent: Agent,
+  signal: AbortSignal,
+): Promise<AgentDefinition | undefined> {
+  if (name === undefined) return undefined
+  if (registry === undefined) {
+    throw new Error('agent definitions are unavailable in this composition; omit `agent_type`')
+  }
+  const definition = await registry.get(name, { cwd: parent.session.header.cwd, signal, scope: parent })
+  if (definition === undefined) {
+    throw new Error(`agent definition "${name}" is unknown or no longer available`)
+  }
+  return definition
+}
+
+/**
+ * Reject one definition the provider or composition cannot honor, before a child exists.
+ * @param definition - loaded definition selected by the model.
+ * @param provider - provider the child would start on.
+ * @param runtimeCtx - context whose tool registry holds the child's inherited tools.
+ * @param parent - spawning agent whose scope selects that tool registry.
+ */
+function assertDefinitionSupported(
+  definition: AgentDefinition,
+  provider: SubagentProvider,
+  runtimeCtx: Context,
+  parent: Agent,
+): void {
+  if (definition.tools !== undefined && !provider.capabilities.toolFilter) {
+    throw new Error(
+      `agent definition "${definition.name}" restricts tools, but provider "${provider.name}" has no toolFilter capability`,
+    )
+  }
+  if (definition.maxDepth !== undefined && !provider.capabilities.depthLimit) {
+    throw new Error(
+      `agent definition "${definition.name}" caps delegation depth, but provider "${provider.name}" has no depthLimit capability`,
+    )
+  }
+  for (const tool of definition.tools ?? []) {
+    if (runtimeCtx.tools.get(tool, parent) === undefined) {
+      throw new Error(`agent definition "${definition.name}" names tool "${tool}", which this agent cannot see`)
+    }
+  }
+}
+
+/**
+ * Combine the configured depth cap with a definition's cap, which may only tighten.
+ * @param configured - tool-instance depth policy.
+ * @param definition - selected definition, when one was chosen.
+ * @returns the effective numeric cap, or undefined for no cap.
+ */
+function resolveDelegationMaxDepth(
+  configured: number | 'provider-managed' | undefined,
+  definition: AgentDefinition | undefined,
+): number | undefined {
+  const configuredCap = typeof configured === 'number' ? configured : undefined
+  const definitionCap = definition?.maxDepth
+  if (configuredCap === undefined) return definitionCap
+  if (definitionCap === undefined) return configuredCap
+  return Math.min(configuredCap, definitionCap)
 }
 
 /** Resolve the model's optional scheduling request into one execution route. */
@@ -321,6 +422,11 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
   const backgroundEnabled = config.enableRunInBackground !== false
   const continuable = (config.backgroundMode ?? 'one-shot') === 'continuable'
   const toolName = config.toolName ?? 'subagent'
+  const catalogEnabled = config.agentCatalog === true
+  const catalogDescriptionMaxLength = config.catalogDescriptionMaxLength ?? DEFAULT_CATALOG_DESCRIPTION_MAX_LENGTH
+  if (!Number.isInteger(catalogDescriptionMaxLength) || catalogDescriptionMaxLength < 3) {
+    throw new Error('tool-subagent: `catalogDescriptionMaxLength` must be an integer greater than or equal to 3')
+  }
 
   const modelSelectionCapable = config.modelSelectionSettings === true
   ctx.sessionProjections.register(subagentModelSelectionProjectionDefinition)
@@ -362,11 +468,15 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
     if (modelSelectionPolicy !== undefined) registerListSubagentModels(runtimeCtx, modelSelectionPolicy)
     // Load order and HMR replacement can change provider availability while
     // this fiber remains active.
-    let mounted: { subagentProvider: SubagentProvider; disposeTool: () => void } | undefined
+    let mounted: { subagentProvider: SubagentProvider; disposeTool: () => void; tool: ToolDefinition } | undefined
     const mount = (subagentProvider: SubagentProvider): void => {
       assertSubagentProviderConfiguration(subagentProvider)
       const wording = providerWording(subagentProvider.inheritsParentContext)
       const providerRouteDefaults = subagentProvider.agentRouteDefaults
+      // Definitions specialize an in-process child through persona and tool
+      // scoping, so a provider without the persona capability cannot host them.
+      const definitionsEnabled = runtimeCtx.get('agentDefinitions') !== undefined
+        && subagentProvider.capabilities.persona
       const selectionDescription = providerRouteDefaults !== undefined
         ? ' Child LLM selection is optional. Omit `provider`, `model`, and `reasoning_effort` to use configured child defaults and this provider\'s route defaults. Supply `provider` and `model` together after using `list_subagent_models` to inspect advertised routes and efforts. Changing the effective route without naming an effort uses the selected model\'s default effort.'
         : ' Child LLM selection is optional. Omit `provider`, `model`, and `reasoning_effort` to use configured child defaults and inherit compatible missing values from the parent Agent. Supply `provider` and `model` together after using `list_subagent_models` to inspect advertised routes and efforts. Changing the effective route without naming an effort uses the selected model\'s default effort.'
@@ -376,7 +486,7 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
           + (subagentProvider.inheritsParentContext
             ? ' Changing the route can prevent provider-side reuse of the inherited conversation prefix.'
             : '')
-      const disposeTool = runtimeCtx.tools.register(defineTool({
+      const tool = defineTool({
         name: toolName,
         description: wording.description + (backgroundEnabled
           // The completion notice is the continuation service's own behavior, not
@@ -415,6 +525,12 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
               description: providerRouteDefaults !== undefined
                 ? 'Adapter-owned reasoning effort for the effective child route. Omit to use a compatible configured effort or the selected model\'s default.'
                 : 'Adapter-owned reasoning effort for the effective child route. Omit to inherit a compatible configured/parent effort or use a newly selected model\'s default.',
+            },
+          } : {},
+          ...definitionsEnabled ? {
+            agent_type: {
+              type: 'string' as const,
+              description: 'Name of a specialized agent definition from the available-subagents catalog. Omit to delegate with this tool\'s configured defaults.',
             },
           } : {},
           ...backgroundEnabled ? {
@@ -476,12 +592,41 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
           }
 
           const modelRequest = args as DelegationModelRequest
+          const definitionRequest = args as DelegationDefinitionRequest
+          const definition = await resolveAgentDefinition(
+            definitionsEnabled ? runtimeCtx.get('agentDefinitions') : undefined,
+            definitionRequest.agent_type,
+            parent,
+            exec.signal,
+          )
+          if (definition !== undefined) assertDefinitionSupported(definition, subagentProvider, runtimeCtx, parent)
+          let definitionRoute: DelegationModelRequest = {}
+          if (definition !== undefined) {
+            definitionRoute = {
+              ...definition.model === undefined ? {} : { model: definition.model },
+              ...definition.reasoningEffort === undefined ? {} : { reasoning_effort: definition.reasoningEffort },
+            }
+            if (hasDelegationModelRequest(definitionRoute) && !modelSelectionEnabled) {
+              throw new Error(
+                `agent definition "${definition.name}" declares a child LLM route, but model selection is disabled for this tool instance`,
+              )
+            }
+          }
+          const configuredChildOptions: AgentOptions | undefined = definition === undefined
+            ? config.agentOptions
+            : {
+              ...config.agentOptions,
+              ...definition.model === undefined ? {} : { model: definition.model },
+              ...definition.reasoningEffort === undefined
+                ? {}
+                : { reasoningEffort: ReasoningEffortId(definition.reasoningEffort) },
+            }
           const parentOptions = parentAgentOptionsForDelegation(parent)
           const requiresRoutePreflight = hasDelegationModelRequest(modelRequest)
-            || hasConfiguredLlmSelection(config.agentOptions)
+            || hasConfiguredLlmSelection(configuredChildOptions)
           const configuredChildAgentOptions = requiresRoutePreflight && providerRouteDefaults !== undefined
-            ? { ...providerRouteDefaults, ...config.agentOptions }
-            : config.agentOptions
+            ? { ...providerRouteDefaults, ...configuredChildOptions }
+            : configuredChildOptions
           const requestedChildAgentOptions = requestedAgentOptions(
             parentOptions,
             configuredChildAgentOptions,
@@ -494,6 +639,16 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
             requestedChildAgentOptions,
             modelRequest,
           )
+          // A definition route is not model-facing, so the policy that gates the
+          // model's own route fields must be applied to it explicitly.
+          if (hasDelegationModelRequest(definitionRoute)) {
+            assertAllowedModelSelection(
+              modelSelectionPolicy,
+              parentOptions,
+              requestedChildAgentOptions,
+              definitionRoute,
+            )
+          }
           if (requiresRoutePreflight) {
             const llm = runtimeCtx.get('llm')
             if (llm === undefined) {
@@ -511,14 +666,16 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
             }
           }
           exec.signal.throwIfAborted()
-          const maxDepth = typeof config.maxDepth === 'number' ? config.maxDepth : undefined
+          const maxDepth = resolveDelegationMaxDepth(config.maxDepth, definition)
+          const persona = definition?.instructions ?? config.persona
+          const toolFilter = definition?.tools === undefined ? config.toolFilter : { allow: [...definition.tools] }
           const request = {
             label: args.description,
             prompt: [{ type: 'text', text: args.prompt }] as ContentBlock[],
             parent,
             ...requestedChildAgentOptions !== undefined ? { agentOptions: requestedChildAgentOptions } : {},
-            ...config.persona !== undefined ? { persona: config.persona } : {},
-            ...config.toolFilter !== undefined ? { toolFilter: config.toolFilter } : {},
+            ...persona !== undefined ? { persona } : {},
+            ...toolFilter !== undefined ? { toolFilter } : {},
             ...maxDepth !== undefined ? { maxDepth } : {},
           }
 
@@ -566,8 +723,9 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
           })
           return settleForegroundRun(run)
         },
-      }))
-      mounted = { subagentProvider, disposeTool }
+      })
+      const disposeTool = runtimeCtx.tools.register(tool)
+      mounted = { subagentProvider, disposeTool, tool }
     }
 
     // Register listeners before checking presence so no synchronous change is missed.
@@ -601,6 +759,47 @@ export function apply(ctx: Context, config: Config, session?: Session): void {
         text: context => mounted === undefined || runtimeCtx.tools.get(toolName, context.scope) === undefined
           ? ''
           : `Use ${toolName} in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set \`run_in_background: false\` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.`,
+      })
+    }
+    if (catalogEnabled) {
+      runtimeCtx.on('agent/pre-step', async (
+        { agent, signal },
+        next,
+      ): Promise<PreStepDecision> => {
+        const decision = await next()
+        if (decision.kind === 'reject') return decision
+        signal.throwIfAborted()
+        const definitions = runtimeCtx.get('agentDefinitions')
+        const toolVisible = mounted !== undefined && runtimeCtx.tools.get(toolName, agent) === mounted.tool
+        const snapshot = definitions === undefined || !toolVisible
+          ? { definitions: [], complete: true }
+          : await definitions.snapshot({ cwd: agent.session.header.cwd, signal, scope: agent })
+        signal.throwIfAborted()
+        // A partial observation hides definitions that still exist, so the last
+        // published catalog stays in place instead of retiring live names.
+        if (!snapshot.complete) return decision
+        const text = renderAgentCatalog(agentCatalogEntries(snapshot.definitions, catalogDescriptionMaxLength))
+        const digest = digestAgentCatalog(text)
+        const history = visibleAgentCatalog(agent)
+        const existing = pendingAgentCatalog(decision.messages)
+        if (history.digest === digest) {
+          return existing === undefined
+            ? decision
+            : { ...decision, messages: decision.messages.filter(message => message.id !== existing.id) }
+        }
+        if (existing !== undefined && digestAgentCatalog(messageText(existing)) === digest) return decision
+        if (!history.published && snapshot.definitions.length === 0) {
+          return existing === undefined
+            ? decision
+            : { ...decision, messages: decision.messages.filter(message => message.id !== existing.id) }
+        }
+        const catalog = agentCatalogMessage(text)
+        return {
+          ...decision,
+          messages: existing === undefined
+            ? [...decision.messages, catalog]
+            : decision.messages.map(message => message.id === existing.id ? catalog : message),
+        }
       })
     }
   }

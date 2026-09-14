@@ -45,6 +45,9 @@
       "path": "../subagent"
     },
     {
+      "path": "../agent-definitions"
+    },
+    {
       "path": "../../jobs/jobs"
     },
     {

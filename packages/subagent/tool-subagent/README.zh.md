@@ -51,6 +51,8 @@ kind: "package-reference"
 | `persona` | — | 每个子 agent 独立的 persona；要求提供方具备 `persona` 能力 |
 | `toolFilter` | — | 每个子 agent 独立的全局工具限制；要求提供方具备 `toolFilter` 能力 |
 | `maxDepth` | `3` | 绝对委派深度上限（`0` 禁止委派）；`'provider-managed'` 不向进程外提供方发送上限 |
+| `agentCatalog` | `false` | 在已挂载 `ctx.agentDefinitions` 且本实例的工具注册为可见注册时，发布持久的可用 subagent 目录 |
+| `catalogDescriptionMaxLength` | `500` | 每个目录条目渲染的规范化定义描述最大长度；为不小于 3 的整数 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-tool-subagent)是每个受支持字段及其 JSDoc 的穷尽式真源。
 
@@ -67,6 +69,14 @@ kind: "package-reference"
 设置 `modelSelectionSettings: true`，即可在组合每个全新顶层 Session 时读取宿主的 `subagent-model-selection` 偏好。没有已记录策略的恢复 Session 会保持禁用，包括显式为空的恢复。启用后，非空的精确 provider/model 路由列表会记录进 Session、由子 Session 继承，后续设置编辑不会改变它。工具随后公开可选的 `provider`、`model` 与 `reasoning_effort` 字段，并注册共享的 `list_subagent_models` 工具。此模式要求后端声明 `agentOptions`；两个进程内后端和 DSH SDK 支持该能力，而 ACP、Codex 与 Claude Code 会拒绝它，而不是忽略它。
 
 一次调用需同时提供 `provider` 与 `model`；当配置值、父 agent 值或提供方持有的默认值能提供路由时，也可只提供推理等级。静态的 `provider.agentRouteDefaults` 在存在时构成提供方／模型基线；工具配置与模型字段会在路由相关强度合并和确切路由预检前覆盖它。没有这些默认值的提供方会使用父 agent 最新已记录请求中的兼容值，再使用父级首次请求前的创建选项，并保留配置的 `maxTokens`。更改路由但未显式提供推理等级时，会清除继承的路由自有等级，使所选模型解析自己的默认值。实时 LLM 适配器在创建子 agent 前校验有效路由。目录成员资格只提供建议，因此适配器接受时，模型可以使用未列出的 id。
+
+### 选择专用 agent 定义
+
+仅当组合已挂载 `ctx.agentDefinitions` 且委派提供方声明 `persona` 能力时，工具才会公开可选的 `agent_type` 参数；缺少任一条件时，指定定义的调用会在子 agent 存在之前失败。其值为可用 subagent 目录中的定义名称。
+
+选中的定义会为该次调用覆盖已配置的子 agent 策略。其 persona 正文替换 `persona`，其 `tools` 允许列表替换 `toolFilter`。其 `model` 与 `reasoning_effort` 位于调用自身的 `provider`、`model`、`reasoning_effort` 参数与已配置的 `agentOptions` 之间，并要求启用模型选择且 Session 已授权该路由。其 `max_depth` 只会收紧已配置的 `maxDepth`，因此生效上限取两者中的较小值。定义中缺省的字段保持已配置行为不变。
+
+所有拒绝都发生在子 agent 存在之前：未知或不可用的定义、定义了调用 agent 看不到的工具、提供方无法执行的 `tools` 或 `max_depth`，以及模型选择被禁用时的定义路由。定义名称不会持久化到子 agent descriptor 中。
 
 -----
 
@@ -103,6 +113,7 @@ kind: "package-reference"
 | [`src/model-selection-settings.ts`](src/model-selection-settings.ts) | 为新 Session 读取的宿主所有 opt-in 设置 |
 | [`src/model-selection-state.ts`](src/model-selection-state.ts) | 记录并继承已读取决定的 Session 事件 |
 | [`src/list-models.ts`](src/list-models.ts) | `list_subagent_models` 运行时发现工具 |
+| [`src/agent-catalog.ts`](src/agent-catalog.ts) | 持久的可用 subagent 目录文本、消息身份与发布决策 |
 
 </details>
 
@@ -129,11 +140,11 @@ kind: "package-reference"
 
 #### 模型看到什么
 
-当提供方存在时，以当前实例配置的名称公开已生成的默认 [`subagent` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent)。启用的 Session 策略会添加 `provider`、`model` 与 `reasoning_effort`，以及继承和选择指引；提供方必须支持 `agentOptions`。提供方是否继承上下文会改变工具描述和提示词描述。启用后台模式会添加 `run_in_background`：可继续模式会记录其默认值为 `true`、运行时结算通知与显式前台覆盖；一次性模式会记录其默认值为 `false`，以及用 `job_output` 收集或用 `job_kill` 停止的 job id。当工具在本次组装的作用域中可见时，一个 `tool:<toolName>` 系统提示词 section 会指示模型同时启动相互独立的可继续委派、在它们运行时继续工作，并且仅当下一步动作依赖结果时选择前台；工具限制会同时移除其 schema 和这段指引。
+当提供方存在时，以当前实例配置的名称公开已生成的默认 [`subagent` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent)。启用的 Session 策略会添加 `provider`、`model` 与 `reasoning_effort`，以及继承和选择指引；提供方必须支持 `agentOptions`。提供方是否继承上下文会改变工具描述和提示词描述。启用后台模式会添加 `run_in_background`：可继续模式会记录其默认值为 `true`、运行时结算通知与显式前台覆盖；一次性模式会记录其默认值为 `false`，以及用 `job_output` 收集或用 `job_kill` 停止的 job id。当工具在本次组装的作用域中可见时，一个 `tool:<toolName>` 系统提示词 section 会指示模型同时启动相互独立的可继续委派、在它们运行时继续工作，并且仅当下一步动作依赖结果时选择前台；工具限制会同时移除其 schema 和这段指引。当挂载 `ctx.agentDefinitions` 且提供方声明 `persona` 时，具备可用定义的组合还会添加 `agent_type`。
 
 #### Token 影响
 
-每个父级请求支付固定的 schema 成本；模型选择会增加三个参数。每个提供方实例增加一个 schema，每个可继续实例还增加一个简短的系统提示词 section。
+每个父级请求支付固定的 schema 成本；模型选择会增加三个参数，具备可用定义的组合还会添加 `agent_type`。每个提供方实例增加一个 schema，每个可继续实例还增加一个简短的系统提示词 section。
 
 #### KV Cache 影响
 
@@ -152,6 +163,34 @@ Session 携带策略的 settings 控制实例会公开子级 LLM 选择字段与
 #### KV Cache 影响
 
 适配器注册与目录变化不会改变 schema 前缀。每个发现结果都追加在可复用前缀之后。
+
+### agent 定义目录
+
+#### 模型看到什么
+
+设置 `agentCatalog: true` 时，只要已挂载 `ctx.agentDefinitions`、至少存在一个定义，且本实例的工具注册为可见注册，组合就会在首次请求前发布一条持久的、来源为 `plugin`（标识 `tool-subagent/agent-catalog`）的 user 消息。后续步骤会在获胜成员或渲染出的描述变化时发布替换列表，在最后一个定义消失后把列表退化为 `- (none)`，并在发现不完整时保留上次发布的列表。渲染文本不依赖发布它的实例，因此多个具备能力的委派工具只发布一份列表；描述会规范化空白、截断到 `catalogDescriptionMaxLength` 个字符，并转义 `<`、`>` 与 `&`。
+
+##### 目录消息
+
+```markdown
+<system-reminder>
+Specialized subagents may be available for delegation. Each one runs with its own system prompt and tool access. This complete list replaces every earlier available-subagent list in this session:
+
+<available_subagents>
+- `code-reviewer`: Reviews a change against this repository's standards.
+</available_subagents>
+
+When a task clearly matches a listed specialist, delegate to it with a delegation tool that offers `agent_type` and pass the exact listed name.
+</system-reminder>
+```
+
+#### Token 影响
+
+只要目录处于发布状态，每个 Session 一条简短固定的 user 消息；每个定义增加一行，其描述上限为 `catalogDescriptionMaxLength` 个字符。
+
+#### KV Cache 影响
+
+仅追加：未变化的列表不会被重新发布，变化的列表会在可复用前缀之后追加一条消息，而不会使更早的条目失效。
 
 ### 系统提示词
 
@@ -211,7 +250,7 @@ Use subagent in the background by default. Start independent delegations togethe
 - **后台运行不通过本工具公开结果**——一次性任务的最终输出通过通用 Task 接口收集，可继续子 agent 的输出留在其自身会话中，按其 subagent id 读取。结算通知会说明该子 agent 如何结束，并携带可能存在的最终 assistant 消息，但它不是本次调用的返回值，也无法在此等待。
 - **等待中的一次性实例较晚才发现重复名称**（`TODO(subagent-dup-toolname)`）——可继续实例会在插件应用期间预留提示词 section 名称，但若要阻止等待中的一次性实例回滚提供方注册，仍需要一份预期名称注册表。
 - **随附 fork 工具不能选择子级 LLM 路由**——它们继承父级提供方与模型，使复制的对话前缀仍有资格复用 KV Cache。仅当路由变更能保留复用或公开有界重算成本时，才重新启用选择。
-- **非路由子 agent 策略按实例固定**——另一个 persona、工具过滤器或深度上限需要另一个名称不同的工具。LLM 选择要求启用逐 Session 偏好，且提供方必须声明 `agentOptions`；两个进程内提供方和 DSH SDK 会声明该能力，而 ACP、Codex 与 Claude Code 会拒绝它，而不是忽略它。
+- **已配置的子 agent 策略按实例固定**——`persona`、`toolFilter`、`maxDepth` 与 `agentOptions` 来自所挂载实例的配置，通过 `agent_type` 选中的定义只能为单次调用收紧它们。未挂载 `ctx.agentDefinitions` 的组合，或缺少 `persona` 能力的提供方，无法选择任何定义。LLM 选择要求启用逐 Session 偏好，且提供方必须声明 `agentOptions`；两个进程内提供方和 DSH SDK 会声明该能力，而 ACP、Codex 与 Claude Code 会拒绝它，而不是忽略它。
 
 <a id="dev-note"></a>
 ### 开发备注
