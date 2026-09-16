@@ -3,10 +3,17 @@
  * shapes the two diff layouts draw: one column of prefixed lines, or the old
  * and new sides of the same band paired into two columns.
  *
+ * A surface that knows the changed file's language passes a {@link DiffHighlighter}
+ * and every body row then carries the grammar's token runs for its own text, so a
+ * diff reads with the same colors as the file it changes. Tokenizing a whole side
+ * rather than one line at a time is what lets a change inside a block comment or
+ * a template literal keep the context that colorizes it.
+ *
  * The type is declared here rather than beside either surface so a pure model
  * can validate durable result metadata without importing a component module.
  * @module
  */
+import type { HighlightSpan } from './markdown/highlight.ts'
 
 /**
  * One file change in the form the diff surfaces render. It is declared here so
@@ -55,6 +62,23 @@ export function narrowDiffHunks(value: unknown): DiffHunk[] | null {
 }
 
 /**
+ * Tokenize one side's complete text into one run list per source line, in the
+ * same order and with the same line count as {@link contentLines}. `undefined`
+ * means that side renders plain — an unknown language, a grammar that has not
+ * loaded yet, or a caller that supplies no highlighter at all.
+ */
+export type DiffHighlighter = (text: string) => readonly (readonly HighlightSpan[])[] | undefined
+
+/** The runs a tokenized side holds for one line, spread onto the row that draws it. */
+function spansOf(
+  runs: readonly (readonly HighlightSpan[])[] | undefined,
+  index: number,
+): { spans?: readonly HighlightSpan[] | undefined } {
+  const spans = runs?.[index]
+  return spans === undefined ? {} : { spans }
+}
+
+/**
  * Split a side's text into its content lines. Empty text is zero lines (a full
  * deletion's `newText` or a create's absent `oldText` side draws nothing), and a
  * single trailing newline is a line terminator rather than an extra empty line —
@@ -96,6 +120,8 @@ export interface DiffRow {
    * reader jumps between changes by scrolling to these rows.
    */
   hunk?: number | undefined
+  /** The grammar's runs for {@link text}, absent when the row draws its text plain. */
+  spans?: readonly HighlightSpan[] | undefined
 }
 
 /** Local exhaustiveness helper — this package does not depend on `dsh-llm`. */
@@ -141,21 +167,27 @@ function walkHunks<Row>(
  * diff card's footer, so two hunks in one file read as `1 file` on both front
  * ends.
  * @param diffs - the hunks to render.
+ * @param highlight - tokenizes one side's complete text; absent renders every row plain.
  * @returns the body rows, the +/- totals, and the distinct-file count.
  */
 export function buildDiffRows(
   diffs: readonly DiffHunk[],
+  highlight?: DiffHighlighter,
 ): { rows: DiffRow[]; added: number; removed: number; files: number } {
   const { rows, files } = walkHunks<DiffRow>(
     diffs,
     (path, hunk): DiffRow => ({ kind: 'path', text: path, hunk }),
     (hunk): DiffRow => ({ kind: 'gap', text: '⋯', hunk }),
-    (diff): DiffRow[] => [
-      ...(diff.oldText === null
-        ? []
-        : contentLines(diff.oldText).map((text): DiffRow => ({ kind: 'del', text }))),
-      ...contentLines(diff.newText).map((text): DiffRow => ({ kind: 'add', text })),
-    ],
+    (diff): DiffRow[] => {
+      const oldRuns = diff.oldText === null ? undefined : highlight?.(diff.oldText)
+      const newRuns = highlight?.(diff.newText)
+      return [
+        ...(diff.oldText === null
+          ? []
+          : contentLines(diff.oldText).map((text, line): DiffRow => ({ kind: 'del', text, ...spansOf(oldRuns, line) }))),
+        ...contentLines(diff.newText).map((text, line): DiffRow => ({ kind: 'add', text, ...spansOf(newRuns, line) })),
+      ]
+    },
   )
   return { rows, ...diffTotals(diffs), files }
 }
@@ -183,9 +215,9 @@ export function copyDiffText(rows: readonly DiffRow[]): string {
 
 /** One side of a split row: a removed, added, or shared line, or the padding opposite a one-sided change. */
 export type SplitDiffCell =
-  | { readonly kind: 'del'; readonly text: string }
-  | { readonly kind: 'add'; readonly text: string }
-  | { readonly kind: 'context'; readonly text: string }
+  | { readonly kind: 'del'; readonly text: string; readonly spans?: readonly HighlightSpan[] | undefined }
+  | { readonly kind: 'add'; readonly text: string; readonly spans?: readonly HighlightSpan[] | undefined }
+  | { readonly kind: 'context'; readonly text: string; readonly spans?: readonly HighlightSpan[] | undefined }
   | { readonly kind: 'empty' }
 
 /** One split row: a file header, a same-file gap, or the old and new sides of one line band. */
@@ -205,11 +237,16 @@ export type SplitDiffRow =
  * exact rather than an approximation of a larger alignment.
  * @param oldText - the removed side, or null for a create.
  * @param newText - the added side.
+ * @param highlight - tokenizes one side's complete text; absent renders every cell plain.
  * @returns the hunk's paired rows in reading order.
  */
-function pairSides(oldText: string | null, newText: string): SplitDiffRow[] {
+function pairSides(oldText: string | null, newText: string, highlight?: DiffHighlighter): SplitDiffRow[] {
   const oldLines = oldText === null ? [] : contentLines(oldText)
   const newLines = contentLines(newText)
+  // Tokenizing the whole side is what keeps a shared line's own context — a
+  // comment still open, a string still running — colored on both columns.
+  const oldRuns = oldText === null ? undefined : highlight?.(oldText)
+  const newRuns = highlight?.(newText)
   let prefix = 0
   while (prefix < oldLines.length && prefix < newLines.length && oldLines[prefix] === newLines[prefix]) {
     prefix += 1
@@ -223,8 +260,12 @@ function pairSides(oldText: string | null, newText: string): SplitDiffRow[] {
     suffix += 1
   }
   const rows: SplitDiffRow[] = []
-  for (const line of oldLines.slice(0, prefix)) {
-    rows.push({ kind: 'pair', left: { kind: 'context', text: line }, right: { kind: 'context', text: line } })
+  for (const [line, text] of oldLines.slice(0, prefix).entries()) {
+    rows.push({
+      kind: 'pair',
+      left: { kind: 'context', text, ...spansOf(oldRuns, line) },
+      right: { kind: 'context', text, ...spansOf(newRuns, line) },
+    })
   }
   const removed = oldLines.slice(prefix, oldLines.length - suffix)
   const added = newLines.slice(prefix, newLines.length - suffix)
@@ -233,16 +274,20 @@ function pairSides(oldText: string | null, newText: string): SplitDiffRow[] {
     const addedLine = added[index]
     rows.push({
       kind: 'pair',
-      left: removedLine === undefined ? { kind: 'empty' } : { kind: 'del', text: removedLine },
-      right: addedLine === undefined ? { kind: 'empty' } : { kind: 'add', text: addedLine },
+      left: removedLine === undefined
+        ? { kind: 'empty' }
+        : { kind: 'del', text: removedLine, ...spansOf(oldRuns, prefix + index) },
+      right: addedLine === undefined
+        ? { kind: 'empty' }
+        : { kind: 'add', text: addedLine, ...spansOf(newRuns, prefix + index) },
     })
   }
   for (let index = suffix; index > 0; index -= 1) {
     /* v8 ignore next 4 -- both sides are at least `suffix` lines long, so neither read is out of range */
     rows.push({
       kind: 'pair',
-      left: { kind: 'context', text: oldLines[oldLines.length - index] ?? '' },
-      right: { kind: 'context', text: newLines[newLines.length - index] ?? '' },
+      left: { kind: 'context', text: oldLines[oldLines.length - index] ?? '', ...spansOf(oldRuns, oldLines.length - index) },
+      right: { kind: 'context', text: newLines[newLines.length - index] ?? '', ...spansOf(newRuns, newLines.length - index) },
     })
   }
   return rows
@@ -253,23 +298,36 @@ function pairSides(oldText: string | null, newText: string): SplitDiffRow[] {
  * headers, gaps, and totals {@link buildDiffRows} produces, with each hunk's
  * sides paired instead of stacked.
  * @param diffs - the hunks to render.
+ * @param highlight - tokenizes one side's complete text; absent renders every cell plain.
  * @returns the paired rows, the +/- totals, and the distinct-file count.
  */
 export function buildSplitRows(
   diffs: readonly DiffHunk[],
+  highlight?: DiffHighlighter,
 ): { rows: SplitDiffRow[]; added: number; removed: number; files: number } {
   const { rows, files } = walkHunks<SplitDiffRow>(
     diffs,
     (path, hunk): SplitDiffRow => ({ kind: 'path', text: path, hunk }),
     (hunk): SplitDiffRow => ({ kind: 'gap', hunk }),
-    diff => pairSides(diff.oldText, diff.newText),
+    diff => pairSides(diff.oldText, diff.newText, highlight),
   )
   return { rows, ...diffTotals(diffs), files }
 }
 
-/** The shared row both columns draw for one line the change left alone. */
-function contextPair(text: string): SplitDiffRow {
-  return { kind: 'pair', left: { kind: 'context', text }, right: { kind: 'context', text } }
+/**
+ * The shared row both columns draw for one line the change left alone, carrying
+ * that line's own runs from the file the two sides are drawn over.
+ * @param text - the unchanged line.
+ * @param line - its 0-based index in the file.
+ * @param fileRuns - the file's tokenized lines, or undefined for a plain body.
+ * @returns the paired context row.
+ */
+function contextPair(text: string, line: number, fileRuns: readonly (readonly HighlightSpan[])[] | undefined): SplitDiffRow {
+  return {
+    kind: 'pair',
+    left: { kind: 'context', text, ...spansOf(fileRuns, line) },
+    right: { kind: 'context', text, ...spansOf(fileRuns, line) },
+  }
 }
 
 /**
@@ -306,14 +364,17 @@ function locateHunk(fileLines: readonly string[], covered: readonly string[], fr
  * misplaced body; the caller then keeps the change-only comparison.
  * @param diffs - one file's hunks, in file order.
  * @param fileLines - the file's new text, one entry per line.
+ * @param highlight - tokenizes the file's own text; absent renders every context cell plain.
  * @returns the whole-file rows, or null when the hunks cannot be placed in it.
  */
 export function buildFileSplitRows(
   diffs: readonly DiffHunk[],
   fileLines: readonly string[],
+  highlight?: DiffHighlighter,
 ): SplitDiffRow[] | null {
   const path = diffs[0]?.path
   if (path === undefined) return null
+  const fileRuns = highlight?.(fileLines.join('\n'))
   const rows: SplitDiffRow[] = [{ kind: 'path', text: path }]
   // The next line of the file no row has drawn yet, as a 0-based index.
   let cursor = 0
@@ -325,13 +386,17 @@ export function buildFileSplitRows(
     const start = newStart === undefined ? locateHunk(fileLines, covered, cursor) : newStart - 1
     if (start === null || start < cursor || start + covered.length > fileLines.length) return null
     if (covered.some((line, offset) => fileLines[start + offset] !== line)) return null
-    for (const line of fileLines.slice(cursor, start)) rows.push(contextPair(line))
-    const changed = pairSides(diff.oldText, diff.newText)
+    for (const [offset, text] of fileLines.slice(cursor, start).entries()) {
+      rows.push(contextPair(text, cursor + offset, fileRuns))
+    }
+    const changed = pairSides(diff.oldText, diff.newText, highlight)
     // The change's first row is where a reader jumps to; the rest carry no marker.
     if (changed.length > 0) changed[0] = { ...changed[0] as SplitDiffRow, hunk }
     rows.push(...changed)
     cursor = start + covered.length
   }
-  for (const line of fileLines.slice(cursor)) rows.push(contextPair(line))
+  for (const [offset, text] of fileLines.slice(cursor).entries()) {
+    rows.push(contextPair(text, cursor + offset, fileRuns))
+  }
   return rows
 }

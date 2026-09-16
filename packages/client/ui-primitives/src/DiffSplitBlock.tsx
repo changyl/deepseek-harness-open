@@ -10,14 +10,17 @@
  * unified diff text, so the clipboard form does not depend on which layout the
  * reader was looking at.
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import type { ReactNode } from 'react'
 import clsx from 'clsx'
 import { FoldToggle } from './FoldToggle.tsx'
 import { writeClipboard } from './clipboard.ts'
 import {
   buildDiffRows, buildFileSplitRows, buildSplitRows, copyDiffText, type DiffHunk, type SplitDiffCell, type SplitDiffRow,
 } from './diff-hunks.ts'
-import { DEFAULT_DIFF_MAX_LINES, type DiffBlockLabels } from './DiffBlock.tsx'
+import { DiffLineText, DEFAULT_DIFF_MAX_LINES, type DiffBlockLabels } from './DiffBlock.tsx'
+import { grammarLoadCount, highlightLines, subscribeGrammarLoaded } from './markdown/highlight.ts'
+import { useViewportHighlighting } from './markdown/useViewportHighlighting.ts'
 import css from './DiffSplitBlock.module.css'
 
 export interface DiffSplitBlockProps {
@@ -36,6 +39,11 @@ export interface DiffSplitBlockProps {
    * misplacing the change.
    */
   fileLines?: readonly string[] | undefined
+  /**
+   * Grammar hint for the changed file, as the owning render site derives it
+   * from the path. Absent, unknown, or not-yet-loaded renders the plain body.
+   */
+  lang?: string | undefined
 }
 
 /** The class per cell kind, so a shared line stays unmarked while a change carries its side's colour. */
@@ -50,6 +58,11 @@ const CELL_CLASS: Record<SplitDiffCell['kind'], string | undefined> = {
 /* v8 ignore next 3 -- closed-union backstop; only reached if a row kind is forged */
 function assertNever(value: never): never {
   throw new Error(`unreachable split diff row kind: ${String(value)}`)
+}
+
+/** One side of a band: its own text, as the grammar's runs when it carries them. */
+function SplitCell({ cell }: { cell: SplitDiffCell }): ReactNode {
+  return cell.kind === 'empty' ? '' : <DiffLineText text={cell.text} spans={cell.spans} />
 }
 
 /** One row of the comparison: a header spanning both columns, or the two sides of one band. */
@@ -69,10 +82,10 @@ function SplitRow({ row, anchor }: { row: SplitDiffRow; anchor: boolean }) {
             data-split-side="old"
             data-split-change-start={anchor ? '' : undefined}
           >
-            {row.left.kind === 'empty' ? '' : row.left.text}
+            <SplitCell cell={row.left} />
           </div>
           <div className={clsx(css.cell, CELL_CLASS[row.right.kind])} data-split-side="new">
-            {row.right.kind === 'empty' ? '' : row.right.text}
+            <SplitCell cell={row.right} />
           </div>
         </div>
       )
@@ -86,13 +99,25 @@ function SplitRow({ row, anchor }: { row: SplitDiffRow; anchor: boolean }) {
  * @param props - see {@link DiffSplitBlockProps}.
  * @returns the comparison element.
  */
-export function DiffSplitBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className, fileLines }: DiffSplitBlockProps) {
-  const { rows, added, removed, files } = useMemo(() => buildSplitRows(diffs), [diffs])
+export function DiffSplitBlock({
+  diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className, fileLines, lang,
+}: DiffSplitBlockProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const highlighting = useViewportHighlighting(rootRef, lang)
+  // Re-render when a lazy grammar finishes loading, so a comparison that drew
+  // plain while its language's grammar imported picks up highlighting. The
+  // snapshot value is opaque; only its change across renders drives the memos.
+  const loaded = useSyncExternalStore(subscribeGrammarLoaded, grammarLoadCount, grammarLoadCount)
+  const highlighter = highlighting ? (text: string) => highlightLines(text, lang) : undefined
+  const { rows, added, removed, files } = useMemo(
+    () => buildSplitRows(diffs, highlighter),
+    [diffs, highlighting, lang, loaded],
+  )
   // The reader may ask for the change inside the file it landed in; a hunk the
   // file cannot account for keeps the change-only body.
   const wholeFile = useMemo(
-    () => fileLines === undefined ? null : buildFileSplitRows(diffs, fileLines),
-    [diffs, fileLines],
+    () => fileLines === undefined ? null : buildFileSplitRows(diffs, fileLines, highlighter),
+    [diffs, fileLines, highlighting, lang, loaded],
   )
   const body = wholeFile ?? rows
   // Copying keeps the unified form: one clipboard text for both layouts, and
@@ -128,7 +153,13 @@ export function DiffSplitBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINE
     : wholeFile.find(row => row.kind === 'pair' && (row.left.kind === 'del' || row.right.kind === 'add'))
 
   return (
-    <div className={clsx(css.block, className)} data-diff="" data-diff-layout="split">
+    <div
+      ref={rootRef}
+      className={clsx(css.block, className)}
+      data-diff=""
+      data-diff-layout="split"
+      data-diff-highlight={highlighting ? '' : undefined}
+    >
       <button type="button" className={css.copyButton} onClick={onCopy}>
         {copied ? labels.copied : labels.copy}
       </button>

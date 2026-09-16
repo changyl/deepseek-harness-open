@@ -76,6 +76,25 @@
   color: var(--dsw-alias-state-success-primary);
 }
 
+/* Highlighted rows carry the grammar's own colors on their text, which replaces
+   the tone the `.del`/`.add` rules above put there. The side of the change then
+   moves to a tinted band, and the `- `/`+ ` prefix keeps its red/green. */
+.block[data-diff-highlight] .del {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);
+}
+
+.block[data-diff-highlight] .add {
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent);
+}
+
+/* The band follows the line's own text width past the body's edge, so a long
+   line stays tinted while the body scrolls sideways; `min-width` keeps a short
+   line's band spanning the whole row. */
+.block[data-diff-highlight] .line {
+  width: max-content;
+  min-width: 100%;
+}
+
 .expand {
   display: block;
   width: 100%;

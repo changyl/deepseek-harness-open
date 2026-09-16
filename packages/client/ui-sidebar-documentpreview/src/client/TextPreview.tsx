@@ -32,6 +32,7 @@ import type { TextInjected } from './face.ts'
 import type { ChangeReviewDecision } from '@deepseek-ai/dsh-change-review'
 import type { SessionFileChange } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
 import type { ReviewTarget } from './review-target.ts'
+import { languageForPath } from './code/languages.ts'
 import { diffBlockLabels } from './diff-labels.ts'
 import { failureLine } from './failure-line.ts'
 import { IconNowrapFill16, IconWrapFill16 } from './icons.tsx'
@@ -286,11 +287,14 @@ export function TextPreview({
     () => content?.kind === 'text' && content.eof ? contentLines(content.text) : undefined,
     [content],
   )
+  // The change is the file's own code, so it reads with the same grammar the
+  // file's own renderer picks for this path.
+  const changeLang = languageForPath(file.path)
   const diffSurface = changeHunks === undefined || viewMode === 'file'
     ? undefined
     : viewMode === 'split'
-      ? <DiffSplitBlock diffs={changeHunks} labels={diffLabels} maxLines={Infinity} fileLines={changedFileLines} />
-      : <DiffBlock diffs={changeHunks} labels={diffLabels} maxLines={Infinity} />
+      ? <DiffSplitBlock diffs={changeHunks} labels={diffLabels} maxLines={Infinity} fileLines={changedFileLines} lang={changeLang} />
+      : <DiffBlock diffs={changeHunks} labels={diffLabels} maxLines={Infinity} lang={changeLang} />
 
   // The comparison draws the change among the file's own lines, so selecting it
   // lands on the change rather than on the file's first line. The mark names

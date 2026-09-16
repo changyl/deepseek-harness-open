@@ -85,6 +85,17 @@
   content: '  ';
 }
 
+/* Highlighted cells carry the grammar's own colors on their text, which replaces
+   the tone the `.del`/`.add` rules above put there. The side of the change then
+   moves to a tinted cell, and the `- `/`+ ` prefix keeps its red/green. */
+.block[data-diff-highlight] .del {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);
+}
+
+.block[data-diff-highlight] .add {
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent);
+}
+
 /* Facing a one-sided change: the side that has no line here. */
 .empty {
   background: var(--dsw-alias-interactive-bg-hover);

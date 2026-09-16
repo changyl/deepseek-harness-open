@@ -5,9 +5,16 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import {
   DiffSplitBlock as LocalizedDiffSplitBlock, buildFileSplitRows, buildSplitRows,
-  type DiffHunk, type SplitDiffRow,
+  type DiffHighlighter, type DiffHunk, type SplitDiffRow,
 } from '../src/index.ts'
 import { diffBlockLabels } from './labels.client.ts'
+
+/**
+ * A highlighter that makes every line one run of its own text, so a spec can
+ * see which line of which side a cell's runs came from without depending on a
+ * grammar's tokenization.
+ */
+const oneRunPerLine: DiffHighlighter = text => text.split('\n').map(line => [{ text: line, style: { color: line } }])
 
 function DiffSplitBlock(props: Omit<ComponentProps<typeof LocalizedDiffSplitBlock>, 'labels'>) {
   return <LocalizedDiffSplitBlock {...props} labels={diffBlockLabels} />
@@ -162,6 +169,62 @@ describe('buildFileSplitRows', () => {
   })
 })
 
+describe('buildSplitRows highlighting', () => {
+  it("carries each side's own runs on the changed cells and on the context both sides share", () => {
+    const { rows } = buildSplitRows([{ path: 'a.ts', oldText: 'a\nold\nz', newText: 'a\nnew\nz' }], oneRunPerLine)
+    expect(rows.slice(1)).toEqual([
+      {
+        kind: 'pair',
+        left: { kind: 'context', text: 'a', spans: [{ text: 'a', style: { color: 'a' } }] },
+        right: { kind: 'context', text: 'a', spans: [{ text: 'a', style: { color: 'a' } }] },
+      },
+      {
+        kind: 'pair',
+        left: { kind: 'del', text: 'old', spans: [{ text: 'old', style: { color: 'old' } }] },
+        right: { kind: 'add', text: 'new', spans: [{ text: 'new', style: { color: 'new' } }] },
+      },
+      {
+        kind: 'pair',
+        left: { kind: 'context', text: 'z', spans: [{ text: 'z', style: { color: 'z' } }] },
+        right: { kind: 'context', text: 'z', spans: [{ text: 'z', style: { color: 'z' } }] },
+      },
+    ])
+  })
+
+  it('draws a cell the highlighter left uncovered as plain text', () => {
+    const { rows } = buildSplitRows([{ path: 'a.ts', oldText: 'old', newText: 'new' }], () => [])
+    expect(rows.slice(1)).toEqual([
+      { kind: 'pair', left: { kind: 'del', text: 'old' }, right: { kind: 'add', text: 'new' } },
+    ])
+  })
+})
+
+describe('buildFileSplitRows highlighting', () => {
+  it("carries the file's own runs on the unchanged lines it draws", () => {
+    const rows = buildFileSplitRows(
+      [{ path: 'a.ts', oldText: 'l1\nOLD', newText: 'l1\nNEW', newStart: 1 }],
+      ['l1', 'NEW'],
+      oneRunPerLine,
+    )!
+    // The band that opens the change carries the jump marker, so it is the
+    // hunk's own first row — here the context line the two sides share.
+    expect(rows).toEqual([
+      { kind: 'path', text: 'a.ts' },
+      {
+        kind: 'pair',
+        left: { kind: 'context', text: 'l1', spans: [{ text: 'l1', style: { color: 'l1' } }] },
+        right: { kind: 'context', text: 'l1', spans: [{ text: 'l1', style: { color: 'l1' } }] },
+        hunk: 0,
+      },
+      {
+        kind: 'pair',
+        left: { kind: 'del', text: 'OLD', spans: [{ text: 'OLD', style: { color: 'OLD' } }] },
+        right: { kind: 'add', text: 'NEW', spans: [{ text: 'NEW', style: { color: 'NEW' } }] },
+      },
+    ])
+  })
+})
+
 describe('DiffSplitBlock structure', () => {
   it('renders one two-cell row per band under a path header, with the shared footer', () => {
     const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: 'a\nold', newText: 'a\nnew' }]
@@ -186,6 +249,30 @@ describe('DiffSplitBlock structure', () => {
   it('renders nothing for empty hunks', () => {
     const { container } = render(<DiffSplitBlock diffs={[]} />)
     expect(container.querySelector('[data-diff]')).toBeNull()
+  })
+
+  it("draws both columns as the changed file type's grammar runs", () => {
+    const { container } = render(
+      <DiffSplitBlock diffs={[{ path: 'a.ts', oldText: 'const a = 1', newText: 'const b = 2' }]} lang="ts" />,
+    )
+    expect(container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(true)
+    const cells = container.querySelectorAll('[data-split-row="pair"] [data-split-side]')
+    expect(cells[0]?.textContent).toBe('const a = 1')
+    expect(cells[1]?.textContent).toBe('const b = 2')
+    expect(cells[0]?.querySelectorAll('span[style]').length).toBeGreaterThan(1)
+    expect(cells[1]?.querySelectorAll('span[style]').length).toBeGreaterThan(1)
+  })
+
+  it('draws bare cells and marks nothing for a language that cannot be highlighted', () => {
+    const absent = render(<DiffSplitBlock diffs={[{ path: 'a.ts', oldText: 'old', newText: 'new' }]} />)
+    expect(absent.container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(false)
+    expect(absent.container.querySelectorAll('span[style]').length).toBe(0)
+    cleanup()
+    const unknown = render(
+      <DiffSplitBlock diffs={[{ path: 'a.cob', oldText: null, newText: 'MOVE X' }]} lang="cobol" />,
+    )
+    expect(unknown.container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(false)
+    expect(pairs(unknown.container)).toEqual([['', 'MOVE X']])
   })
 
   it('collapses the middle past the cap and expands on demand', () => {

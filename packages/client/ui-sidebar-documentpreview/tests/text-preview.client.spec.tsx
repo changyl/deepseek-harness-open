@@ -662,6 +662,18 @@ describe('TextPreview — the Turn change', () => {
     expect(view.container.querySelector('[data-textpreview-change]')).not.toBeNull()
   })
 
+  it("draws the change with the file type's own grammar", async () => {
+    const h = harness({ 1: page(1, ['one'], true) })
+    h.setChange(ADDRESS, 5, change('const a = 1', 'const b = 2'))
+    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
+    await settle()
+    // The tab's own path selects the grammar: `work/notes.md` is Markdown, so
+    // the change surface announces that it is rendering the change highlighted.
+    const drawn = view.container.querySelector('[data-textpreview-change] [data-diff]')
+    expect(drawn?.hasAttribute('data-diff-highlight')).toBe(true)
+    expect(drawn?.textContent).toContain('const b = 2')
+  })
+
   it('shows the file and no toggle when no Turn indexed the change', async () => {
     const h = harness({ 1: page(1, ['one'], true) })
     const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)

@@ -3,8 +3,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
-import { DEFAULT_DIFF_MAX_LINES, DiffBlock as LocalizedDiffBlock, type DiffHunk } from '../src/index.ts'
+import {
+  buildDiffRows, DEFAULT_DIFF_MAX_LINES, DiffBlock as LocalizedDiffBlock, type DiffHighlighter, type DiffHunk,
+} from '../src/index.ts'
 import { diffBlockLabels } from './labels.client.ts'
+
+/**
+ * A highlighter that makes every line one run of its own text, so a spec can
+ * see which line of which side a row's runs came from without depending on a
+ * grammar's tokenization.
+ */
+const oneRunPerLine: DiffHighlighter = text => text.split('\n').map(line => [{ text: line, style: { color: line } }])
 
 function DiffBlock(props: Omit<ComponentProps<typeof LocalizedDiffBlock>, 'labels'>) {
   return <LocalizedDiffBlock {...props} labels={diffBlockLabels} />
@@ -91,6 +100,57 @@ describe('DiffBlock structure', () => {
   it('keeps a genuine interior blank line', () => {
     const { container } = render(<DiffBlock diffs={[{ path: 'a.ts', oldText: null, newText: 'x\n\ny' }]} />)
     expect(container.querySelectorAll('[class*="_add_"]').length).toBe(3)
+  })
+})
+
+describe('buildDiffRows highlighting', () => {
+  it("carries each side's own runs on every row it drew, line for line", () => {
+    const { rows } = buildDiffRows([{ path: 'a.ts', oldText: 'one\ntwo', newText: 'one\nTHREE' }], oneRunPerLine)
+    expect(rows.slice(1)).toEqual([
+      { kind: 'del', text: 'one', spans: [{ text: 'one', style: { color: 'one' } }] },
+      { kind: 'del', text: 'two', spans: [{ text: 'two', style: { color: 'two' } }] },
+      { kind: 'add', text: 'one', spans: [{ text: 'one', style: { color: 'one' } }] },
+      { kind: 'add', text: 'THREE', spans: [{ text: 'THREE', style: { color: 'THREE' } }] },
+    ])
+  })
+
+  it('draws a line the highlighter left uncovered as plain text', () => {
+    // A grammar that reports fewer lines than the side has (a partial load)
+    // must drop that line's runs, not its text.
+    const { rows } = buildDiffRows([{ path: 'a.ts', oldText: null, newText: 'one\ntwo' }], () => [])
+    expect(rows.slice(1)).toEqual([{ kind: 'add', text: 'one' }, { kind: 'add', text: 'two' }])
+  })
+
+  it('draws every row plain when no highlighter is supplied', () => {
+    const { rows } = buildDiffRows([{ path: 'a.ts', oldText: 'old', newText: 'new' }])
+    expect(rows.slice(1)).toEqual([{ kind: 'del', text: 'old' }, { kind: 'add', text: 'new' }])
+  })
+})
+
+describe('DiffBlock language', () => {
+  const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: 'const a = 1', newText: 'const b = 2' }]
+
+  it("draws each changed line as its file type's grammar runs", () => {
+    const { container } = render(<DiffBlock diffs={diffs} lang="ts" />)
+    expect(container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(true)
+    // Both sides are tokenized, and the line's own text survives the runs.
+    const [removed, added] = [...container.querySelectorAll('[class*="_del_"], [class*="_add_"]')]
+    expect(removed?.textContent).toBe('const a = 1')
+    expect(added?.textContent).toBe('const b = 2')
+    expect(removed?.querySelectorAll('span[style]').length).toBeGreaterThan(1)
+    expect(added?.querySelectorAll('span[style]').length).toBeGreaterThan(1)
+  })
+
+  it('draws bare text and marks nothing for a language that cannot be highlighted', () => {
+    const absent = render(<DiffBlock diffs={diffs} />)
+    expect(absent.container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(false)
+    expect(absent.container.querySelectorAll('span[style]').length).toBe(0)
+    expect(changeRows(absent.container)).toEqual(['const a = 1', 'const b = 2'])
+    cleanup()
+    const unknown = render(<DiffBlock diffs={[{ path: 'a.cob', oldText: null, newText: 'MOVE X' }]} lang="cobol" />)
+    expect(unknown.container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(false)
+    expect(unknown.container.querySelectorAll('span[style]').length).toBe(0)
+    expect(changeRows(unknown.container)).toEqual(['MOVE X'])
   })
 })
 

@@ -53,7 +53,7 @@ kind: "package-library"
 | `Toast` | 顶部居中的瞬时横幅，保持时长由所有者的 `holdMs` 决定。 |
 | `JsonTree`、`JsonBlock` | 只读 JSON 查看。 |
 | `MarkdownText`、`CodeBlock` | 不可信 GFM 与 TeX 数学，以及高亮代码。`CodeBlock` 可通过 `lineNumbers` 开启行号；复制的源码不含行号栏，`contentRef` 则向需要把稳定源码包装节点用作滚动区的 owner 提供该节点。 |
-| `TerminalBlock`、`ReadBlock`、`DiffBlock`、`DiffSplitBlock`、`SearchBlock`、`WebBlock` | 与各类工具结果意图对应的 agent 输出卡片；两个 diff 表面把同一批 hunk 画成一栏或两栏。 |
+| `TerminalBlock`、`ReadBlock`、`DiffBlock`、`DiffSplitBlock`、`SearchBlock`、`WebBlock` | 与各类工具结果意图对应的 agent 输出卡片；两个 diff 表面把同一批 hunk 画成一栏或两栏，调用方给出语言时按被改文件自身的语法着色。 |
 | `icons/*`、`FishLogo`、`BrandWordmark`、`ReferenceIcon`、`LinkIcon` | 字形与品牌标识。`LinkIcon` 用于 14px 的可点击链接分类。 |
 | `FileTypeIcon`、`classifyFileType`、`fileExtension` | 按类别着色的 28px 文件或文件夹图形，以及它背后共享的不区分大小写文件名映射。代码与配置文件使用细分的全彩技术图形；链接前置图形使用 `LinkIcon`，图片内容使用图片预览。 |
 
@@ -71,7 +71,7 @@ kind: "package-library"
 
 ### 渲染 agent 输出
 
-`MarkdownText` 渲染不可信的 GFM 与 TeX 公式、阻止不安全的链接与图片，并可把已解析的文件提及转换为显式控件。当 owner 传入 `pathImages` 词表时，本地媒体路径的图片目标只在落定渲染阶段重写为可展示 URL（与 file mentions 相同的流式门）；不传词表时本地目标保持惰性 alt 文本。加载或解码失败后，图片替换为作者的 alt 文本；alt 为空时显示原始目标路径。图片源变化后可重新加载。回复流式输出时，它冻结已完成的块、按已完成行推进顶层未闭合 fence，并从保存的 Shiki grammar state 为该 fence 增量高亮。已完成的 token 行进入固定大小的 React 分组，后续分片只 reconcile 正在增长的分组；最终全量解析解决跨文档语法时，未变化的 fence 会保留该 DOM。`TerminalBlock`、`ReadBlock`、`DiffBlock`、`DiffSplitBlock`、`SearchBlock` 与 `WebBlock` 把对应的工具结果意图渲染为带复制控件、溢出处理及适用时 ANSI 处理的卡片。`DiffBlock` 把一个 hunk 的删除行与新增行上下堆叠；`DiffSplitBlock` 把它们配成左「旧」右「新」两栏，为单侧改动补空以保证各行对齐，两者复制出的都是同一份统一格式文本。在拿到文件自身的行时，对比会把每个改动画在文件未改动行之间的原位——按 hunk 记录的行号，或在没有记录时按文件唯一包含其文本的位置；文件无法对应上的 hunk 则退回仅改动区的正文。`JsonTree` 与 `JsonBlock` 以只读方式检查 JSON 值；`projectUserText` 把已发送的用户文本投影为行内普通文本段与引用 chip，供消息气泡和排队行使用。 传入 `UserTextReferences` 时，文件和 skill 引用成为支持键盘操作的预览按钮，复用正文文件链接的悬停和聚焦样式；第一次指针点击可以打开预览，后续点击和已有选区保留原生选择行为。键盘激活在存在选区时仍可打开预览。
+`MarkdownText` 渲染不可信的 GFM 与 TeX 公式、阻止不安全的链接与图片，并可把已解析的文件提及转换为显式控件。当 owner 传入 `pathImages` 词表时，本地媒体路径的图片目标只在落定渲染阶段重写为可展示 URL（与 file mentions 相同的流式门）；不传词表时本地目标保持惰性 alt 文本。加载或解码失败后，图片替换为作者的 alt 文本；alt 为空时显示原始目标路径。图片源变化后可重新加载。回复流式输出时，它冻结已完成的块、按已完成行推进顶层未闭合 fence，并从保存的 Shiki grammar state 为该 fence 增量高亮。已完成的 token 行进入固定大小的 React 分组，后续分片只 reconcile 正在增长的分组；最终全量解析解决跨文档语法时，未变化的 fence 会保留该 DOM。`TerminalBlock`、`ReadBlock`、`DiffBlock`、`DiffSplitBlock`、`SearchBlock` 与 `WebBlock` 把对应的工具结果意图渲染为带复制控件、溢出处理及适用时 ANSI 处理的卡片。`DiffBlock` 把一个 hunk 的删除行与新增行上下堆叠；`DiffSplitBlock` 把它们配成左「旧」右「新」两栏，为单侧改动补空以保证各行对齐，两者复制出的都是同一份统一格式文本。在拿到文件自身的行时，对比会把每个改动画在文件未改动行之间的原位——按 hunk 记录的行号，或在没有记录时按文件唯一包含其文本的位置；文件无法对应上的 hunk 则退回仅改动区的正文。调用方若知道被改文件的语言，可通过 `lang` 传入，两个表面即按该语法绘制改动：每一侧的整段文本只做一次 tokenize——而不是逐行处理，因此位于未闭合注释或字符串中的改动仍保留上下文——每个正文行绘制自己的 run，标记删除/新增行的着色底带承载改动方向，而 `- `/`+ ` 前缀保留自身的红/绿。语言缺省、未知或尚未加载时，正文仍按纯文本绘制；从不传 `lang` 的调用方（聊天中的工具卡片）渲染结果与之前完全一致。`JsonTree` 与 `JsonBlock` 以只读方式检查 JSON 值；`projectUserText` 把已发送的用户文本投影为行内普通文本段与引用 chip，供消息气泡和排队行使用。 传入 `UserTextReferences` 时，文件和 skill 引用成为支持键盘操作的预览按钮，复用正文文件链接的悬停和聚焦样式；第一次指针点击可以打开预览，后续点击和已有选区保留原生选择行为。键盘激活在存在选区时仍可打开预览。
 
 
 ### 本地化文案

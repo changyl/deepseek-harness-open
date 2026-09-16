@@ -57,7 +57,7 @@ export type { DiffBlockProps, DiffBlockLabels } from './DiffBlock.tsx'
 export { DiffSplitBlock } from './DiffSplitBlock.tsx'
 export type { DiffSplitBlockProps } from './DiffSplitBlock.tsx'
 export { buildDiffRows, buildFileSplitRows, buildSplitRows, contentLines, copyDiffText, diffTotals, narrowDiffHunks } from './diff-hunks.ts'
-export type { DiffHunk, DiffRow, SplitDiffCell, SplitDiffRow } from './diff-hunks.ts'
+export type { DiffHighlighter, DiffHunk, DiffRow, SplitDiffCell, SplitDiffRow } from './diff-hunks.ts'
 export { SearchBlock, DEFAULT_SEARCH_MAX_LINES } from './SearchBlock.tsx'
 export type {
   SearchBlockProps, SearchMatchesBlockProps, SearchPathsBlockProps, SearchFileGroup, SearchBlockLineMatch,

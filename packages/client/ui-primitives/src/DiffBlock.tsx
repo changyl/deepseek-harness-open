@@ -1,8 +1,11 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import type { ReactNode } from 'react'
 import clsx from 'clsx'
 import { FoldToggle } from './FoldToggle.tsx'
 import { writeClipboard } from './clipboard.ts'
 import { buildDiffRows, copyDiffText, type DiffHunk, type DiffRow } from './diff-hunks.ts'
+import { grammarLoadCount, highlightLines, subscribeGrammarLoaded, type HighlightSpan } from './markdown/highlight.ts'
+import { useViewportHighlighting } from './markdown/useViewportHighlighting.ts'
 import css from './DiffBlock.module.css'
 
 /** Output lines shown before the height cap collapses the middle. */
@@ -17,6 +20,11 @@ export interface DiffBlockProps {
   maxLines?: number | undefined
   /** Extra class merged onto the wrapper (callers position; this component draws). */
   className?: string | undefined
+  /**
+   * Grammar hint for the changed file, as the owning render site derives it
+   * from the path. Absent, unknown, or not-yet-loaded renders the plain body.
+   */
+  lang?: string | undefined
 }
 
 /** Localized chrome for {@link DiffBlock} and {@link DiffSplitBlock}. */
@@ -39,12 +47,34 @@ const ROW_CLASS: Record<DiffRow['kind'], string | undefined> = {
 }
 
 /**
+ * One row's own text: the grammar's runs when the row carries them, bare text
+ * otherwise. A row with no runs draws exactly what it drew before a language
+ * was available, so an unsupported or still-loading grammar degrades to plain
+ * instead of to nothing.
+ * @param props - the row's text and its optional runs.
+ * @returns the row's text content.
+ */
+export function DiffLineText({ text, spans }: { text: string; spans?: readonly HighlightSpan[] | undefined }): ReactNode {
+  if (spans === undefined) return text
+  return spans.map((span, index) => <span key={index} style={span.style}>{span.text}</span>)
+}
+
+/**
  * Render a file mutation as an inline diff surface.
  * @param props - see {@link DiffBlockProps}.
  * @returns the diff block element.
  */
-export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className }: DiffBlockProps) {
-  const { rows, added, removed, files } = useMemo(() => buildDiffRows(diffs), [diffs])
+export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className, lang }: DiffBlockProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const highlighting = useViewportHighlighting(rootRef, lang)
+  // Re-render when a lazy grammar finishes loading, so a diff that drew plain
+  // while its language's grammar imported picks up highlighting. The snapshot
+  // value is opaque; only its change across renders drives the memo.
+  const loaded = useSyncExternalStore(subscribeGrammarLoaded, grammarLoadCount, grammarLoadCount)
+  const { rows, added, removed, files } = useMemo(
+    () => buildDiffRows(diffs, highlighting ? text => highlightLines(text, lang) : undefined),
+    [diffs, highlighting, lang, loaded],
+  )
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -70,15 +100,24 @@ export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, cl
   const head = capped ? rows.slice(0, headLines) : rows
   const tail = capped ? rows.slice(rows.length - tailLines) : []
 
+  const row = (entry: DiffRow, index: number): ReactNode => (
+    <div key={index} className={clsx(css.line, ROW_CLASS[entry.kind])} data-diff-hunk={entry.hunk}>
+      <DiffLineText text={entry.text} spans={entry.spans} />
+    </div>
+  )
+
   return (
-    <div className={clsx(css.block, className)} data-diff="">
+    <div
+      ref={rootRef}
+      className={clsx(css.block, className)}
+      data-diff=""
+      data-diff-highlight={highlighting ? '' : undefined}
+    >
       <button type="button" className={css.copyButton} onClick={onCopy}>
         {copied ? labels.copied : labels.copy}
       </button>
       <div className={css.body}>
-        {head.map((row, index) => (
-          <div key={index} className={clsx(css.line, ROW_CLASS[row.kind])} data-diff-hunk={row.hunk}>{row.text}</div>
-        ))}
+        {head.map(row)}
         {hidden > 0 && (
           <FoldToggle
             className={css.expand}
@@ -88,9 +127,7 @@ export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, cl
             onToggle={onToggle}
           />
         )}
-        {tail.map((row, index) => (
-          <div key={index} className={clsx(css.line, ROW_CLASS[row.kind])} data-diff-hunk={row.hunk}>{row.text}</div>
-        ))}
+        {tail.map(row)}
       </div>
       <div className={css.footer}>└ +{added} -{removed} · {labels.files(files)}</div>
     </div>
