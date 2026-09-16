@@ -977,7 +977,7 @@ describe('TextPreview — the side-by-side comparison', () => {
     expect(lines(view.container)).toEqual(['one\n'])
   })
 
-  it('starts on the one-column change again after navigating to another one', async () => {
+  it('keeps the comparison across a navigation to another change', async () => {
     const h = harness({ 1: page(1, ['one'], true) })
     h.setChange(ADDRESS, 5, change('before', 'after'))
     h.setChange(ADDRESS, 9, change('after', 'later'))
@@ -986,7 +986,41 @@ describe('TextPreview — the side-by-side comparison', () => {
     click(view.container, '[data-textpreview-tool="split"]')
     expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
     view.rerender(<TextPreview {...h.props({ params: { changeSeq: 9 }, revision: 3 })} />)
-    expect(view.container.querySelector('[data-change-mode="change"]')).toBeTruthy()
+    // The layout belongs to the session, so the next change is drawn in it too.
+    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
+    expect(view.container.querySelector('[data-diff-layout="split"]')).toBeTruthy()
     expect(view.container.querySelector('[data-textpreview-change]')?.textContent).toContain('later')
+  })
+
+  it('returns to the change, in the session layout, after a step from the whole file', async () => {
+    const h = harness({ 1: page(1, ['one'], true) })
+    h.setChange(ADDRESS, 5, change('before', 'after'))
+    h.setChange(ADDRESS, 9, change('after', 'later'))
+    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
+    await settle()
+    click(view.container, '[data-textpreview-tool="split"]')
+    click(view.container, '[data-textpreview-tool="change"]')
+    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
+    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 9 }, revision: 3 })} />)
+    // A step lands on the change: the whole-file look does not follow it, and
+    // the comparison it was asked for does.
+    expect(view.container.querySelector('[data-textpreview-change]')).not.toBeNull()
+    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
+  })
+
+  it('draws another tab of the same session in the comparison', async () => {
+    const first = harness({ 1: page(1, ['one'], true) })
+    first.setChange(ADDRESS, 5, change('before', 'after'))
+    const view = render(<TextPreview {...first.props({ params: { changeSeq: 5 }, revision: 2 })} />)
+    await settle()
+    click(view.container, '[data-textpreview-tool="split"]')
+    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
+
+    // The neighbouring change's file is another tab of the same session store.
+    const second = harness({ 1: page(1, ['two'], true) }, 'tab-2' as TabId, first.instance)
+    second.setChange(ADDRESS, 9, change('after', 'later'))
+    const neighbour = render(<TextPreview {...second.props({ params: { changeSeq: 9 }, revision: 2 })} />)
+    await settle()
+    expect(neighbour.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
   })
 })

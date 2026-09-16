@@ -6,7 +6,9 @@
  * view state (scroll offset, wrap, the navigation already answered) must outlive
  * the body: a tab switched away from unmounts its body and must come back where
  * it was rather than re-read or jump to its opening line again. Bucketed by tab
- * id because two tabs of one file scroll independently.
+ * id because two tabs of one file scroll independently. The change layout is the
+ * exception: it describes how this session reads changes, so it sits beside the
+ * buckets and follows the reader into the tabs a step opens.
  *
  * A bucket lives as long as its tab record: the face's first read of a tab arms
  * one listener on the owner's `signal` that forgets the bucket when the record
@@ -91,9 +93,18 @@ export interface TextTabEdit {
   conflict: boolean
 }
 
-/** Every tab's state, keyed by tab id. */
+/** How a change is drawn when the reader has a choice: one column, or two. */
+export type ChangeLayout = 'change' | 'split'
+
+/** Every tab's state, keyed by tab id, under the session's own view preferences. */
 export interface TextState {
   byTab: Record<TabId, TextTabState>
+  /**
+   * The comparison layout this session reads changes in. It outlives the change
+   * it was chosen on: stepping to the next change — including one in another
+   * file, whose tab that step opens — draws that change the same way.
+   */
+  changeLayout: ChangeLayout
 }
 
 /**
@@ -131,6 +142,7 @@ type TextActions = {
   reset: (draft: TextState, tabId: TabId) => void
   scrolled: (draft: TextState, tabId: TabId, scrollTop: number) => void
   toggledWrap: (draft: TextState, tabId: TabId) => void
+  laidOut: (draft: TextState, layout: ChangeLayout) => void
   navigated: (draft: TextState, tabId: TabId, revision: number) => void
   editOpening: (draft: TextState, tabId: TabId) => void
   editOpened: (draft: TextState, tabId: TabId, text: string, version: string) => void
@@ -152,7 +164,7 @@ type TextActions = {
  */
 export function createTextStore(): EngineStoreHandle<TextState, TextActions> {
   return defineStore({
-    init: (): TextState => ({ byTab: {} }),
+    init: (): TextState => ({ byTab: {}, changeLayout: 'change' }),
     actions: {
       /** @param d - draft. @param tabId - owning tab. @param rendererId - manual choice, or automatic selection. */
       selected: (d, tabId: TabId, rendererId: string | undefined) => {
@@ -241,6 +253,16 @@ export function createTextStore(): EngineStoreHandle<TextState, TextActions> {
       toggledWrap: (d, tabId: TabId) => {
         const state = bucket(d, tabId)
         state.wrap = !state.wrap
+      },
+      /**
+       * Record how this session draws changes. The choice belongs to the
+       * session rather than to a tab, so the step that opens the next change in
+       * another file finds it already set.
+       * @param d - draft state.
+       * @param layout - the change layout the reader selected.
+       */
+      laidOut: (d, layout: ChangeLayout) => {
+        d.changeLayout = layout
       },
       /**
        * Record that the body answered one navigation, so a remount restores the

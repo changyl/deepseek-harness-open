@@ -90,6 +90,26 @@ describe('text store', () => {
     expect(Object.keys(instance.getSnapshot().byTab)).toEqual([TAB_2])
   })
 })
+
+describe('change layout', () => {
+  it('keeps the session comparison across tabs, writes, and forgotten tabs', () => {
+    const instance = createTextStore().create()
+    expect(instance.getSnapshot().changeLayout).toBe('change')
+    instance.actions.laidOut('split')
+    expect(instance.getSnapshot().changeLayout).toBe('split')
+    // Per-tab writes and a tab record going away leave the session's layout alone.
+    instance.actions.toggledWrap(TAB_1)
+    instance.actions.scrolled(TAB_2, 40)
+    instance.actions.forget(TAB_1)
+    expect(instance.getSnapshot().changeLayout).toBe('split')
+    expect(Object.keys(instance.getSnapshot().byTab)).toEqual([TAB_2])
+  })
+
+  it('starts another store at the one-column change', () => {
+    expect(createTextStore().create().getSnapshot().changeLayout).toBe('change')
+  })
+})
+
 describe('read observation baseline', () => {
   it('retains the first observation across overlapping reads and resets it only for a new generation', () => {
     const instance = createTextStore().create()

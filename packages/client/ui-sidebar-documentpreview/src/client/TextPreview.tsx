@@ -167,10 +167,14 @@ export function TextPreview({
   const pathRef = useRef<HTMLDivElement | null>(null)
   const pathTextRef = useRef<HTMLSpanElement | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  // The view the reader chose for one change; null means the default, which is
-  // the change when the index has one. A new navigation carries a new seq, so
-  // the default returns on its own without an effect.
-  const [view, setView] = useState<{ seq: number | undefined; mode: ChangeView } | null>(null)
+  // The comparison layout the session reads changes in, chosen by the header's
+  // second control. It belongs to the session rather than to one change, so a
+  // navigation to the next change keeps drawing it that way.
+  const layout = useStore(s => s.changeLayout)
+  // Whether this change was swapped for the whole file instead; a new
+  // navigation carries a new seq, so the default returns on its own without an
+  // effect.
+  const [fileLook, setFileLook] = useState<{ seq: number | undefined } | null>(null)
   // The decision this tab already made, keyed by the change it belongs to: a
   // navigation to another change starts undecided without an effect.
   // The change the reader stepped to, keyed by the change it belongs to: a
@@ -195,7 +199,7 @@ export function TextPreview({
   const changeHunks = change !== undefined && change.length > 0 ? change : undefined
   const viewMode: ChangeView = changeHunks === undefined
     ? 'file'
-    : view !== null && view.seq === changeSeq ? view.mode : 'change'
+    : fileLook !== null && fileLook.seq === changeSeq ? 'file' : layout
   const pages = current?.pages
   const loaded = useMemo(() => loadedPages(pages ?? {}), [pages])
   const loadedThrough = lastLineLoaded(loaded)
@@ -407,7 +411,7 @@ export function TextPreview({
     if (action === 'reverted') {
       // The file the tab drew is gone: show the restored content instead of a
       // change view whose hunks no longer describe the file.
-      setView({ seq: changeSeq, mode: 'file' })
+      setFileLook({ seq: changeSeq })
       reload()
     }
   }
@@ -493,8 +497,8 @@ export function TextPreview({
         {changeHunks !== undefined && (
           // Two controls over one subject: the first says whether the change is
           // showing at all, the second how it is drawn. Each pressed state is
-          // its own fact, and a tab re-navigated to another change starts on
-          // the change again because the recorded seq no longer matches.
+          // its own fact: the whole-file look is recorded for the change it was
+          // chosen on, while the layout belongs to the session.
           <>
             <Tooltip label={t(viewMode === 'file' ? 'change.show' : 'change.toFile')} side="bottom" delayMs={500}>
               <button
@@ -503,7 +507,10 @@ export function TextPreview({
                 aria-pressed={viewMode !== 'file'}
                 aria-label={t('change.aria')}
                 data-textpreview-tool="change"
-                onClick={() => { setView({ seq: changeSeq, mode: viewMode === 'file' ? 'change' : 'file' }) }}
+                onClick={() => {
+                  if (viewMode === 'file') setFileLook(null)
+                  else setFileLook({ seq: changeSeq })
+                }}
               >
                 {t('change.show')}
               </button>
@@ -515,7 +522,12 @@ export function TextPreview({
                 aria-pressed={viewMode === 'split'}
                 aria-label={t('split.aria')}
                 data-textpreview-tool="split"
-                onClick={() => { setView({ seq: changeSeq, mode: viewMode === 'split' ? 'change' : 'split' }) }}
+                onClick={() => {
+                  // A comparison always shows the change: the whole-file look
+                  // gives way to the layout this control selects.
+                  setFileLook(null)
+                  actions.laidOut(viewMode === 'split' ? 'change' : 'split')
+                }}
               >
                 {t('split.label')}
               </button>

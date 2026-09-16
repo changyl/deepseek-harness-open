@@ -173,10 +173,16 @@ export interface Harness {
  * One tab record's harness.
  * @param script - the page each offset resolves to; an unscripted offset fails `not-found`.
  * @param tabId - owning tab record.
+ * @param store - the session's store instance, so a spec can render a second
+ * tab of the same session; defaults to a fresh one.
  * @returns the store, the scripted faces, and a props builder.
  */
-export function harness(script: Record<number, RemoteResult<WorkspaceFileText>> = {}, tabId = TAB_ID): Harness {
-  const instance = createTextStore().create()
+export function harness(
+  script: Record<number, RemoteResult<WorkspaceFileText>> = {},
+  tabId = TAB_ID,
+  store?: ReturnType<TextStore['create']>,
+): Harness {
+  const instance = store ?? createTextStore().create()
   const pages: Record<number, RemoteResult<WorkspaceFileText>> = { ...script }
   const read = vi.fn<ReadWorkspaceFilePage>((_session, _path, offset) =>
     Promise.resolve(pages[offset] ?? failure('workspace-file/not-found', { path: PATH })))
