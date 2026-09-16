@@ -7,7 +7,7 @@
  * payload, the scoped consume-token dispatch, per-session popupFor
  * lifecycle, and the directory invalidation event subscriptions.
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context, Service } from '@deepseek-ai/cordis'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { CommandResult } from '@deepseek-ai/dsh-commands/types'
 import { CommandDefinitionId } from '@deepseek-ai/dsh-commands/brand'
@@ -1135,6 +1135,90 @@ describe('palette (composer-less surface)', () => {
     expect(run).not.toHaveBeenCalled()
     await vi.waitFor(() => {
       expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/goal', images: [] }])
+    })
+  })
+})
+
+/**
+ * Minimal Client Remote double. Unlike `TestRemote`, it is a Cordis Service:
+ * the shipped Remote service makes `ctx.remote.<namespace>` resolve the nested
+ * service name against the reading fiber, which is the behavior under test.
+ */
+class RemoteServiceDouble extends Service {
+  /**
+   * @param ctx - the providing fiber's context.
+   */
+  constructor(ctx: Context) {
+    super(ctx, 'remote')
+  }
+
+  /**
+   * Forwarded Host event subscription; this spec drives no event.
+   * @returns the unbind disposer.
+   */
+  $on(): () => void {
+    return () => {}
+  }
+}
+
+/**
+ * Mount the runtime with the Remote namespaces where the shipped client puts
+ * them: on the api-gateway plugin fiber, never the root context. The palette
+ * reaches `commandUi` from a fiber that injects no Remote namespace, so a
+ * Service method reading `this.ctx.remote.commands` would resolve the nested
+ * namespace against its caller's injected services and fail.
+ */
+async function foreignCallerBench() {
+  const ctx = new Context()
+  const registered = new Map<string, InputTriggerSource>()
+  const executeCalls: Array<{ sessionId: SessionId; line: string }> = []
+  ctx.provide('inputTriggers', {
+    registerSource(src: InputTriggerSource) {
+      registered.set(src.trigger, src)
+      return () => { registered.delete(src.trigger) }
+    },
+  })
+  ctx.provide('locale', { bind: () => (key: string) => key })
+  ctx.provide('sessions', {
+    scope: () => undefined,
+    scopeOf: () => undefined,
+    subagentAddress: () => undefined,
+  })
+  await ctx.plugin({
+    name: 'api-gateway',
+    apply(provider: Context) {
+      new RemoteServiceDouble(provider)
+      provider.provide('remote.commands', {
+        list: async () => ({ ok: true as const, value: S1_CMDS }),
+        execute: async (sessionId: SessionId, line: string) => {
+          executeCalls.push({ sessionId, line })
+          return { ok: true as const, value: { commandId: 'fake-command', result: { kind: 'success' as const } } }
+        },
+      })
+    },
+  }).await()
+  const fiber = ctx.plugin(CommandUiRuntime)
+  await fiber.await()
+  return { ctx, fiber, registered, executeCalls }
+}
+
+describe('palette caller topology', () => {
+  it('executes a host row for a caller fiber that injects no Remote namespace', async () => {
+    const { ctx, registered, executeCalls } = await foreignCallerBench()
+    const source = registered.get('/')
+    if (source === undefined) throw new Error('command source not registered')
+    await source.candidates(proj('s1'), { query: '', position: 'leading', drilled: false, signal: new AbortController().signal })
+
+    await ctx.plugin({
+      name: 'palette',
+      inject: ['commandUi'],
+      apply(caller: Context) {
+        caller.commandUi.run('plan', proj('s1'))
+      },
+    }).await()
+
+    await vi.waitFor(() => {
+      expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/plan' }])
     })
   })
 })

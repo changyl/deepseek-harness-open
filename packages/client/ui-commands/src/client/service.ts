@@ -84,6 +84,13 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
 
   private readonly directory: CommandDirectory
   private readonly live: LiveState = { contributions: new Map(), decorations: new Map(), popups: new Map() }
+  /**
+   * The PROVIDING fiber, kept because a Service reads `ctx` as its *caller's*
+   * fiber: resolving `remote.commands` through `this.ctx` would make every
+   * caller declare that Remote namespace in its own `inject` — the palette
+   * reaches this service from a fiber that names only `commandUi`.
+   */
+  private readonly owner: Context
   /** `command`-namespace translator (composer refusal notices). */
   private readonly t: TranslateNS<'command'>
 
@@ -93,12 +100,13 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    */
   constructor(ctx: Context) {
     super(ctx, 'commandUi')
+    this.owner = ctx
     const locale = ctx.get('locale')
     if (locale === undefined) throw new Error('ui-commands: locale service unavailable')
     this.t = locale.bind('command')
     this.directory = new CommandDirectory(async (sessionId) => {
       if (this.sessions().subagentAddress(sessionId) !== undefined) return []
-      const result = await ctx.remote.commands.list(sessionId)
+      const result = await this.owner.remote.commands.list(sessionId)
       if (!result.ok) throw new Error(`command.list failed: ${result.error.code}: ${result.error.message}`)
       return result.value
     })
@@ -452,7 +460,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     line: string,
     attachments: readonly SubmitAttachment[] = [],
   ): Promise<SubmitOutcome> {
-    const result = await this.ctx.remote.commands.execute(session.sessionId, line, attachments)
+    const result = await this.owner.remote.commands.execute(session.sessionId, line, attachments)
     if (!result.ok) throw new Error(`command.execute failed: ${result.error.code}: ${result.error.message}`)
     if (result.value === undefined) return { kind: 'error', text: `unknown or malformed command: ${line}` }
     this.notifyExecuted(session.sessionId, submittedCommandName(line), result.value.result)
