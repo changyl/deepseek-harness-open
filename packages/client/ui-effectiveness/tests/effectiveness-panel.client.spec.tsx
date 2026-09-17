@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * The effectiveness section's rendering rules: the loading, failed, and ready
+ * The outcome-signal panel's rendering rules: the loading, failed, and ready
  * reads; the totals grid; the category list; the route table; the session rows
  * and their truncation notice; the insufficient-signal notice; and the refresh
  * gesture.
@@ -12,8 +12,8 @@ import type {
   EffectivenessProjectionWire,
   EffectivenessReportWire,
 } from '@deepseek-ai/dsh-api-effectiveness/types'
-import { EffectivenessSection } from '../src/client/EffectivenessSection.tsx'
-import type { EffectivenessSectionProps } from '../src/client/EffectivenessSection.tsx'
+import { EffectivenessPanel } from '../src/client/EffectivenessPanel.tsx'
+import type { EffectivenessPanelProps } from '../src/client/EffectivenessPanel.tsx'
 import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -49,19 +49,18 @@ function report(over: Partial<EffectivenessReportWire> = {}): EffectivenessRepor
 }
 
 /**
- * Render the section over one scripted query.
- * @param query - the Remote face the section calls.
+ * Render the panel over one scripted query.
+ * @param query - the Remote face the panel calls.
  */
-function renderSection(query: EffectivenessSectionProps['query']) {
+function renderSection(query: EffectivenessPanelProps['query']) {
   const props = {
-    close: vi.fn(),
     t: makeTranslate(en),
     query,
-  } as unknown as EffectivenessSectionProps
-  render(<EffectivenessSection {...props} />)
+  } as unknown as EffectivenessPanelProps
+  render(<EffectivenessPanel {...props} />)
 }
 
-describe('the effectiveness section', () => {
+describe('the outcome-signal panel', () => {
   it('reports the read in progress, then the totals it answered', async () => {
     const query = vi.fn(() => Promise.resolve(report()))
     renderSection(query)

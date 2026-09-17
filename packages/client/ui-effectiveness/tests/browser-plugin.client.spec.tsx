@@ -1,21 +1,22 @@
 // @vitest-environment jsdom
 /**
  * ui-effectiveness plugin halves: the browser entry's dictionary and
- * Settings-section registrations against the real SlotRegistry (with fiber
+ * global-panel registrations against the real SlotRegistry (with fiber
  * teardown proving removal — HMR safety), the failed-read classification of the
  * Remote face, and the inert node entry.
  */
 import { Context, Service } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
+import { resolveSlotLabel, type PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
 import type { EffectivenessReportWire } from '@deepseek-ai/dsh-api-effectiveness/types'
 import { apply, inject } from '../src/client/index.ts'
-import { EffectivenessSection } from '../src/client/EffectivenessSection.tsx'
-import type { EffectivenessSectionInjected } from '../src/client/EffectivenessSection.tsx'
+import { EffectivenessPanel } from '../src/client/EffectivenessPanel.tsx'
+import type { EffectivenessPanelInjected } from '../src/client/EffectivenessPanel.tsx'
+import { EffectivenessPanelIcon } from '../src/client/EffectivenessPanelIcon.tsx'
 import { en, NS, zh } from '../src/client/locales.ts'
 import { apply as hostApply } from '../src/index.ts'
 
@@ -59,8 +60,16 @@ async function bench() {
 function declare(slots: SlotRegistry): () => void {
   return slots.register({
     name: 'root',
-    children: { 'settings.section': { kind: 'list', scope: 'root' } },
+    children: {
+      'main': { kind: 'keyed', scope: 'root' },
+      'sidebar.panellist': { kind: 'list', scope: 'root' },
+    },
   } as never, () => null)
+}
+
+/** Props of one panellist row glyph, narrowed for a direct render. */
+function iconProps(size: number): PropsRuntime<'sidebar.panellist'> {
+  return { size, active: false } as unknown as PropsRuntime<'sidebar.panellist'>
 }
 
 describe('ui-effectiveness browser plugin', () => {
@@ -68,7 +77,7 @@ describe('ui-effectiveness browser plugin', () => {
     expect(hostApply).not.toThrow()
   })
 
-  it('declares only the services used by the Settings Remote contribution', () => {
+  it('declares only the services used by the panel contributions', () => {
     expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.effectiveness'])
   })
 
@@ -76,19 +85,29 @@ describe('ui-effectiveness browser plugin', () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(zh).sort())
   })
 
-  it('registers a localized section without reading the Remote eagerly', async () => {
+  it('draws the sidebar row glyph at the size the row requests', () => {
+    const { container } = render(<EffectivenessPanelIcon {...iconProps(18)} />)
+    expect(container.querySelector('svg')?.getAttribute('width')).toBe('18')
+  })
+
+  it('registers one panel and its matching sidebar row without reading the Remote eagerly', async () => {
     const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
 
-    const entry = b.slots.entries('settings.section')[0]!
-    expect(entry.component).toBe(EffectivenessSection)
-    expect(entry.options).toMatchObject({ id: 'effectiveness', order: 50 })
-    expect(entry.locale).toBe(NS)
-    expect(resolveSlotLabel(entry.options.label)).toBe('有效性')
+    const panel = b.slots.entries('main')[0]!
+    const row = b.slots.entries('sidebar.panellist')[0]!
+    expect(panel.component).toBe(EffectivenessPanel)
+    expect(panel.options).toMatchObject({ key: 'effectiveness' })
+    expect(panel.locale).toBe(NS)
+    expect(row.component).toBe(EffectivenessPanelIcon)
+    // The row id and the main key are the same identity: a mismatch would
+    // select a main panel that is not registered.
+    expect(row.options).toMatchObject({ id: 'effectiveness', order: 30 })
+    expect(resolveSlotLabel(row.options.label)).toBe('有效性')
     expect(b.query).not.toHaveBeenCalled()
 
-    const injected = (entry.inject as unknown as () => EffectivenessSectionInjected)()
+    const injected = (panel.inject as unknown as () => EffectivenessPanelInjected)()
     await expect(injected.query()).resolves.toEqual(REPORT)
     expect(b.query).toHaveBeenCalledOnce()
     // The Remote face checks arity against the descriptor, so the optional
@@ -96,12 +115,12 @@ describe('ui-effectiveness browser plugin', () => {
     expect(b.query).toHaveBeenCalledWith(undefined)
   })
 
-  it('classifies a refused Remote call as a failure the section can render', async () => {
+  it('classifies a refused Remote call as a failure the panel can render', async () => {
     const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
-    const entry = b.slots.entries('settings.section')[0]!
-    const injected = (entry.inject as unknown as () => EffectivenessSectionInjected)()
+    const panel = b.slots.entries('main')[0]!
+    const injected = (panel.inject as unknown as () => EffectivenessPanelInjected)()
 
     b.query.mockResolvedValueOnce({
       ok: false,
@@ -115,22 +134,26 @@ describe('ui-effectiveness browser plugin', () => {
     const b = await bench()
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    expect(b.slots.entries('settings.section')).toHaveLength(0)
+    expect(b.slots.entries('main')).toHaveLength(0)
+    expect(b.slots.entries('sidebar.panellist')).toHaveLength(0)
 
     const stop = declare(b.slots)
-    await vi.waitFor(() => { expect(b.slots.entries('settings.section')).toHaveLength(1) })
+    await vi.waitFor(() => { expect(b.slots.entries('main')).toHaveLength(1) })
+    expect(b.slots.entries('sidebar.panellist')).toHaveLength(1)
     b.locale.setLocale('en')
-    expect(resolveSlotLabel(b.slots.entries('settings.section')[0]!.options.label)).toBe('Effectiveness')
+    expect(resolveSlotLabel(b.slots.entries('sidebar.panellist')[0]!.options.label)).toBe('Effectiveness')
 
     stop()
-    expect(b.slots.entries('settings.section')).toHaveLength(0)
+    expect(b.slots.entries('main')).toHaveLength(0)
+    expect(b.slots.entries('sidebar.panellist')).toHaveLength(0)
     declare(b.slots)
     await vi.waitFor(() => {
-      expect(b.slots.entries('settings.section')[0]?.component).toBe(EffectivenessSection)
+      expect(b.slots.entries('main')[0]?.component).toBe(EffectivenessPanel)
     })
 
     await fiber.dispose()
-    expect(b.slots.entries('settings.section')).toHaveLength(0)
+    expect(b.slots.entries('main')).toHaveLength(0)
+    expect(b.slots.entries('sidebar.panellist')).toHaveLength(0)
     await b.ctx.fiber.dispose()
   })
 })

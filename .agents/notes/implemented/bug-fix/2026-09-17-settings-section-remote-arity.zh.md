@@ -1,4 +1,4 @@
-# Agent Note: 设置页显式传入每个已声明的 Remote 参数
+# Agent Note: Fork 数据面板显式传入每个已声明的 Remote 参数
 
 Status: implemented
 
@@ -6,15 +6,15 @@ Status: implemented
 
 ## Problem
 
-本 fork 新增的三个客户端设置页——Token 用量面板、持久项目看板、结果信号面板——都以偏短的实参列表读取各自的 Remote 命名空间：`ctx.remote.usage.query()`、`ctx.remote.project.list()`、`ctx.remote.effectiveness.query()`。这三个描述符各自声明了一个可选过滤参数，而生成的 Client 面把它标成 `filter?: UsageFilterWire`，因此这些调用点能通过类型检查。
+本 fork 新增的三个客户端全局面板——Token 用量面板、持久项目看板、结果信号面板——都以偏短的实参列表读取各自的 Remote 命名空间：`ctx.remote.usage.query()`、`ctx.remote.project.list()`、`ctx.remote.effectiveness.query()`。这三个描述符各自声明了一个可选过滤参数，而生成的 Client 面把它标成 `filter?: UsageFilterWire`，因此这些调用点能通过类型检查。
 
-Client 网关不接受省略参数。`TypertGatewayClient.prepareInvocation` 计算 `expected = descriptor.parameters.length`，并不会排除缺席的可选参数，于是在 `connection.rpc.call` 执行之前抛出 `client api: usage/query expected 1 argument(s), got 0`。三个设置页把任何拒绝都折进各自的 `error` 状态，因此三个面板都显示 `暂时无法读取…，请重试。`，并且完全没有发出任何 HTTP 请求；与此同时，Host 控制器对同样这些方法的直接 RPC 调用是正常应答的。
+Client 网关不接受省略参数。`TypertGatewayClient.prepareInvocation` 计算 `expected = descriptor.parameters.length`，并不会排除缺席的可选参数，于是在 `connection.rpc.call` 执行之前抛出 `client api: usage/query expected 1 argument(s), got 0`。三个面板把任何拒绝都折进各自的 `error` 状态，因此三个面板都显示 `暂时无法读取…，请重试。`，并且完全没有发出任何 HTTP 请求；与此同时，Host 控制器对同样这些方法的直接 RPC 调用是正常应答的。
 
 `acceptsUndefined` 是 wire 层面的标记，表示允许某个*值*缺席——Host 会因此跳过缺失字段——而不是允许在发出时省略该实参。既有的调用约定本就是显式的那一种：`ui-agent-preset` 的设置存储为可选的 `expectedRevision` 传入 `undefined`，并写明了原因。
 
 ## Decision
 
-三个设置页各自显式传入已声明的参数：`query(undefined)`、`list(undefined)`、`query(undefined)`。Client 网关保留其精确参数个数约定，描述符保留可选过滤条件，Host 对「过滤条件缺席」的行为不变。
+三个面板各自显式传入已声明的参数：`query(undefined)`、`list(undefined)`、`query(undefined)`。Client 网关保留其精确参数个数约定，描述符保留可选过滤条件，Host 对「过滤条件缺席」的行为不变。
 
 ## Alternatives considered
 
@@ -28,4 +28,4 @@ Client 网关不接受省略参数。`TypertGatewayClient.prepareInvocation` 计
 
 三个面板都能读取各自的命名空间并完成渲染。没有会话事件、提示词、工具 schema 或 wire 格式发生变化，因此录制会话快照不发生移动。
 
-覆盖：每个设置页的 browser-plugin 规格断言注入的读取以已声明的实参调用其命名空间方法（`toHaveBeenCalledWith(undefined)`），该断言在省略实参的写法下失败；[fork 设置页场景](../../../../apps/web/tests/fork-settings-sections.e2e.ts) 启动随包发布的 Web 组合，断言每个面板都到达其就绪标题，且没有失败提示、没有页面错误。
+覆盖：每个面板的 browser-plugin 规格断言注入的读取以已声明的实参调用其命名空间方法（`toHaveBeenCalledWith(undefined)`），该断言在省略实参的写法下失败；[fork 全局面板场景](../../../../apps/web/tests/fork-global-panels.e2e.ts) 启动随包发布的 Web 组合，断言每个面板都到达其就绪标题，且没有失败提示、没有页面错误。

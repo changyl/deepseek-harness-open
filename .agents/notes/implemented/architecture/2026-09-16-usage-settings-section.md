@@ -4,6 +4,8 @@ Status: implemented
 
 English | [中文](2026-09-16-usage-settings-section.zh.md)
 
+> The Settings-section placement recorded here is superseded by [fork data panels as global panels](2026-09-17-fork-data-panels-as-global-panels.md); the Remote face, the component-local read state, the unfiltered whole-corpus selection, and the read-time cost semantics remain owned here.
+
 ## Problem
 
 The `usage` Remote namespace answered a complete report — totals, per-route figures, unpriced routes, and read-time cost — and nothing in the Web GUI called it. The only human reader was the in-process `/usage` command in [`dsh-command-usage`](../../../../packages/usage/command-usage/README.md), which prints the report as text into a session, so an operator had to run a command and read the answer out of a transcript to see what a deployment had spent.

@@ -24,7 +24,7 @@ One usage seam in six packages owns statement, answer, the human entry point, an
 
 `@deepseek-ai/dsh-command-usage` is the Consumer role: a global `/usage [<window>] [<provider>/<model>]` command that renders the same report without spending a model turn. It owns only its argument grammar and its text; amounts print at full micro-unit precision, an invalid argument is refused before any query, and a composition with no provider is reported as unavailable rather than empty.
 
-`@deepseek-ai/dsh-client-ui-usage` is the browser consumer: one Web Settings section over `ctx.remote.usage`, documented in [the usage settings section note](2026-09-16-usage-settings-section.md). It reads the whole corpus on mount and on request, renders the totals, the per-route table, the unpriced list, and the cost notices, and holds no state beyond the read it is showing.
+`@deepseek-ai/dsh-client-ui-usage` is the browser consumer: one Web global panel over `ctx.remote.usage`, documented in [the usage panel note](2026-09-16-usage-settings-section.md). It reads the whole corpus on mount and on request, renders the totals, the per-route table, the unpriced list, and the cost notices, and holds no state beyond the read it is showing.
 
 Three report semantics follow from those choices and are part of the contract:
 

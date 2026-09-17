@@ -1,7 +1,7 @@
-/** Copy dictionaries for the effectiveness Settings section. */
+/** Copy dictionaries for the outcome-signal global panel. */
 
 /** Dictionary namespace owned by this plugin. */
-export const NS = 'settings.effectiveness'
+export const NS = 'effectiveness'
 
 /** Simplified Chinese dictionary and key source of truth. */
 export const zh = {

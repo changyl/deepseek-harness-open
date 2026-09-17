@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-17-settings-section-remote-arity.md
-2026-09-17-settings-section-remote-arity.md: f8405df4a404979d746673ce05fde039ee61278b
-2026-09-17-settings-section-remote-arity.zh.md: d25ee1c577bac68849e0c8c63209528804be8b3a
+2026-09-17-settings-section-remote-arity.md: 2368e6337b7e7a9377e8c7fdea4ef42cdce9d4e2
+2026-09-17-settings-section-remote-arity.zh.md: 791fb56e5171c4f0b381eed0743a188ba48f0548

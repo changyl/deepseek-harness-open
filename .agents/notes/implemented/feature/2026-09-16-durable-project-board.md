@@ -50,7 +50,7 @@ The costs are real. The store is single-process durable: a second harness instan
 
 ## Deferred
 
-Remote methods for browser edits are not implemented; the board itself reaches the browser through [`dsh-client-ui-project`](../../../../packages/client/ui-project/README.md). The store's consumers are the model tool, the read-only `/project` command, the read-only [`project` Remote namespace](../architecture/2026-09-16-project-board-remote-namespace.md), and that settings section.
+Remote methods for browser edits are not implemented; the board itself reaches the browser through [`dsh-client-ui-project`](../../../../packages/client/ui-project/README.md). The store's consumers are the model tool, the read-only `/project` command, the read-only [`project` Remote namespace](../architecture/2026-09-16-project-board-remote-namespace.md), and that global panel.
 
 ## Testing
 

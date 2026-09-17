@@ -1,8 +1,15 @@
-.section {
+.panel {
   display: flex;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
   gap: 12px;
-  max-width: 720px;
+  padding: 20px 28px 40px;
+  overflow-y: auto;
+  /* The sheet also paints the elevated status lanes, so the scrollport rebinds
+     the thumb pair to that surface level. */
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
   color: var(--dsw-alias-label-primary);
 }
 

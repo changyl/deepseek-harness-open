@@ -3,23 +3,23 @@ import type { UsageReportWire, UsageRouteTotalsWire } from '@deepseek-ai/dsh-api
 import { Button, IconRefreshOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS } from './locales.ts'
-import css from './UsageSection.module.css'
+import css from './UsagePanel.module.css'
 
-/** Registration-side Remote face used by the section. */
-export interface UsageSectionInjected {
+/** Registration-side Remote face used by the panel. */
+export interface UsagePanelInjected {
   /** Read the current usage report for the whole corpus. */
   query: () => Promise<UsageReportWire>
 }
 
-/** Full component props assembled by the Settings slot renderer. */
-export type UsageSectionProps =
-  PropsRuntime<'settings.section'>
+/** Full component props assembled by the main-slot renderer. */
+export type UsagePanelProps =
+  PropsRuntime<'main'>
   & PropsLocale<typeof NS>
-  & InjectFace<UsageSectionInjected>
+  & InjectFace<UsagePanelInjected>
 
 type ViewState =
   | { readonly status: 'loading' }
-  | { readonly status: 'error' }
+  | { readonly status: 'error'; readonly reason: string }
   | { readonly status: 'ready'; readonly report: UsageReportWire }
 
 /** Route identity as both the wire and the rendered row spell it. */
@@ -39,13 +39,15 @@ function formatMicros(micros: number): string {
 }
 
 /**
- * Settings section over `ctx.remote.usage`: one report per read, refreshed on
- * request. The section owns only its own load state, so nothing here outlives
- * the panel and no store is declared.
- * @param props - the Settings slot renderer's derived shares plus the Remote face.
- * @returns the usage panel, its loading state, or the failed-read notice.
+ * Global panel over `ctx.remote.usage`: one report per read, refreshed on
+ * request. The panel owns only its own load state, so nothing here outlives
+ * the panel and no store is declared. A rejected read keeps the rejection's own
+ * message verbatim beside the notice, because the notice alone leaves the
+ * operator nothing to act on.
+ * @param props - the main-slot renderer's derived shares plus the Remote face.
+ * @returns the usage panel, its loading state, or the failed-read notice with that rejection's message.
  */
-export function UsageSection(props: UsageSectionProps) {
+export function UsagePanel(props: UsagePanelProps) {
   const { t, query } = props
   const [state, setState] = useState<ViewState>({ status: 'loading' })
   const [pending, setPending] = useState(false)
@@ -57,8 +59,8 @@ export function UsageSection(props: UsageSectionProps) {
         setState({ status: 'ready', report })
         setPending(false)
       },
-      () => {
-        setState({ status: 'error' })
+      (error: unknown) => {
+        setState({ status: 'error', reason: error instanceof Error ? error.message : String(error) })
         setPending(false)
       },
     )
@@ -69,13 +71,18 @@ export function UsageSection(props: UsageSectionProps) {
   }, [reload])
 
   if (state.status === 'loading') {
-    return <p className={css.notice} role="status">{t('loading')}</p>
+    return (
+      <section className={css.panel} aria-label={t('title')}>
+        <p className={css.notice} role="status">{t('loading')}</p>
+      </section>
+    )
   }
 
   if (state.status === 'error') {
     return (
-      <section className={css.section} aria-label={t('title')}>
+      <section className={css.panel} aria-label={t('title')}>
         <p className={css.error} role="alert">{t('failed')}</p>
+        <p className={css.reason}>{t('failed.reason', { reason: state.reason })}</p>
         <div>
           <Button size="sm" variant="outline" icon={<IconRefreshOutline16 />} onClick={reload}>
             {t('refresh')}
@@ -87,7 +94,7 @@ export function UsageSection(props: UsageSectionProps) {
 
   const { report } = state
   return (
-    <section className={css.section} aria-label={t('title')}>
+    <section className={css.panel} aria-label={t('title')}>
       <header className={css.header}>
         <h2 className={css.title}>{t('title')}</h2>
         <Button

@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
 /**
- * The usage section's rendering rules: the loading, failed, and ready reads;
- * the totals and per-route table; the missing-rate-card and incomplete-amount
- * notices; the unpriced list; and the refresh gesture.
+ * The usage panel's rendering rules: the loading, failed, and ready reads;
+ * the failure notice with its rejection reason; the totals and per-route
+ * table; the missing-rate-card and incomplete-amount notices; the unpriced
+ * list; and the refresh gesture.
  */
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type { UsageCostWire, UsageReportWire, UsageRouteTotalsWire } from '@deepseek-ai/dsh-api-usage/types'
-import { UsageSection } from '../src/client/UsageSection.tsx'
-import type { UsageSectionProps } from '../src/client/UsageSection.tsx'
+import { UsagePanel } from '../src/client/UsagePanel.tsx'
+import type { UsagePanelProps } from '../src/client/UsagePanel.tsx'
 import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -72,20 +73,19 @@ function report(
 }
 
 /**
- * Render the section over one scripted query.
+ * Render the panel over one scripted query.
  * @param query - the Remote face the section calls.
  * @returns the query mock, so a test can script later reads.
  */
-function renderSection(query: UsageSectionProps['query']) {
+function renderSection(query: UsagePanelProps['query']) {
   const props = {
-    close: vi.fn(),
     t: makeTranslate(en),
     query,
-  } as unknown as UsageSectionProps
-  render(<UsageSection {...props} />)
+  } as unknown as UsagePanelProps
+  render(<UsagePanel {...props} />)
 }
 
-describe('the usage section', () => {
+describe('the usage panel', () => {
   it('reports the read in progress, then the totals and routes it answered', async () => {
     const query = vi.fn(() => Promise.resolve(report()))
     renderSection(query)
@@ -144,17 +144,27 @@ describe('the usage section', () => {
     expect(screen.getByText(en['cost.none'])).toBeDefined()
   })
 
-  it('offers a retry after a failed read', async () => {
+  it('offers a retry after a failed read and keeps the rejection reason', async () => {
     const query = vi.fn()
-      .mockRejectedValueOnce(new Error('usage/unavailable'))
+      .mockRejectedValueOnce(new Error('usage.query failed: usage/unavailable: no provider'))
       .mockResolvedValueOnce(report({ unpriced: [] }, null))
     renderSection(query)
 
     expect((await screen.findByRole('alert')).textContent).toBe(en.failed)
+    expect(screen.getByText(
+      en['failed.reason'].replace('{reason}', 'usage.query failed: usage/unavailable: no provider'),
+    )).toBeDefined()
     fireEvent.click(screen.getByRole('button', { name: en.refresh }))
     expect(await screen.findByRole('heading', { name: en.title })).toBeDefined()
     expect(query).toHaveBeenCalledTimes(2)
     expect(screen.getByText(en['cost.none'])).toBeDefined()
+  })
+
+  it('reports a rejection that is not an Error verbatim', async () => {
+    renderSection(vi.fn().mockRejectedValue('gateway/closed'))
+
+    expect((await screen.findByRole('alert')).textContent).toBe(en.failed)
+    expect(screen.getByText(en['failed.reason'].replace('{reason}', 'gateway/closed'))).toBeDefined()
   })
 
   it('holds the refresh control while the next read is in flight', async () => {

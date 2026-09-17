@@ -4,6 +4,8 @@ Status: implemented
 
 [English](2026-09-16-usage-settings-section.md) | 中文
 
+> 本文记录的位置决定（设置分区）已被[把 fork 数据面板作为全局面板打开](2026-09-17-fork-data-panels-as-global-panels.zh.md)取代；Remote 面、组件局部的读取状态、不发送过滤条件的全语料选择，以及读取时计算费用的语义仍由本文拥有。
+
 ## Problem
 
 `usage` Remote 命名空间已经能回答一份完整报告——总量、逐路由数字、未定价路由与读取时成本——但 Web GUI 中没有任何代码调用它。唯一的人类读者是 [`dsh-command-usage`](../../../../packages/usage/command-usage/README.zh.md) 中的进程内命令 `/usage`：它把报告作为文本打印进会话，因此运维人员要看一个部署花了多少，必须先运行命令再从转录里读结果。

@@ -4,6 +4,8 @@ Status: implemented
 
 English | [中文](2026-09-16-effectiveness-settings-section.zh.md)
 
+> The Settings-section placement recorded here is superseded by [fork data panels as global panels](2026-09-17-fork-data-panels-as-global-panels.md); the Remote face, the component-local read state, the unfiltered whole-corpus selection, and the outcome-signal semantics remain owned here.
+
 ## Problem
 
 Outcome signals were recorded in every session log and readable in two places, neither of them a browser. [`dsh-command-effectiveness`](../../../../packages/feedback/command-effectiveness/README.md) renders the report as text through `/effectiveness`, which spends a session to read, and [`dsh-api-effectiveness`](../../../../packages/api/effectiveness/README.md) publishes `ctx.remote.effectiveness` with one read method, but nothing in the Web GUI called it — the namespace shipped with a spec and no consumer.

@@ -1,7 +1,7 @@
-/** Copy dictionaries for the project-board Settings section. */
+/** Copy dictionaries for the project-board global panel. */
 
 /** Dictionary namespace owned by this plugin. */
-export const NS = 'settings.projects'
+export const NS = 'projects'
 
 /** Simplified Chinese dictionary and key source of truth. */
 export const zh = {

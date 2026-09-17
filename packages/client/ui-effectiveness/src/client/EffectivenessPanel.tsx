@@ -8,19 +8,19 @@ import type {
 import { Button, IconRefreshOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS, type EffectivenessLocaleKey } from './locales.ts'
-import css from './EffectivenessSection.module.css'
+import css from './EffectivenessPanel.module.css'
 
-/** Registration-side Remote face used by the section. */
-export interface EffectivenessSectionInjected {
+/** Registration-side Remote face used by the panel. */
+export interface EffectivenessPanelInjected {
   /** Read the current outcome-signal report for the whole corpus. */
   query: () => Promise<EffectivenessReportWire>
 }
 
-/** Full component props assembled by the Settings slot renderer. */
-export type EffectivenessSectionProps =
-  PropsRuntime<'settings.section'>
+/** Full component props assembled by the main-slot renderer. */
+export type EffectivenessPanelProps =
+  PropsRuntime<'main'>
   & PropsLocale<typeof NS>
-  & InjectFace<EffectivenessSectionInjected>
+  & InjectFace<EffectivenessPanelInjected>
 
 type ViewState =
   | { readonly status: 'loading' }
@@ -48,13 +48,13 @@ function createdDate(session: EffectivenessSessionRowWire): string {
 }
 
 /**
- * Settings section over `ctx.remote.effectiveness`: one report per read,
- * refreshed on request. The section owns only its own load state, so nothing
+ * Global panel over `ctx.remote.effectiveness`: one report per read,
+ * refreshed on request. The panel owns only its own load state, so nothing
  * here outlives the panel and no store is declared.
- * @param props - the Settings slot renderer's derived shares plus the Remote face.
+ * @param props - the main-slot renderer's derived shares plus the Remote face.
  * @returns the outcome-signal panel, its loading state, or the failed-read notice.
  */
-export function EffectivenessSection(props: EffectivenessSectionProps) {
+export function EffectivenessPanel(props: EffectivenessPanelProps) {
   const { t, query } = props
   const [state, setState] = useState<ViewState>({ status: 'loading' })
   const [pending, setPending] = useState(false)
@@ -78,12 +78,16 @@ export function EffectivenessSection(props: EffectivenessSectionProps) {
   }, [reload])
 
   if (state.status === 'loading') {
-    return <p className={css.notice} role="status">{t('loading')}</p>
+    return (
+      <section className={css.panel} aria-label={t('title')}>
+        <p className={css.notice} role="status">{t('loading')}</p>
+      </section>
+    )
   }
 
   if (state.status === 'error') {
     return (
-      <section className={css.section} aria-label={t('title')}>
+      <section className={css.panel} aria-label={t('title')}>
         <p className={css.error} role="alert">{t('failed')}</p>
         <div>
           <Button size="sm" variant="outline" icon={<IconRefreshOutline16 />} onClick={reload}>
@@ -101,7 +105,7 @@ export function EffectivenessSection(props: EffectivenessSectionProps) {
   })
 
   return (
-    <section className={css.section} aria-label={t('title')}>
+    <section className={css.panel} aria-label={t('title')}>
       <header className={css.header}>
         <h2 className={css.title}>{t('title')}</h2>
         <Button

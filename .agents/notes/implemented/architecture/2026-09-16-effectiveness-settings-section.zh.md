@@ -4,6 +4,8 @@ Status: implemented
 
 [English](2026-09-16-effectiveness-settings-section.md) | 中文
 
+> 本文记录的位置决定（设置分区）已被[把 fork 数据面板作为全局面板打开](2026-09-17-fork-data-panels-as-global-panels.zh.md)取代；Remote 面、组件局部的读取状态、不发送过滤条件的全语料选择，以及结果信号语义仍由本文拥有。
+
 ## 问题
 
 结果信号记录在每一份会话日志里，却只有两个可读入口，且都不是浏览器。[`dsh-command-effectiveness`](../../../../packages/feedback/command-effectiveness/README.zh.md) 通过 `/effectiveness` 把报告渲染为文本，代价是占用一个会话；[`dsh-api-effectiveness`](../../../../packages/api/effectiveness/README.zh.md) 发布了带单个读取方法的 `ctx.remote.effectiveness`，但 Web GUI 里没有任何调用者——该命名空间带着规格发布，却没有消费者。

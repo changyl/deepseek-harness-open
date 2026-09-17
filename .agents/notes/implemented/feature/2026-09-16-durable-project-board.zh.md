@@ -50,7 +50,7 @@ Status: implemented
 
 ## Deferred
 
-用于浏览器编辑的 Remote 方法尚未实现；看板本身已经通过 [`dsh-client-ui-project`](../../../../packages/client/ui-project/README.zh.md) 抵达浏览器。该存储的消费者是模型工具、只读的 `/project` 命令、只读的 [`project` Remote 命名空间](../architecture/2026-09-16-project-board-remote-namespace.zh.md)，以及该设置页。
+用于浏览器编辑的 Remote 方法尚未实现；看板本身已经通过 [`dsh-client-ui-project`](../../../../packages/client/ui-project/README.zh.md) 抵达浏览器。该存储的消费者是模型工具、只读的 `/project` 命令、只读的 [`project` Remote 命名空间](../architecture/2026-09-16-project-board-remote-namespace.zh.md)，以及该全局面板。
 
 ## Testing
 

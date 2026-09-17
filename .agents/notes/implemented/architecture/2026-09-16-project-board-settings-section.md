@@ -4,6 +4,8 @@ Status: implemented
 
 English | [中文](2026-09-16-project-board-settings-section.zh.md)
 
+> The Settings-section placement recorded here is superseded by [fork data panels as global panels](2026-09-17-fork-data-panels-as-global-panels.md); the Remote face, the component-local read state, and the read-only board semantics remain owned here.
+
 ## Problem
 
 The durable board had a model-facing tool and a text command, and the browser could reach neither. [`dsh-tool-project`](../../../../packages/project/tool-project/README.md) reads and changes the board from inside an agent turn, and [`dsh-command-project`](../../../../packages/project/command-project/README.md) renders one board as text in a session transcript, but an operator who wanted to see which projects exist, what is ready, and what is stranded had to run `/project` and read the answer out of the conversation.

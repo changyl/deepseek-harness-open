@@ -24,7 +24,7 @@ Harness 早已记录了成本报告所需的一切：每个终结的 Assistant �
 
 `@deepseek-ai/dsh-command-usage` 是 Consumer 角色：全局命令 `/usage [<window>] [<provider>/<model>]`，在不消耗模型轮次的前提下渲染同一份报告。它只拥有自己的参数语法与文本；金额按完整微单位精度打印，非法参数在查询之前即被拒绝，未挂载 provider 的组合报告为"不可用"而不是"空"。
 
-`@deepseek-ai/dsh-client-ui-usage` 是浏览器消费者：`ctx.remote.usage` 之上的一个 Web 设置页，记录于[usage 设置页笔记](2026-09-16-usage-settings-section.zh.md)。它在挂载时以及按需读取时读取整个语料，渲染总计、逐路由表、未定价列表与费用提示，除当前展示的这一次读取之外不保留任何状态。
+`@deepseek-ai/dsh-client-ui-usage` 是浏览器消费者：`ctx.remote.usage` 之上的一个 Web 全局面板，记录于[usage 面板笔记](2026-09-16-usage-settings-section.zh.md)。它在挂载时以及按需读取时读取整个语料，渲染总计、逐路由表、未定价列表与费用提示，除当前展示的这一次读取之外不保留任何状态。
 
 三项报告语义由这些选择推出，并属于契约本身：
 

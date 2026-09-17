@@ -4,6 +4,8 @@ Status: implemented
 
 [English](2026-09-16-project-board-settings-section.md) | 中文
 
+> 本文记录的位置决定（设置页）已被[把 fork 数据面板作为全局面板打开](2026-09-17-fork-data-panels-as-global-panels.zh.md)取代；Remote 面、组件局部的读取状态，以及只读看板语义仍由本文拥有。
+
 ## Problem
 
 持久看板已经有了面向模型的工具和一条文本命令，而浏览器两者都触达不到。[`dsh-tool-project`](../../../../packages/project/tool-project/README.zh.md) 在 agent 轮次内部读取和修改看板，[`dsh-command-project`](../../../../packages/project/command-project/README.zh.md) 把一份看板作为文本渲染进会话记录；但想看清有哪些项目、哪些可开工、哪些受阻的人，必须运行 `/project` 再从对话里读答案。

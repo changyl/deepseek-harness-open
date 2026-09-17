@@ -9,21 +9,21 @@ import type {
 import { Button, IconRefreshOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS, type ProjectLocaleKey } from './locales.ts'
-import css from './ProjectSection.module.css'
+import css from './ProjectPanel.module.css'
 
-/** Registration-side Remote face used by the section. */
-export interface ProjectSectionInjected {
+/** Registration-side Remote face used by the panel. */
+export interface ProjectPanelInjected {
   /** Read the stored projects with their task counts. */
   list: () => Promise<ProjectListWire>
   /** Read one project's board. */
   board: (id: string) => Promise<ProjectBoardWire>
 }
 
-/** Full component props assembled by the Settings slot renderer. */
-export type ProjectSectionProps =
-  PropsRuntime<'settings.section'>
+/** Full component props assembled by the main-slot renderer. */
+export type ProjectPanelProps =
+  PropsRuntime<'main'>
   & PropsLocale<typeof NS>
-  & InjectFace<ProjectSectionInjected>
+  & InjectFace<ProjectPanelInjected>
 
 type ListingState =
   | { readonly status: 'loading' }
@@ -54,7 +54,7 @@ function projectStatusKey(status: ProjectSummaryWire['status']): ProjectLocaleKe
 }
 
 /** One task row: its title plus the dependency and session counts it carries. */
-function TaskRow({ task, t }: { task: ProjectTaskWire; t: ProjectSectionProps['t'] }) {
+function TaskRow({ task, t }: { task: ProjectTaskWire; t: ProjectPanelProps['t'] }) {
   return (
     <li className={css.task}>
       <span className={css.taskTitle}>{task.title}</span>
@@ -67,13 +67,13 @@ function TaskRow({ task, t }: { task: ProjectTaskWire; t: ProjectSectionProps['t
 }
 
 /**
- * Settings section over `ctx.remote.project`: the stored projects, and the
- * board of the one the reader opens. The section owns only its own read state,
- * so nothing here outlives the panel and no store is declared.
- * @param props - the Settings slot renderer's derived shares plus the Remote face.
+ * Global panel over `ctx.remote.project`: the stored projects, and the board of
+ * the one the reader opens. The panel owns only its own read state, so nothing
+ * here outlives the panel and no store is declared.
+ * @param props - the main-slot renderer's derived shares plus the Remote face.
  * @returns the project panel, its loading state, or the failed-read notice.
  */
-export function ProjectSection(props: ProjectSectionProps) {
+export function ProjectPanel(props: ProjectPanelProps) {
   const { t, list, board } = props
   const [listing, setListing] = useState<ListingState>({ status: 'loading' })
   const [view, setView] = useState<BoardView>({ status: 'idle' })
@@ -107,12 +107,16 @@ export function ProjectSection(props: ProjectSectionProps) {
   }, [board])
 
   if (listing.status === 'loading') {
-    return <p className={css.notice} role="status">{t('loading')}</p>
+    return (
+      <section className={css.panel} aria-label={t('title')}>
+        <p className={css.notice} role="status">{t('loading')}</p>
+      </section>
+    )
   }
 
   if (listing.status === 'error') {
     return (
-      <section className={css.section} aria-label={t('title')}>
+      <section className={css.panel} aria-label={t('title')}>
         <p className={css.error} role="alert">{t('failed')}</p>
         <div>
           <Button size="sm" variant="outline" icon={<IconRefreshOutline16 />} onClick={reload}>
@@ -124,7 +128,7 @@ export function ProjectSection(props: ProjectSectionProps) {
   }
 
   return (
-    <section className={css.section} aria-label={t('title')}>
+    <section className={css.panel} aria-label={t('title')}>
       <header className={css.header}>
         <h2 className={css.title}>{t('title')}</h2>
         <Button

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * The project section's rendering rules: the loading, failed, and ready reads;
+ * The project panel's rendering rules: the loading, failed, and ready reads;
  * the project rows and their counts; opening one board and its status lanes;
  * the ready/stranded notices; the truncated-listing notice; and the refresh
  * gesture.
@@ -16,8 +16,8 @@ import type {
   ProjectViewWire,
   TaskStatus,
 } from '@deepseek-ai/dsh-api-project/types'
-import { ProjectSection } from '../src/client/ProjectSection.tsx'
-import type { ProjectSectionProps } from '../src/client/ProjectSection.tsx'
+import { ProjectPanel } from '../src/client/ProjectPanel.tsx'
+import type { ProjectPanelProps } from '../src/client/ProjectPanel.tsx'
 import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -89,24 +89,23 @@ function board(over: Partial<ProjectBoardWire> = {}): ProjectBoardWire {
 }
 
 /**
- * Render the section over scripted Remote calls.
+ * Render the panel over scripted Remote calls.
  * @param list - the listing read.
  * @param board - the board read.
  */
 function renderSection(
-  list: ProjectSectionProps['list'],
-  readBoard: ProjectSectionProps['board'] = () => Promise.resolve(board()),
+  list: ProjectPanelProps['list'],
+  readBoard: ProjectPanelProps['board'] = () => Promise.resolve(board()),
 ) {
   const props = {
-    close: vi.fn(),
     t: makeTranslate(en),
     list,
     board: readBoard,
-  } as unknown as ProjectSectionProps
-  render(<ProjectSection {...props} />)
+  } as unknown as ProjectPanelProps
+  render(<ProjectPanel {...props} />)
 }
 
-describe('the project section', () => {
+describe('the project panel', () => {
   it('reports the listing read, then the rows a reader opens', async () => {
     const list = vi.fn(() => Promise.resolve(listing()))
     renderSection(list)

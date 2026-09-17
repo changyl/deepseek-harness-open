@@ -1,7 +1,7 @@
-/** Copy dictionaries for the token-usage Settings section. */
+/** Copy dictionaries for the token-usage global panel. */
 
 /** Dictionary namespace owned by this plugin. */
-export const NS = 'settings.usage'
+export const NS = 'usage'
 
 /** Simplified Chinese dictionary and key source of truth. */
 export const zh = {
@@ -11,6 +11,7 @@ export const zh = {
   refresh: '刷新',
   loading: '正在读取用量…',
   failed: '暂时无法读取用量，请重试。',
+  'failed.reason': '失败原因：{reason}',
   'totals.heading': '总计',
   'totals.sessions': '会话',
   'totals.turns': '轮次',
@@ -44,6 +45,7 @@ export const en = {
   refresh: 'Refresh',
   loading: 'Reading usage…',
   failed: 'Usage is unavailable right now. Try again.',
+  'failed.reason': 'Reason: {reason}',
   'totals.heading': 'Totals',
   'totals.sessions': 'Sessions',
   'totals.turns': 'Turns',

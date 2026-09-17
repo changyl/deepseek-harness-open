@@ -1,4 +1,4 @@
-# Agent Note: Settings sections pass every declared Remote parameter
+# Agent Note: Fork data panels pass every declared Remote parameter
 
 Status: implemented
 
@@ -6,7 +6,7 @@ English | [中文](2026-09-17-settings-section-remote-arity.zh.md)
 
 ## Problem
 
-The three client Settings sections this fork adds — the token-usage panel, the durable project board, and the outcome-signal panel — each read their Remote namespace with a short argument list: `ctx.remote.usage.query()`, `ctx.remote.project.list()`, `ctx.remote.effectiveness.query()`. Every one of those descriptors declares one optional filter parameter, and the generated Client face types it as `filter?: UsageFilterWire`, so the call sites type-check.
+The three client global panels this fork adds — the token-usage panel, the durable project board, and the outcome-signal panel — each read their Remote namespace with a short argument list: `ctx.remote.usage.query()`, `ctx.remote.project.list()`, `ctx.remote.effectiveness.query()`. Every one of those descriptors declares one optional filter parameter, and the generated Client face types it as `filter?: UsageFilterWire`, so the call sites type-check.
 
 The Client gateway does not accept an omitted parameter. `TypertGatewayClient.prepareInvocation` computes `expected = descriptor.parameters.length`, without excluding an absent optional parameter, and throws `client api: usage/query expected 1 argument(s), got 0` before `connection.rpc.call` runs. The sections fold any rejection into their `error` state, so all three panels drew `暂时无法读取…，请重试。` and sent no HTTP request at all, while the Host controllers answered the same methods correctly over direct RPC.
 
@@ -28,4 +28,4 @@ Each of the three sections passes the declared parameter explicitly: `query(unde
 
 The three panels read their namespaces and render. No session event, prompt, tool schema, or wire format changed, so recorded-session snapshots do not move.
 
-Coverage: each section's browser-plugin spec asserts the injected read calls its namespace method with the declared argument (`toHaveBeenCalledWith(undefined)`), which fails against the omitted-argument form; [the fork Settings scenario](../../../../apps/web/tests/fork-settings-sections.e2e.ts) boots the shipped Web composition and asserts every panel reaches its ready heading with no failure notice and no page error.
+Coverage: each panel's browser-plugin spec asserts the injected read calls its namespace method with the declared argument (`toHaveBeenCalledWith(undefined)`), which fails against the omitted-argument form; [the fork global-panel scenario](../../../../apps/web/tests/fork-global-panels.e2e.ts) boots the shipped Web composition and asserts every panel reaches its ready heading with no failure notice and no page error.

@@ -286,15 +286,15 @@
     - id: ui-settings-plugin-inventory
       name: '@deepseek-ai/dsh-client-ui-settings-plugin-inventory'
 
-    # Token usage and cost: one Settings section over the `usage` Remote namespace.
+    # Token usage and cost: one global panel over the `usage` Remote namespace.
     - id: ui-usage
       name: '@deepseek-ai/dsh-client-ui-usage'
 
-    # Durable project board: one Settings section over the `project` Remote namespace.
+    # Durable project board: one global panel over the `project` Remote namespace.
     - id: ui-project
       name: '@deepseek-ai/dsh-client-ui-project'
 
-    # Cross-session outcome signals: one Settings section over the
+    # Cross-session outcome signals: one global panel over the
     # `effectiveness` Remote namespace.
     - id: ui-effectiveness
       name: '@deepseek-ai/dsh-client-ui-effectiveness'
