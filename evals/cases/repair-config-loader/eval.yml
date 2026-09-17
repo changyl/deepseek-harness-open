@@ -1,0 +1,16 @@
+profile: headless
+timeoutMs: 600000
+maxTurns: 20
+assertions:
+  - kind: file-not-contains
+    path: loader.js
+    text: 'TODO'
+  - kind: file-not-contains
+    path: loader.js
+    text: '8080'
+  - kind: unchanged
+    path: config.json
+  - kind: command
+    run: node loader.js
+    expectExit: 0
+    expectStdout: 'port: 9090'

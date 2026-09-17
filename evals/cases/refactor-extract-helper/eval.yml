@@ -1,0 +1,17 @@
+profile: headless
+timeoutMs: 600000
+maxTurns: 24
+assertions:
+  - kind: file-exists
+    path: helpers.js
+  - kind: file-contains
+    path: helpers.js
+    text: 'discountedTotal'
+  - kind: file-contains
+    path: calculator.js
+    text: 'require(''./helpers.js'')'
+  - kind: unchanged
+    path: test.js
+  - kind: command
+    run: node test.js
+    expectExit: 0

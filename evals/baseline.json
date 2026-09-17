@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "tasks": {
+    "fix-off-by-one": "409a4a0f5b5fcb59b6743fec3939c450b11151eb8f188941132896c24f0607ad",
+    "refactor-extract-helper": "c670062dcc5828b725d293348354e97c1c31d7b983bf995947232f4230615755",
+    "repair-config-loader": "9d694a95e12de6875a844ee1559181290d8422866197087186a14b37c965b319"
+  },
+  "cases": {}
+}

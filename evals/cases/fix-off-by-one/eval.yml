@@ -1,0 +1,12 @@
+profile: headless
+timeoutMs: 600000
+maxTurns: 20
+assertions:
+  - kind: file-contains
+    path: app.js
+    text: 'value <= to'
+  - kind: unchanged
+    path: test.js
+  - kind: command
+    run: node test.js
+    expectExit: 0

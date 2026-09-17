@@ -1,0 +1,1 @@
+`calculator.js` repeats the same discount arithmetic in `totalForMember` and `totalForGuest`. Extract it into a new `helpers.js` that exports `discountedTotal(price, quantity)`, and make both functions in `calculator.js` call it. Keep the existing behaviour: `node test.js` must print `PASS`.

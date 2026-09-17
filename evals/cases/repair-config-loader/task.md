@@ -1,0 +1,1 @@
+`loader.js` prints a hard-coded port that no longer matches `config.json`. Make it read the port from the configuration file so `node loader.js` prints exactly `port: 9090`, and remove the stale TODO comment. Do not change `config.json`.
