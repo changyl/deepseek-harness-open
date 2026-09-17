@@ -176,17 +176,22 @@ export abstract class SessionQueryEngine extends Service {
 
   /**
    * Read and replay-validate one complete logical session log without making it live.
+   *
+   * A stored log validates through the restore contract — the complete log plus
+   * its fork-inherited cut — not the create-time seed-prefix contract, so a
+   * seeded session that appended live events after its cut reads back whole.
    * @param sessionId - live or persisted session id to read.
    * @returns cloned header and complete raw event log from one observation.
    * @throws when persistence, header compatibility, or replay validation fails.
    */
   async readSession(sessionId: SessionId): Promise<SessionLogSnapshot> {
     const loaded = await this._corpus.load(sessionId)
-    Session.create(
+    Session.fromRestore(
       sessionId,
       loaded.events,
       loaded.header,
       loaded.inheritedEventCount,
+      loaded.eventState,
     )
     return {
       session: structuredClone(loaded.header),

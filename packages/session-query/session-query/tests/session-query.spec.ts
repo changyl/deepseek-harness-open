@@ -44,13 +44,21 @@ function eventLog(text = 'hello'): SessionEvent[] {
 }
 
 class TestHandle implements SessionHandle {
-  readonly inheritedEventCount = SessionLogOffset(0)
+  readonly inheritedEventCount: SessionLogOffset
 
   constructor(
     readonly id: SessionIdType,
     readonly header: SessionHeader,
     readonly access: SessionAccess,
-  ) {}
+  ) {
+    // The real backend derives the fork-inherited cut from the log's tagged
+    // end-seed marker, so seeded fixtures must read like stored logs.
+    let cut = 0
+    for (const event of TestPersistence.entries.get(id)?.events ?? []) {
+      if (event.type === 'session/end-seed' && event.data['inherited'] === true) cut = event.seq
+    }
+    this.inheritedEventCount = SessionLogOffset(cut)
+  }
 
   read(offset = 0, length?: number, options?: SessionHandleReadOptions): Promise<SessionHandleReadResult> {
     TestPersistence.readCalls.push(this.id)
@@ -483,6 +491,29 @@ describe('session-query exact reads', () => {
     Object.assign(snapshot.events[0]!, { time: 999 })
     expect(TestPersistence.entries.get(valid.id)?.events[0]?.time).toBe(10)
     await expect(ctx.sessionQuery.readSession(corrupt.id)).rejects.toThrow('seed event at index 0 has seq 1')
+  })
+
+  it('reads a seeded log that appended live events past its inherited cut', async () => {
+    const seeded = header('seeded-with-live-events', 1, {
+      isSeeded: true,
+      parentSession: SessionId('session-parent'),
+      origin: 'subagent',
+      delegationDepth: 1,
+    })
+    const events: SessionEvent[] = [
+      ...eventLog('inherited'),
+      { type: 'session/end-seed', seq: SessionSeq(1), time: 11, data: { inherited: true } },
+      { ...eventLog('live')[0]!, seq: SessionSeq(2), time: 12 },
+    ]
+    TestPersistence.reset([{ meta: seeded, events }])
+    const ctx = await liveContext()
+    await ctx.plugin(TestPersistence)
+
+    const snapshot = await ctx.sessionQuery.readSession(seeded.id)
+    expect(snapshot.session).toEqual(seeded)
+    expect(snapshot.inheritedEventCount).toEqual(SessionLogOffset(1))
+    expect(snapshot.events.map(event => event.seq)).toEqual([SessionSeq(0), SessionSeq(1), SessionSeq(2)])
+    expect(snapshot.events[1]).toMatchObject({ type: 'session/end-seed', data: { inherited: true } })
   })
 
   it('prefers a live owner that attaches while its persisted prefix is inspected', async () => {

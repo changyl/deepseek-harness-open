@@ -1,7 +1,7 @@
 /** Live/persisted logical-corpus resolution for session-query. */
 
 import type { Context, Fiber } from '@deepseek-ai/cordis'
-import type { Session, SessionEvent, SessionHeader, SessionId , SessionLogOffset } from '@deepseek-ai/dsh-session'
+import type { Session, SessionEvent, SessionHeader, SessionId , SessionLogOffset, SessionSeedEventState } from '@deepseek-ai/dsh-session'
 import type SessionPersistence from '@deepseek-ai/dsh-session-persistence'
 import type { SessionRecord } from './types.ts'
 import { SessionQueryError } from './config.ts'
@@ -16,6 +16,8 @@ export interface LogicalSession {
   inheritedEventCount: SessionLogOffset
   /** Cloned raw event log. */
   events: SessionEvent[]
+  /** Aliasing state of {@link events}; every loader clone is independently owned. */
+  eventState: SessionSeedEventState
 }
 
 /** Borrowed source visible only during one synchronous batch projection. */
@@ -114,6 +116,7 @@ export class SessionCorpus {
       header: structuredClone(loaded.header),
       inheritedEventCount: loaded.inheritedEventCount,
       events: loaded.events.map(event => structuredClone(event)),
+      eventState: 'detached' as const,
     }
     signal?.throwIfAborted()
     return snapshot
@@ -301,6 +304,7 @@ function snapshotLive(session: Session): LogicalSession {
     inheritedEventCount: session.inheritedEventCount,
     // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     events: session.snapshotEvents().map(event => structuredClone(event)),
+    eventState: 'detached',
   }
 }
 
