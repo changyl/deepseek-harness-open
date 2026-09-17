@@ -38,7 +38,7 @@ This decision partially supersedes the human-control exclusions in [Web subagent
 
 **Track waking work by `MessageId` and transfer that record across mutation.** Rejected because it duplicates the Inbox's pending set with a second activity ledger and couples residency to occurrence identity. `whenIdle()` waits for existing Agent activity, `Inbox.hasPending` conservatively retains every occurrence, the Activation generation invalidates stale observations, and the final maintenance task atomically joins idle ownership to admission closure. This choice can retain quiet injected context, but it avoids both an additional mutation protocol and silent loss of accepted steering.
 
-**Derive residency from `MessageSource.kind`, treating `plugin` as parked context.** Rejected because `kind` records who produced a message, not how it was delivered, and `MessageSourceMap` is merge-extensible. Plugins steer with a plugin source (`cordis-host-runner` failure reports, blocking Stop hooks) and hosts inject with non-plugin sources (`dsh-experimental-agent-team` quiet mail), so the correspondence fails in both directions. Treating all pending occurrences alike avoids that unsupported inference.
+**Derive residency from `MessageSource.kind`, treating `plugin` as parked context.** Rejected because `kind` records who produced a message, not how it was delivered, and `MessageSourceMap` is merge-extensible. Plugins steer with a plugin source (`cordis-host-runner` failure reports, blocking Stop hooks) and hosts inject with non-plugin sources (`dsh-agent-team` quiet mail), so the correspondence fails in both directions. Treating all pending occurrences alike avoids that unsupported inference.
 
 ## Consequences
 

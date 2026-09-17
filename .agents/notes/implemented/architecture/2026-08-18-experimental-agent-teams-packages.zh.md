@@ -12,13 +12,13 @@ Agent Teams 的服务与工具约定仍在变化，但它需要使用真实 Sess
 
 ## 决策
 
-`packages/experimental/agent-team`、`packages/experimental/tool-agent-team`、`packages/experimental/agent-team-profile`、`packages/experimental/client-ui-agent-team` 与 `packages/experimental/agent-team-web-profile` 是公开 workspace 包。它们保留现有 `@deepseek-ai/dsh-experimental-*` 名称并加入 dsh 发布系列。[实验性包规则](../../../../packages/experimental/AGENTS.md)负责默认私有原则、本例外与后续 promotion。
+`packages/subagent/agent-team`、`packages/subagent/tool-agent-team`、`packages/bundle/agent-team-profile`、`packages/client/ui-agent-team` 与 `packages/bundle/agent-team-web-profile` 是公开 workspace 包。它们保留现有 `@deepseek-ai/dsh-experimental-*` 名称并加入 dsh 发布系列。[实验性包规则](../../../../packages/experimental/AGENTS.md)负责默认私有原则、本例外与后续 promotion。这里提到的浏览器层此后已退役：promotion 之后，它唯一的那条 `ui-agent-team` 行由随包发布的 [`dsh-web-app`](../../../../packages/bundle/web-app/README.zh.md) 组合包挂载。
 
 dsh pack 与 publish 集合以及本地 baseline 发布器只会纳入这五个实验性包目录。workspace 约束要求它们省略 `private`、设置 `publishConfig.access` 为 `public`，并保留实验性 npm 前缀。其他实验性包默认仍为私有且不发布。实验组外的发布包与 app 以及 Python runtime 不得通过 `dependencies`、`optionalDependencies` 或 `peerDependencies` 引用实验性包；实验性包可以依赖发布包和其他实验性包。
 
 通用的调用方预留 continuable child 身份和精确 direct-child drain 仍属于稳定 Subagent 服务。它们负责 Subagent 身份与 Activation 生命周期，不 import 或命名 Agent Teams；实验性 Team 服务沿允许的方向消费这些能力。
 
-公开发布的 Host 侧 Agent Teams profile bundle 依赖 Team 包，并在 `dsh-base` 之后应用。它会插入 Team 配置行，并禁用模型可见名称与 Team 工具重叠的全局 continuable-child control。独立公开发布的 Web profile 在 `dsh-web-app` 与 Host profile 之后应用；它会插入 Team UI，后者挂载 Team package 生成的 Remote contribution。两个层都保持显式启用，不改变随附 base、CLI、Web 与 Python runtime 的依赖图。
+公开发布的 Host 侧 Agent Teams profile bundle 依赖 Team 包，并在 `dsh-base` 之后应用。它会插入 Team 配置行，并禁用模型可见名称与 Team 工具重叠的全局 continuable-child control。Team UI 不再作为独立的 profile 层发布：随包发布的 `dsh-web-app` 组合包会在 Host profile 之后挂载它，由它挂载 Team package 生成的 Remote contribution。宿主层保持显式启用，不改变随附 base、CLI、Web 与 Python runtime 的依赖图。
 
 profile 安装通过自身 package manager 解析每个公开 bundle 及其依赖。通用 profile launcher 随后应用所选层，不会把它们加入任何随附 profile，也不会改变其他 profile 的解析结果。
 

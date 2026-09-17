@@ -328,6 +328,21 @@
     - id: subagent
       name: '@deepseek-ai/dsh-subagent'
 
+    # Agent Teams domain: the implicit-root roster, durable peer mailbox, and
+    # shared task DAG behind `ctx.agentTeams`. It ships no tools of its own, so
+    # mounting it adds no model-visible surface; the Team tools arrive from the
+    # dsh-agent-team-profile layer, which also withdraws the global
+    # continuable-child controls whose tool names the Team tools claim, and the
+    # browser panel is mounted by dsh-web-app.
+    - id: agent-team
+      name: '@deepseek-ai/dsh-agent-team'
+      config:
+        maxMembers: 8
+        maxTasks: 256
+        maxPendingMessagesPerMember: 64
+        maxMessageBytes: 65536
+        disposalTimeoutMs: 5000
+
     - id: subagent-spawn-in-process
       name: '@deepseek-ai/dsh-subagent-spawn-in-process'
       config:

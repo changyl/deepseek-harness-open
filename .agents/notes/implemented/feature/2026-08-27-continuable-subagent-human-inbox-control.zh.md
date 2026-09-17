@@ -38,7 +38,7 @@ QueueDock Steer 在 command 准入一个正在运行的排队 occurrence 后，�
 
 **按 `MessageId` 跟踪唤醒工作，并在 mutation 中转移该记录。** 拒绝，因为这会用第二套活动账本重复 Inbox 的待处理集合，并让驻留依赖 occurrence 身份。`whenIdle()` 会等待既有 Agent 活动，`Inbox.hasPending` 保守地保留每个 occurrence，Activation generation 会让过期观察失效，而最终 maintenance 任务则以原子方式衔接 idle ownership 与准入关闭。这项选择可能保留静默注入的 context，但既避免额外的 mutation 协议，也避免静默丢失已接受的 steering。
 
-**用 `MessageSource.kind` 推导驻留，把 `plugin` 视为停放 context。** 拒绝，因为 `kind` 记录的是消息由谁产生，而非如何投递，且 `MessageSourceMap` 可合并扩展。插件会以 plugin 来源 steer（`cordis-host-runner` 的失败报告、阻断式 Stop hook），host 也会以非 plugin 来源 inject（`dsh-experimental-agent-team` 的静默邮件），因此该对应关系在两个方向上都不成立。统一对待所有待处理 occurrence 可以避免这种没有依据的推断。
+**用 `MessageSource.kind` 推导驻留，把 `plugin` 视为停放 context。** 拒绝，因为 `kind` 记录的是消息由谁产生，而非如何投递，且 `MessageSourceMap` 可合并扩展。插件会以 plugin 来源 steer（`cordis-host-runner` 的失败报告、阻断式 Stop hook），host 也会以非 plugin 来源 inject（`dsh-agent-team` 的静默邮件），因此该对应关系在两个方向上都不成立。统一对待所有待处理 occurrence 可以避免这种没有依据的推断。
 
 ## 结果
 

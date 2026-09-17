@@ -8,7 +8,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { isPublicExperimentalPackageDirectory } from './experimental-package-policy.ts'
 import { hasTypertRemoteNavigation, isForbiddenPublicationFile } from './publication-payload.ts'
 import { collectProjectReferenceFaceViolations } from './project-reference-faces.ts'
 
@@ -268,7 +267,7 @@ function usesEmittedTreeDefaults(manifest: PackageManifest): boolean {
     exportDefault(manifest, subpath)?.startsWith('./lib/types/') === true)
 }
 
-/** Experimental manifest requirements, including explicit public exceptions. */
+/** Experimental manifest requirements: private, and with no publication metadata. */
 export function checkExperimentalManifest({ dir, manifest }: WorkspaceManifest): string[] {
   if (!experimentalPackageDirectory.test(dir)) return []
   const label = manifest.name ?? dir
@@ -276,20 +275,13 @@ export function checkExperimentalManifest({ dir, manifest }: WorkspaceManifest):
   if (manifest.name?.startsWith(experimentalPackageNamePrefix) !== true) {
     errors.push(`${label}: experimental package name must start with ${JSON.stringify(experimentalPackageNamePrefix)}`)
   }
-  if (isPublicExperimentalPackageDirectory(dir)) {
-    if (manifest.private === true) errors.push(`${label}: public experimental package must not set "private": true`)
-    if (manifest.publishConfig?.access !== 'public') {
-      errors.push(`${label}: public experimental package must set publishConfig.access to "public"`)
-    }
-  } else {
-    if (manifest.private !== true) errors.push(`${label}: experimental package must set "private": true`)
-    if (manifest.publishConfig !== undefined) errors.push(`${label}: experimental package must omit publishConfig`)
-  }
+  if (manifest.private !== true) errors.push(`${label}: experimental package must set "private": true`)
+  if (manifest.publishConfig !== undefined) errors.push(`${label}: experimental package must omit publishConfig`)
   return errors
 }
 
 function isReleaseMemberDirectory(dir: string): boolean {
-  return standardReleaseMemberDirectory.test(dir) || isPublicExperimentalPackageDirectory(dir)
+  return standardReleaseMemberDirectory.test(dir)
 }
 
 /**

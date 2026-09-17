@@ -36,6 +36,8 @@ subagent 包家族让 agent（智能体）将任务委派给子 agent、继续�
 | [`agent-definitions-filesystem/`](agent-definitions-filesystem/README.zh.md) | 以本地定义提供方身份发现项目、自定义与用户 Markdown 定义文件 | 注册到 `ctx.agentDefinitions` |
 | [`tool-subagent/`](tool-subagent/README.zh.md) | 向模型公开委派 | 注册到 `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.zh.md) | 向模型提供向相邻 agent 发送消息、中断工作和列出子级状态的操作 | 注册到 `ctx.tools` |
+| [`agent-team/`](agent-team/README.zh.md) | 在一个会话中运行一支由具名 teammate 组成的小型团队，成员之间持久通信并共享任务板 | `ctx.agentTeams` |
+| [`tool-agent-team/`](tool-agent-team/README.zh.md) | 向模型公开团队创建、成员消息与共享任务板 | 按作用域注册工具到 `ctx.tools` |
 
 -----
 

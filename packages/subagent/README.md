@@ -36,6 +36,8 @@ The subagent package family lets an agent delegate a task to a child, continue t
 | [`agent-definitions-filesystem/`](agent-definitions-filesystem/README.md) | Discovers project, custom, and user Markdown definition files as the local definition provider | registers on `ctx.agentDefinitions` |
 | [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
+| [`agent-team/`](agent-team/README.md) | Runs a small team of named teammates in one session with durable peer messages and a shared task board | `ctx.agentTeams` |
+| [`tool-agent-team/`](tool-agent-team/README.md) | Exposes team creation, peer messaging, and the shared task board to the model | registers scoped tools on `ctx.tools` |
 
 -----
 

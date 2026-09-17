@@ -28,6 +28,9 @@ kind: "package-group"
 | [`headless`](headless/README.zh.md) | 基于 base 的一次性命令行任务应用 | `headless-runner` |
 | [`sdk-app`](sdk-app/README.zh.md) | 基于 base 的 SDK JSON-RPC stdio 应用 | 挂载 SDK 服务器 |
 | [`sdk-minimal`](sdk-minimal/README.zh.md) | 不使用 base 或 Web 的独立极简 SDK 应用 | —（完整 patch 树） |
+| [`agent-team-profile`](agent-team-profile/README.zh.md) | 基于 base 的可选 Agent Teams 宿主层：Team-scoped 协作工具，并保留一次性 delegation | 挂载 base 与 Team 相关行 |
+
+Agent Teams 浏览器面板随 [`web-app`](web-app/README.zh.md) 一起交付。`agent-team-profile` 仍是可选的宿主层：它为宿主 profile 增加 Team 工具，并撤回全局可续跑子级控制行——Team 工具同样占用了那些行声明的 `list_agents`、`send_message` 与 `interrupt_agent` 名称。
 
 内置组合包从 dsh 安装目录解析；树外（out-of-tree）组合包通过 `dsh plugin --profile <name> add <package>` 安装进 profile。
 

@@ -28,6 +28,9 @@ This group maps the installable patch layers used by `dsh --profile`. Each packa
 | [`headless`](headless/README.md) | One-shot command-line task application over base | `headless-runner` |
 | [`sdk-app`](sdk-app/README.md) | SDK JSON-RPC stdio application over base | mounts the SDK server |
 | [`sdk-minimal`](sdk-minimal/README.md) | Standalone minimal SDK application without base or Web | — (complete patch tree) |
+| [`agent-team-profile`](agent-team-profile/README.md) | Opt-in Agent Teams host layer over base: Team-scoped coordination tools with one-shot delegation preserved | mounts base plus the Team rows |
+
+The Agent Teams browser panel ships in [`web-app`](web-app/README.md). `agent-team-profile` remains the opt-in Host layer: it adds the Team tools to a Host profile and withdraws the global continuable-child controls whose `list_agents`, `send_message`, and `interrupt_agent` names the Team tools otherwise claim.
 
 In-box bundles resolve from the dsh installation; out-of-tree bundles install into a profile through `dsh plugin --profile <name> add <package>`.
 

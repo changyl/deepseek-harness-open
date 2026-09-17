@@ -14,14 +14,6 @@ const experimental: WorkspaceManifest = {
   manifest: { name: '@deepseek-ai/dsh-experimental-prototype', private: true },
 }
 
-const publicExperimental: WorkspaceManifest = {
-  dir: 'packages/experimental/agent-team',
-  manifest: {
-    name: '@deepseek-ai/dsh-experimental-agent-team',
-    publishConfig: { access: 'public' },
-  },
-}
-
 describe('experimental workspace constraints', () => {
   it('requires the experimental package-name prefix', () => {
     expect(checkExperimentalManifest({
@@ -43,17 +35,16 @@ describe('experimental workspace constraints', () => {
     ])
   })
 
-  it('requires public metadata only for the Agent Teams exceptions', () => {
-    expect(checkExperimentalManifest(publicExperimental)).toEqual([])
+  it('holds every experimental package to the private rule, with no public exception left', () => {
     expect(checkExperimentalManifest({
-      ...publicExperimental,
+      dir: 'packages/experimental/former-exception',
       manifest: {
-        name: '@deepseek-ai/dsh-experimental-agent-team',
-        private: true,
+        name: '@deepseek-ai/dsh-experimental-former-exception',
+        publishConfig: { access: 'public' },
       },
     })).toEqual([
-      '@deepseek-ai/dsh-experimental-agent-team: public experimental package must not set "private": true',
-      '@deepseek-ai/dsh-experimental-agent-team: public experimental package must set publishConfig.access to "public"',
+      '@deepseek-ai/dsh-experimental-former-exception: experimental package must set "private": true',
+      '@deepseek-ai/dsh-experimental-former-exception: experimental package must omit publishConfig',
     ])
   })
 

@@ -18,11 +18,9 @@ import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './suppor
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/agent-team-panel', import.meta.url))
 const PANEL_EXPECTED = join(SNAPSHOT_DIR, 'task.expected.md')
 const OVERLAY = fileURLToPath(new URL('./agent-team-panel.overlay.yml', import.meta.url))
-const HOST_PATCH = fileURLToPath(new URL('../../../packages/experimental/agent-team-profile/cordis.patch.yml', import.meta.url))
-const WEB_PATCH = fileURLToPath(new URL('../../../packages/experimental/agent-team-web-profile/cordis.patch.yml', import.meta.url))
+const HOST_PATCH = fileURLToPath(new URL('../../../packages/bundle/agent-team-profile/cordis.patch.yml', import.meta.url))
 const INSTALL_ANCHORS = [
-  fileURLToPath(new URL('../../../packages/experimental/agent-team-profile/package.json', import.meta.url)),
-  fileURLToPath(new URL('../../../packages/experimental/agent-team-web-profile/package.json', import.meta.url)),
+  fileURLToPath(new URL('../../../packages/bundle/agent-team-profile/package.json', import.meta.url)),
 ]
 const MODE = webSnapshotMode()
 
@@ -34,10 +32,9 @@ function profileEntries(path: string): unknown[] {
 
 describe('Agent Teams panel overlay', () => {
   it('matches the shipped Host and Web profile layers', () => {
-    expect(profileEntries(OVERLAY)).toEqual([
-      ...profileEntries(HOST_PATCH),
-      ...profileEntries(WEB_PATCH),
-    ])
+    // The browser panel now ships in dsh-web-app; this overlay carries only the
+    // opt-in Host layer that withdraws the global controls and adds the tools.
+    expect(profileEntries(OVERLAY)).toEqual(profileEntries(HOST_PATCH))
   })
 })
 

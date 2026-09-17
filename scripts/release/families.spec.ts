@@ -42,19 +42,18 @@ afterEach(() => {
 })
 
 describe('release families', () => {
-  it('publishes Agent Teams while excluding private experimental packages', () => {
+  it('publishes the promoted Agent Teams packages as ordinary release members', () => {
     const members = releaseFamily('dsh').members(resolve(import.meta.dirname, '../..'))
+    const names = members.map(member => member.name)
 
-    expect(members
-      .filter(member => member.directory.startsWith('packages/experimental/'))
-      .map(member => member.name)).toEqual([
-      '@deepseek-ai/dsh-experimental-agent-team-profile',
-      '@deepseek-ai/dsh-experimental-agent-team-web-profile',
-      '@deepseek-ai/dsh-experimental-agent-team',
-      '@deepseek-ai/dsh-experimental-client-ui-agent-team',
-      '@deepseek-ai/dsh-experimental-tool-agent-team',
-    ])
-    expect(members.map(member => member.name)).not.toContain('@deepseek-ai/dsh-experimental-inspector')
+    expect(members.filter(member => member.directory.startsWith('packages/experimental/'))).toEqual([])
+    expect(names).toEqual(expect.arrayContaining([
+      '@deepseek-ai/dsh-agent-team',
+      '@deepseek-ai/dsh-agent-team-profile',
+      '@deepseek-ai/dsh-client-ui-agent-team',
+      '@deepseek-ai/dsh-tool-agent-team',
+    ]))
+    expect(names).not.toContain('@deepseek-ai/dsh-experimental-inspector')
   })
 
   it('excludes private applications from the publish set', () => {

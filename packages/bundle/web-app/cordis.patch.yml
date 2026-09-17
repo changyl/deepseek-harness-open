@@ -359,6 +359,12 @@
     - id: ui-agent-preset
       name: '@deepseek-ai/dsh-client-ui-agent-preset'
 
+    # Agent Teams panel: the shipped roster/task-board surface over the
+    # `agentTeams` service the base layer mounts. The Team TOOLS stay opt-in
+    # through dsh-agent-team-profile.
+    - id: ui-agent-team
+      name: '@deepseek-ai/dsh-client-ui-agent-team'
+
     # Plugin configuration: the host-plane sections a user owns, as expandable
     # cards. A namespace this deployment does not expose renders nothing.
     - id: ui-settings-plugins
