@@ -32,6 +32,9 @@ The packages below provide the Remote layer; the package READMEs own the exhaust
 | [`settings-controller/`](settings-controller/README.md) | Owns the configuration-surface reads and writes over the settings-domain seams. | `ctx.settingsController`, `ctx.credentialsController` / `ctx.remote.settings`, `ctx.remote.credentials` |
 | [`workspace-controller/`](workspace-controller/README.md) | Owns Workspace mutations and the complete Client Workspace projection. | `ctx.workspaceController` / `ctx.remote.workspace` |
 | [`workspace-files/`](workspace-files/README.md) | Owns bounded workspace file access — `stat`, paged `read`, `list`, and the instrumented-operation `changes` feed — and the Client `file` resource provider over it. | `ctx.workspaceFiles` / `ctx.remote.workspaceFiles` |
+| [`usage/`](usage/README.md) | Owns the `usage` Remote namespace over the usage seam: one query method answering totals, per-route totals, unpriced routes, and read-time cost. | `ctx.usageController` / `ctx.remote.usage` |
+| [`project/`](project/README.md) | Owns the read-only `project` Remote namespace over the durable project board: a bounded listing with workable counts and one project's status lanes. | `ctx.projectController` / `ctx.remote.project` |
+| [`effectiveness/`](effectiveness/README.md) | Owns the read-only `effectiveness` Remote namespace over the cross-session outcome-signal report. | `ctx.effectivenessController` / `ctx.remote.effectiveness` |
 
 Remote calls run Client → Host over the application's shared Connection. API Gateway owns Remote transport, while the controller packages own Session, configuration-surface, and Workspace behavior. Feature packages register exact Connection Fetch routes for responses that do not fit Remote invocation, such as streamed downloads.
 

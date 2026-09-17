@@ -7,7 +7,9 @@
  */
 
 import { globSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, resolve } from 'node:path'
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { basename, join, resolve } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime from '@deepseek-ai/dsh-llm'
 import type { ToolSchema } from '@deepseek-ai/dsh-llm'
@@ -29,6 +31,11 @@ import { AttachmentStore } from '@deepseek-ai/dsh-attachment'
 import type { ImageAttachmentLimits, ImageAttachmentRef, SaveImageAttachment, StoredImageAttachment } from '@deepseek-ai/dsh-attachment'
 import UserQuestionService from '@deepseek-ai/dsh-user-questions'
 import PlanModeController from '@deepseek-ai/dsh-plan-mode'
+import Storage from '@deepseek-ai/dsh-storage'
+import * as StorageJson from '@deepseek-ai/dsh-storage-json'
+import * as StorageDomain from '@deepseek-ai/dsh-storage-domain'
+import ProjectStore from '@deepseek-ai/dsh-project'
+import * as ToolProject from '@deepseek-ai/dsh-tool-project'
 import WebRuntime from '@deepseek-ai/dsh-web'
 import * as WebSearchExa from '@deepseek-ai/dsh-web-search-exa'
 import * as WebFetchLocal from '@deepseek-ai/dsh-web-fetch-http'
@@ -602,6 +609,25 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-project',
+    dir: 'tool-project',
+    source: 'packages/project/tool-project/src/index.ts',
+    requires: ['ctx.tools', 'ctx.projects', 'a calling Agent for link_session'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // The tool injects `projects`; boot the store over a throwaway JSON
+      // backend so the schema harvests without a deployment storage root.
+      const storageRoot = await mkdtemp(join(tmpdir(), 'dsh-tool-catalog-project-'))
+      await ctx.plugin(Storage)
+      await ctx.plugin(StorageJson, { root: storageRoot })
+      await ctx.plugin(StorageDomain, { backend: 'json' })
+      await ctx.plugin(ProjectStore, { maxTasksPerProject: 256 })
+      await ctx.plugin(ToolProject, { maxProjectsListed: 20, maxTasksListed: 50, maxTitleLength: 120 })
+    },
+    note:
+      'One `project` tool covers the durable board: list, create, read, add_task, update_task, and link_session. Every mutation carries the revision the model last read, so a concurrent editor is refused with project/stale-version rather than overwritten, and results are bounded by maxProjectsListed, maxTasksListed, and maxTitleLength.',
   },
 ]
 

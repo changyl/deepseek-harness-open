@@ -2,8 +2,8 @@
 import type { ComponentType } from 'react'
 import type { InputTriggerCandidate } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import {
-  IconCompactOutline16, IconDownloadOutline16, IconGoalOutline16, IconPlanOutline14, IconSendOutline16,
-  IconShieldOutline16,
+  IconChecklistOutline14, IconCompactOutline16, IconDataOutline16, IconDownloadOutline16, IconGaugeOutline16,
+  IconGoalOutline16, IconPlanOutline14, IconSendOutline16, IconShieldOutline16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-locale/client'
@@ -45,6 +45,9 @@ const HOST_FACES: ReadonlyMap<BuiltinCommandName, HostFace> = new Map([
   hostFace('compact', IconCompactOutline16),
   hostFace('permission', IconShieldOutline16),
   hostFace('export', IconDownloadOutline16),
+  hostFace('usage', IconGaugeOutline16),
+  hostFace('effectiveness', IconDataOutline16),
+  hostFace('project', IconChecklistOutline14),
 ])
 
 /**

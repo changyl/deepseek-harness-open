@@ -54,6 +54,7 @@ export { REGION_BEGIN, REGION_END }
  * errors, so the partition can never silently drift from the service API.
  */
 export const SERVICE_PAGE: Record<string, string> = {
+  agentDefinitions: 'subagent.md',
   agentLoop: 'core.md',
   agentDefaultModel: 'core.md',
   agentPresets: 'core.md',
@@ -126,6 +127,12 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceController: 'workspace.md',
   workspaceFiles: 'workspace.md',
   directoryPickerController: 'workspace.md',
+  effectiveness: 'feedback.md',
+  usage: 'usage.md',
+  usageController: 'usage.md',
+  projectController: 'project.md',
+  effectivenessController: 'feedback.md',
+  projects: 'project.md',
 }
 
 /**
@@ -193,6 +200,7 @@ export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
  */
 export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'agent': 'core.md',
+  'agent-definitions': 'subagent.md',
   'agent-loop': 'core.md',
   'agent-preset': 'core.md',
   'api-session': 'session.md',
@@ -662,6 +670,35 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   TypertPackageRecord: 'invariants.md',
   TypertSchemaFilter: 'invariants.md',
   TypertSchemaRecord: 'invariants.md',
+  AgentDefinition: 'subagent.md',
+  AgentDefinitionProvider: 'subagent.md',
+  AgentDefinitionProviderControl: 'subagent.md',
+  AgentDefinitionSnapshot: 'subagent.md',
+  AgentDefinitionSummary: 'subagent.md',
+  AgentDefinitionViewOptions: 'subagent.md',
+  ProjectView: 'project.md',
+  ProjectRef: 'project.md',
+  ProjectBoard: 'project.md',
+  ProjectFilter: 'project.md',
+  ProjectId: 'project.md',
+  TaskId: 'project.md',
+  CreateProjectInput: 'project.md',
+  AddTaskInput: 'project.md',
+  UpdateTaskPatch: 'project.md',
+  UsageFilterWire: 'usage.md',
+  UsageReportWire: 'usage.md',
+  ProjectFilterWire: 'project.md',
+  ProjectListWire: 'project.md',
+  ProjectBoardWire: 'project.md',
+  EffectivenessFilterWire: 'feedback.md',
+  EffectivenessReportWire: 'feedback.md',
+  EffectivenessFilter: 'feedback.md',
+  EffectivenessReport: 'feedback.md',
+  UsageProvider: 'usage.md',
+  UsagePricing: 'usage.md',
+  UsageRoutePrice: 'usage.md',
+  UsageFilter: 'usage.md',
+  UsageReport: 'usage.md',
 }
 
 /** TypeScript lib and pinned framework types with no repository-owned data page. */

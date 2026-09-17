@@ -24,10 +24,15 @@ feedback 组收集用户对 harness 工作成果的意见：用户可以提交�
 |---|---|
 | [`command-feedback`](command-feedback/README.zh.md) | 会话级反馈：`/feedback` 命令、Web 弹窗背后的 `sessionFeedback` Remote，以及固定分类表，均无需模型轮次 |
 | [`message-feedback`](message-feedback/README.zh.md) | 逐消息评分、分类与备注，通过 `messageFeedback` 服务提供给产品界面 |
+| [`command-effectiveness`](command-effectiveness/README.zh.md) | 人类可用的 `/effectiveness` 命令：带窗口与路由语法的语料级结果信号，由 effectiveness 查询渲染，不消耗模型轮次 |
+| [`effectiveness`](effectiveness/README.zh.md) | 会话成效计数——当前消息反馈、变更决定与验证结果——以客户端可见的 `effectiveness` 投影提供 |
+| [`effectiveness-query`](effectiveness-query/README.zh.md) | 面向部署的跨会话成效计数：全语料合计、每条路由一行，以及有界的逐会话行，按需通过 `effectiveness` 服务折叠得出 |
 
 会话评价是单向信号：在对话的任何时刻记录它都是安全的，且绝不会改变模型看到的内容。在 feedback-gated 共享策略下，记录会话评价会触发放行，使该会话可供共享。
 
 逐消息评分与备注与会话一起保存，重启后依然存在，并且绝不会出现在模型历史或遥测中。
+
+`effectiveness` 单元是这些信号之上的读模型：它按会话统计当前评分、变更决定与验证结果，自身不记录任何内容。
 
 <a id="related-documentation"></a>
 ## 相关文档

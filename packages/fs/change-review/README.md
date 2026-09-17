@@ -84,3 +84,5 @@ Append-only; the note joins the request history after the reusable prefix.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The package owns no runtime-checkable relation that independent observations could diverge on; its contracts are its exported types and the Session events it records, which its specs pin.

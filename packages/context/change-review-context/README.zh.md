@@ -77,3 +77,5 @@ The user reviewed file changes you applied:
 无。
 
 </details>
+
+**运行时不变式：** 不发布伴随包。该包不拥有任何可由独立观测产生分歧的、可在运行时检查的关系；它的契约就是其导出的类型与它所记录的 Session 事件，并由其测试规范钉住。

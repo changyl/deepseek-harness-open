@@ -1,0 +1,83 @@
+/** Copy dictionaries for the effectiveness Settings section. */
+
+/** Dictionary namespace owned by this plugin. */
+export const NS = 'settings.effectiveness'
+
+/** Simplified Chinese dictionary and key source of truth. */
+export const zh = {
+  nav: '有效性',
+  title: '结果信号',
+  intro: '这里汇总会话日志已经记录的结果信号：人工反馈、变更决策与验证结果。它们描述会话里发生了什么，不是模型质量评分。',
+  refresh: '刷新',
+  loading: '正在读取结果信号…',
+  failed: '暂时无法读取结果信号，请重试。',
+  'totals.heading': '总计',
+  'totals.sessions': '会话',
+  'totals.turns': '有信号的轮次',
+  'feedback.heading': '反馈',
+  'feedback.positive': '好评',
+  'feedback.negative': '差评',
+  'feedback.categories': '按分类',
+  'category.task-result': '任务结果',
+  'category.instruction-following': '指令遵循',
+  'category.product-interaction': '产品交互',
+  'changes.heading': '变更决策',
+  'changes.accepted': '已接受',
+  'changes.reverted': '已回退',
+  'changes.undecided': '未决定',
+  'verification.heading': '验证',
+  'verification.passed': '通过',
+  'verification.failed': '失败',
+  'verification.unknown': '无结果',
+  'routes.heading': '按路由',
+  'routes.route': '路由',
+  'routes.empty': '所选范围内没有任何路由。',
+  'routes.sessions': '会话',
+  'sessions.heading': '按会话',
+  'sessions.empty': '所选范围内没有可读的会话行。',
+  'sessions.turns': '有信号的轮次',
+  'sessions.createdAt': '创建于 {time}',
+  'sessions.truncated': '会话行已被部署上界截断。',
+  'signal.none': '所选范围内还没有任何结果信号，因此这里不给出比率。',
+}
+
+/** Every localized key of the effectiveness section. */
+export type EffectivenessLocaleKey = keyof typeof zh
+
+/** English dictionary, typed against the Chinese key set. */
+export const en = {
+  nav: 'Effectiveness',
+  title: 'Outcome signals',
+  intro: 'Outcome signals already recorded in the session logs: human feedback, change decisions, and verification results. They describe what happened inside a session, not a model quality score.',
+  refresh: 'Refresh',
+  loading: 'Reading outcome signals…',
+  failed: 'Outcome signals are unavailable right now. Try again.',
+  'totals.heading': 'Totals',
+  'totals.sessions': 'Sessions',
+  'totals.turns': 'Turns with signal',
+  'feedback.heading': 'Feedback',
+  'feedback.positive': 'Positive',
+  'feedback.negative': 'Negative',
+  'feedback.categories': 'By category',
+  'category.task-result': 'Task result',
+  'category.instruction-following': 'Instruction following',
+  'category.product-interaction': 'Product interaction',
+  'changes.heading': 'Change decisions',
+  'changes.accepted': 'Accepted',
+  'changes.reverted': 'Reverted',
+  'changes.undecided': 'Undecided',
+  'verification.heading': 'Verification',
+  'verification.passed': 'Passed',
+  'verification.failed': 'Failed',
+  'verification.unknown': 'No result',
+  'routes.heading': 'By route',
+  'routes.route': 'Route',
+  'routes.empty': 'No route reported in this selection.',
+  'routes.sessions': 'Sessions',
+  'sessions.heading': 'By session',
+  'sessions.empty': 'No readable session row in this selection.',
+  'sessions.turns': 'Turns with signal',
+  'sessions.createdAt': 'Created {time}',
+  'sessions.truncated': 'The deployment bound cut the session rows.',
+  'signal.none': 'No outcome signal is recorded in this selection, so no rate is stated here.',
+} satisfies Record<EffectivenessLocaleKey, string>

@@ -257,6 +257,11 @@
 
 # ── remaining model-facing rows ─────────────────────────────────────────────
 
+# The durable board the store owns: this tool reads and changes it under the
+# compare-and-set revision the session last read.
+- id: tool-project
+  name: '@deepseek-ai/dsh-tool-project'
+
 - id: tool-ask-user
   name: '@deepseek-ai/dsh-tool-ask-user'
 

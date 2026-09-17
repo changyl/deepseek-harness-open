@@ -317,6 +317,23 @@
     - id: token-meter
       name: '@deepseek-ai/dsh-token-meter'
 
+    # Usage statistics: the query service plus the ledger that derives one
+    # token-fact record per session from canonical logs into the `usage`
+    # storage domain. No pricing table is mounted here — a rate card is
+    # deployment data, so a composition that needs cost adds
+    # `@deepseek-ai/dsh-usage-pricing` with its own currency and rates, and
+    # every route stays reported as unpriced until it does.
+    - id: usage
+      name: '@deepseek-ai/dsh-usage'
+
+    - id: usage-ledger
+      name: '@deepseek-ai/dsh-usage-ledger'
+
+    # Human `/usage`: the seam's consumer, rendering the same report a client
+    # reads without spending a model turn.
+    - id: command-usage
+      name: '@deepseek-ai/dsh-command-usage'
+
     - id: compaction-basic
       name: '@deepseek-ai/dsh-compaction-basic'
 
@@ -417,6 +434,39 @@
       name: '@deepseek-ai/dsh-tool-todo'
       config:
         allowParallelInProgress: true
+
+    # Durable project board: the store keeps one record per project in the
+    # `project` storage domain, and the tool lets a session read and change the
+    # board that outlives it. `todo_write` remains the session's own working
+    # memory; this is the board work survives in.
+    - id: project
+      name: '@deepseek-ai/dsh-project'
+
+    # The model-facing board tool. A session's catalog is per-agent in the Web
+    # profile, which withdraws this global row and mounts it from its presets.
+    - id: tool-project
+      name: '@deepseek-ai/dsh-tool-project'
+
+    # The session's linked tasks as a pre-step note. It reads the store above
+    # and adds nothing to a catalog, so every profile can carry one instance.
+    - id: project-context
+      name: '@deepseek-ai/dsh-project-context'
+      config:
+        maxTasksListed: 8
+
+    # Human `/project`: lists the working directory's boards and renders one,
+    # read-only, without spending a model turn.
+    - id: command-project
+      name: '@deepseek-ai/dsh-command-project'
+
+    # Cross-session outcome report plus the human `/effectiveness` entry point:
+    # the query folds the corpus through the same unit the per-session
+    # `effectiveness` projection uses, and the command renders it.
+    - id: effectiveness-query
+      name: '@deepseek-ai/dsh-effectiveness-query'
+
+    - id: command-effectiveness
+      name: '@deepseek-ai/dsh-command-effectiveness'
 
     # Persisted same-session goals reach the model and the slash menu here; the
     # domain, driver, and `/goal` command are above.

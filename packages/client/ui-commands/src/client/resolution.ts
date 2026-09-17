@@ -10,6 +10,9 @@ const BUILTINS = {
   compact: '@deepseek-ai/dsh-command-compact',
   permission: '@deepseek-ai/dsh-permission-presets',
   export: '@deepseek-ai/dsh-session-log-export',
+  usage: '@deepseek-ai/dsh-command-usage',
+  effectiveness: '@deepseek-ai/dsh-command-effectiveness',
+  project: '@deepseek-ai/dsh-command-project',
 } as const
 
 /** Names whose first-party definitions have localized client presentation. */

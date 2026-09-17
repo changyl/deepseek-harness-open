@@ -67,7 +67,9 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`settings/`](settings/README.md) | User-settings seam + file-backed provider |
 | [`credentials/`](credentials/README.md) | Credential-reference and credential-record seam + env-over-`.env` provider + authorization flows that ask a human |
 | [`storage/`](storage/README.md) | Non-session storage hub + backends + domain form |
+| [`usage/`](usage/README.md) | Token usage and cost: query service, durable canonical-log ledger, deployment-owned pricing |
 | [`workspace/`](workspace/README.md) | Workspace entity |
+| [`project/`](project/README.md) | Durable project and task board shared by every session in one working directory |
 | [`sdk/`](sdk/README.md) | Out-of-process SDK: JSON-RPC protocol and TypeScript client/server |
 | [`acp/`](acp/README.md) | Automation-only Agent Client Protocol server |
 | [`interaction/`](interaction/README.md) | Human-collaboration plane: approval/interaction seams, permission preset, commands, ask-user tool |
