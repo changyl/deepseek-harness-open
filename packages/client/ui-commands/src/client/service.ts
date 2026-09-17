@@ -168,8 +168,8 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
   /**
    * Resolve the per-session popup controller (lazy; dies with the session
    * scope). The controller's consume callback dispatches the scoped
-   * consume-token event back to this session; focusComposer reaches the
-   * composer through the overlay slot currency.
+   * consume-token event back to this session; focusComposer hands the caret
+   * back to the composer the session bound.
    * @param actx - session-scope ctx.
    * @returns the resident controller.
    */
@@ -182,24 +182,24 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     if (existing !== undefined) return existing
     const controller = new PopupSelectController<ClientSessionContext>({
       consume: segment => consumeToken(actx, segment),
-      focusComposer: () => { this.focusHooks.get(id)?.() },
+      focusComposer: () => { this.focusComposer(id) },
     })
     popups.set(id, controller)
     actx.effect(() => () => {
       controller.dispose()
       popups.delete(id)
-      this.focusHooks.delete(id)
     }, 'command: session popup')
     return controller
   }
 
-  /** Composer focus hooks by session (the overlay wiring binds the textarea focus here). */
+  /** Composer focus hooks by session (each session's composer binds its own). */
   private readonly focusHooks = new Map<SessionId, () => void>()
 
   /**
-   * Bind one session's composer-focus hook (overlay slot wiring; unbind on unmount).
+   * Bind one session's composer-focus hook (the composer's wiring binds it for
+   * the lifetime of its session scope).
    * @param id - session id.
-   * @param focus - textarea focus callback.
+   * @param focus - composer focus callback.
    * @returns the unbind disposer.
    */
   bindComposerFocus(id: SessionId, focus: () => void): () => void {
@@ -207,6 +207,15 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     return () => {
       if (this.focusHooks.get(id) === focus) this.focusHooks.delete(id)
     }
+  }
+
+  /**
+   * Return DOM focus to one session's composer, for a surface whose pick left
+   * the caret nowhere. A session with no composer bound is left alone.
+   * @param sessionId - the session whose composer takes focus.
+   */
+  focusComposer(sessionId: SessionId): void {
+    this.focusHooks.get(sessionId)?.()
   }
 
   /**
@@ -232,7 +241,9 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    * Run one command by name for a surface that owns no composer token. The
    * client contribution or decoration wins over the host descriptor exactly as
    * it does for a menu pick; a host command without a client face runs
-   * detached as its bare line.
+   * detached as its bare line. The pick took the caret away with the surface
+   * that made it, so every path that does not open a popup hands it back to
+   * the composer; a popup owns focus until it settles and hands it back then.
    * @param name - command name without the leading slash.
    * @param session - session projection the pick addresses.
    */
@@ -245,18 +256,24 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     const desc = this.directory.resolve(session.sessionId, name)
     // The catalog can change between listing and pick; a row that no longer
     // resolves is a miss, never a fallback to a different command.
-    if (desc === undefined) return
+    if (desc === undefined) {
+      this.focusComposer(session.sessionId)
+      return
+    }
     const decoration = this.live.decorations.get(name)
     if (decoration !== undefined && decoration.available(session)) {
       this.invokeDetached(name, decoration.ui, session)
       return
     }
     this.runDetached(desc, session, `/${desc.name}`)
+    this.focusComposer(session.sessionId)
   }
 
   /**
    * Invoke one contribution or decoration from a composer-less surface: an
-   * action runs, a popupSelect opens with a segment that consumes nothing.
+   * action runs and hands the caret back to the composer, or a popupSelect
+   * opens with a segment that consumes nothing and keeps focus until it
+   * settles.
    */
   private invokeDetached(
     name: string,
@@ -265,6 +282,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
   ): void {
     if (ui.kind === 'action') {
       ui.run(session)
+      this.focusComposer(session.sessionId)
       return
     }
     const actx = this.scopeFor(session.sessionId)

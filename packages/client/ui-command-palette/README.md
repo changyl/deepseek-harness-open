@@ -33,7 +33,7 @@ Arrow Up and Arrow Down move the highlight, Enter runs it, Escape and a click ou
 
 ### What a pick does
 
-A client command contribution or a decorated host command opens its own popup or runs its own action, exactly as that row would from the menu. Any other host command runs detached as its bare line, so `/plan` enters plan mode and `/compact` compacts now. Nothing is inserted into the composer and nothing is removed from it — a palette pick owns no command token, so a draft you typed stays where it was.
+A client command contribution or a decorated host command opens its own popup or runs its own action, exactly as that row would from the menu. Any other host command runs detached as its bare line, so `/plan` enters plan mode and `/compact` compacts now. Nothing is inserted into the composer and nothing is removed from it — a palette pick owns no command token, so a draft you typed stays where it was — and the caret comes back to the composer when the pick is done: as it dispatches for an action, a bare host command, and Stop, and when it settles for a command that opens a popup.
 
 With no current session the palette lists New Session alone and says so, because commands resolve per session.
 

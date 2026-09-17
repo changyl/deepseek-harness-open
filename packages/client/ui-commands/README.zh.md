@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-与 `ui-input-trigger` 及 `ui-conversation` 一起挂载本插件；`/` source 随即出现在触发菜单中，业务包经 `ctx.commandUi` 注册自己的命令表面。键入 `/model` 打开已注册的弹窗；带参数声明的宿主命令打开其输入或直接执行。composer 的 `+` 按钮与键入的 `/` 打开同一个菜单：「添加」小节（文件、目标、计划、反馈）与「指令」小节（压缩、权限、模型、下载日志）按使用频次排列，每行带图标、本地化的标题与说明，本地化标题与命令名不同时还显示命令名作为别名。
+与 `ui-input-trigger` 及 `ui-conversation` 一起挂载本插件；`/` source 随即出现在触发菜单中，业务包经 `ctx.commandUi` 注册自己的命令表面。键入 `/model` 打开已注册的弹窗；带参数声明的宿主命令打开其输入或直接执行。composer 的 `+` 按钮与键入的 `/` 打开同一个菜单：「添加」小节（文件、目标、计划、反馈）与「指令」小节（压缩、权限、模型、下载日志）按使用频次排列，每行带图标、本地化的标题与说明，本地化标题与命令名不同时还显示命令名作为别名。这两个列表之外的第一方行——用量、有效性、项目——按目录顺序排在「指令」小节末尾，并带同样的本地化表面。
 
 ### 种类与装饰
 
@@ -41,7 +41,7 @@ composer 携带图片或通用文件提交时，只有声明了 `input.attachmen
 
 ### 无输入框界面
 
-不拥有命令 token 的界面通过 `palette(session, signal)` 读取某个会话可用的行——与 `/` 菜单在行首位置运行的合成完全一致，按分区顺序、在排序之前返回，且不含贡献项图标——并调用 `run(name, session)` 落实一次选择。`run` 优先使用可用的贡献项，其次是对可解析宿主行生效的装饰，最后是宿主行的裸命令行，以分离方式执行；以此方式打开的弹窗携带命令面板段，因此落实它不会从该界面本就未曾拥有的草稿中消费任何内容。[ui-command-palette](../ui-command-palette/README.zh.md) 是随包交付的消费方。
+不拥有命令 token 的界面通过 `palette(session, signal)` 读取某个会话可用的行——与 `/` 菜单在行首位置运行的合成完全一致，按分区顺序、在排序之前返回，且不含贡献项图标——并调用 `run(name, session)` 落实一次选择。`run` 优先使用可用的贡献项，其次是对可解析宿主行生效的装饰，最后是宿主行的裸命令行，以分离方式执行；以此方式打开的弹窗携带命令面板段，因此落实它不会从该界面本就未曾拥有的草稿中消费任何内容，并在落实时把光标交还输入框。其他选择在派发时立即交还；对界面自己拥有的动作，`focusComposer(sessionId)` 就是同一套交还。[ui-command-palette](../ui-command-palette/README.zh.md) 是随包交付的消费方。
 
 -----
 
@@ -51,7 +51,7 @@ composer 携带图片或通用文件提交时，只有声明了 `input.attachmen
 <details>
 <summary>实现细节——点击展开</summary>
 
-`src/client/contract.ts` 定义贡献项和装饰的注册接口。`CommandDirectory` 负责会话级协议缓存，并通过 `resolution.ts` 解析输入命令；该模块负责内置命令标识匹配和本地化输入写法。`matchSpace` 同步读取就绪缓存，`matchEnter` 等待缓存就绪，预热失败或取消时拒绝。转发的目录和连接事件使缓存失效。宿主执行匹配的命令后，本浏览器发布 `command/executed`，其他客户端只观察持久命令事件。`PopupSelectController` 负责弹窗状态，`PopupSelectView` 占据输入浮层。`presentation.ts` 负责行标题、图标和分节，展示与解析辅助函数均留在插件内部。
+`src/client/contract.ts` 定义贡献项和装饰的注册接口。`CommandDirectory` 负责会话级协议缓存，并通过 `resolution.ts` 解析输入命令；该模块负责内置命令标识匹配和本地化输入写法。`matchSpace` 同步读取就绪缓存，`matchEnter` 等待缓存就绪，预热失败或取消时拒绝。转发的目录和连接事件使缓存失效。宿主执行匹配的命令后，本浏览器发布 `command/executed`，其他客户端只观察持久命令事件。`PopupSelectController` 负责弹窗状态，`PopupSelectView` 占据输入浮层。每个会话的输入框把自己的焦点绑定进该服务，分离执行的选择与落实的弹窗都经它交还光标。`presentation.ts` 负责行标题、图标和分节，展示与解析辅助函数均留在插件内部。
 
 </details>
 

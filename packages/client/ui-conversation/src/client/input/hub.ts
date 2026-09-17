@@ -27,6 +27,11 @@ interface CommandFace {
   popupFor(actx: Context): PopupDismissFace
 }
 
+/** Structural command face for the composer-focus hand-back after a command. */
+interface ComposerFocusFace {
+  bindComposerFocus(id: SessionId, focus: () => void): () => void
+}
+
 /** Optional input-trigger service resolved without importing its implementation. */
 interface InputTriggerServiceFace {
   /** @param actx - Session scope. @returns that Session's trigger provider. */
@@ -109,6 +114,17 @@ export class InputHub implements SessionInputResolver {
       },
     })
     this.shells.set(id, shell)
+    // The command surface hands the caret back to the composer after a
+    // composer-less pick; it asks for that through a per-session callback, so
+    // the composer registers one for as long as its scope lives. The read is
+    // declared, so a client without the command surface simply binds nothing.
+    actx.inject(['commandUi'], (scope) => {
+      const command = scope.get('commandUi') as ComposerFocusFace
+      scope.effect(
+        () => command.bindComposerFocus(id, () => { shell.focus() }),
+        'conversation.input: composer focus',
+      )
+    })
     // The one teardown axis: listeners, shell, and map entries all ride the
     // scope fiber (nothing here outlives the scope).
     actx.effect(() => {

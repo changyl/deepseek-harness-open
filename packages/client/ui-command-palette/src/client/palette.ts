@@ -209,12 +209,14 @@ export class CommandPaletteController {
   }
 
   /**
-   * Cancel the running turn. A refused cancel settles into the Session's own
-   * prompt error; only a transport rejection reaches the handler below.
+   * Cancel the running turn, and hand the caret back to the composer the pick
+   * took it from. A refused cancel settles into the Session's own prompt
+   * error; only a transport rejection reaches the handler below.
    */
   private stop(sessionId: SessionId): void {
     const session = this.deps.sessions.binding(sessionId)?.session
     if (session === undefined) return
+    this.deps.commands.focusComposer(sessionId)
     session.cancel().then(undefined, (error: unknown) => {
       console.warn('command palette: stop failed:', error)
     })

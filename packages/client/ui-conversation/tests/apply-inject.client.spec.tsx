@@ -123,7 +123,9 @@ describe('Conversation inject API', () => {
         contributions.set(contribution.name, contribution)
         return () => { contributions.delete(contribution.name) }
       },
+      bindComposerFocus: () => () => {},
     } satisfies Pick<CommandUiContract, 'register'>
+      & { bindComposerFocus: (id: SessionId, focus: () => void) => () => void }
     b.runtime.ctx.provide('commandUi', registry)
     await vi.waitFor(() => { expect(contributions.has('file')).toBe(true) })
     const file = contributions.get('file')!
@@ -156,6 +158,43 @@ describe('Conversation inject API', () => {
     expect(replacement).toHaveBeenCalledOnce()
     await b.feature.dispose()
     expect(contributions.size).toBe(0)
+  })
+
+  it('binds the mounted composer focus for the command surface, and releases it with the scope', async () => {
+    const b = await bench()
+    // The composer materializes its shell when its bar first reads the input
+    // face; the command surface activates afterwards, so the binding waits.
+    const keyboard = b.composerApi(ROOT).keyboard!
+    const bound = new Map<SessionId, () => void>()
+    const unbind = vi.fn()
+    b.runtime.ctx.provide('commandUi', {
+      bindComposerFocus: (id: SessionId, focus: () => void) => {
+        bound.set(id, focus)
+        return () => {
+          bound.delete(id)
+          unbind()
+        }
+      },
+    } as never)
+    await vi.waitFor(() => { expect(bound.has(ROOT)).toBe(true) })
+    const focus = bound.get(ROOT)!
+
+    // The composer's contenteditable is what takes the caret; this spec mounts
+    // one directly rather than rendering the whole conversation shell.
+    const root = document.createElement('div')
+    root.tabIndex = -1
+    document.body.append(root)
+    keyboard.editor.setRootElement(root)
+    focus()
+    expect(document.activeElement).toBe(root)
+
+    // Teardown releases the binding, and a late call over a composer whose
+    // root is already detached keeps the selection restore alone.
+    keyboard.editor.setRootElement(null)
+    root.remove()
+    await b.runtime.dispose()
+    expect(unbind).toHaveBeenCalled()
+    expect(() => { focus() }).not.toThrow()
   })
 
   it('assembles the target-neutral read face without Session side effects', async () => {

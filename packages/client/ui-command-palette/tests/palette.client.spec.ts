@@ -55,13 +55,14 @@ function bench(options: BenchOptions = {}) {
   } as unknown as ISessions
   const startSession = vi.fn()
   const workspace = 'workspace' in options ? options.workspace : { startSession }
+  const focusComposer = vi.fn()
   const controller = new CommandPaletteController({
-    commands: { palette, run } as unknown as CommandUiContract,
+    commands: { palette, run, focusComposer } as unknown as CommandUiContract,
     sessions,
     workspace,
     t,
   })
-  return { controller, palette, run, binding, startSession }
+  return { controller, palette, run, focusComposer, binding, startSession }
 }
 
 /** Wait for the open palette to settle out of its loading state. */
@@ -112,7 +113,7 @@ describe('CommandPaletteController', () => {
 
   it('offers Stop only while the current session is running', async () => {
     const cancel = vi.fn(async () => ({ ok: true }))
-    const { controller } = bench({ session: fakeSession(true, cancel), rows: ROWS })
+    const { controller, focusComposer } = bench({ session: fakeSession(true, cancel), rows: ROWS })
     controller.open()
     expect(controller.state.getSnapshot().entries.map(entry => entry.id)).toEqual(['action:new-session', 'action:stop'])
 
@@ -120,6 +121,8 @@ describe('CommandPaletteController', () => {
     controller.run('action:stop')
     expect(cancel).toHaveBeenCalledTimes(1)
     await vi.waitFor(() => { expect(controller.state.getSnapshot().open).toBe(false) })
+    // The pick took the caret with the palette: the composer it belongs to gets it back.
+    expect(focusComposer).toHaveBeenCalledExactlyOnceWith(SESSION)
   })
 
   it('offers no commands and says so when no session is current', async () => {
@@ -219,12 +222,15 @@ describe('CommandPaletteController', () => {
   })
 
   it('dispatches a command pick against the session it was loaded for', async () => {
-    const { controller, run } = bench({ rows: ROWS })
+    const { controller, run, focusComposer } = bench({ rows: ROWS })
     controller.open()
     await settle(controller)
     controller.run('command:model')
     expect(run).toHaveBeenCalledWith('model', { sessionId: SESSION })
     expect(controller.state.getSnapshot().open).toBe(false)
+    // The command surface owns the caret for a command row: it knows whether
+    // the pick opened a popup that keeps focus.
+    expect(focusComposer).not.toHaveBeenCalled()
   })
 
   it('starts a new session, and survives a deployment without Workspace navigation', async () => {
@@ -232,6 +238,9 @@ describe('CommandPaletteController', () => {
     withWorkspace.controller.open()
     withWorkspace.controller.run('action:new-session')
     expect(withWorkspace.startSession).toHaveBeenCalledTimes(1)
+    // The new session's own composer takes the caret on its unlock; a hand-back
+    // naming the session the pick left would be wrong.
+    expect(withWorkspace.focusComposer).not.toHaveBeenCalled()
 
     const withoutWorkspace = bench({ workspace: undefined })
     withoutWorkspace.controller.open()
@@ -267,19 +276,22 @@ describe('CommandPaletteController', () => {
   it('drops a stop whose session is no longer bound, and reports a transport rejection', async () => {
     const cancel = vi.fn(() => Promise.reject(new Error('socket gone')))
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { controller, binding } = bench({ session: fakeSession(true, cancel), rows: ROWS })
+    const { controller, focusComposer, binding } = bench({ session: fakeSession(true, cancel), rows: ROWS })
     controller.open()
     await settle(controller)
 
     binding.mockReturnValue(undefined)
     controller.run('action:stop')
     expect(cancel).not.toHaveBeenCalled()
+    // No bound composer to hand the caret to.
+    expect(focusComposer).not.toHaveBeenCalled()
 
     binding.mockImplementation((id: SessionId) => (id === SESSION ? { session: fakeSession(true, cancel) } : undefined))
     controller.open()
     await settle(controller)
     controller.run('action:stop')
     await vi.waitFor(() => { expect(warn).toHaveBeenCalledWith('command palette: stop failed:', expect.any(Error)) })
+    expect(focusComposer).toHaveBeenCalledExactlyOnceWith(SESSION)
   })
 
   it('ignores a pick whose row is gone', async () => {

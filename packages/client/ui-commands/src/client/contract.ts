@@ -5,6 +5,7 @@
  */
 import type { ComponentType } from 'react'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ClientSessionContext } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type { IconProps } from '@deepseek-ai/dsh-client-ui-primitives'
 
@@ -142,9 +143,18 @@ export interface CommandUiContract {
    * Run one command by name as a bare palette pick. No composer token exists
    * for this caller, so nothing is consumed from the draft: a client
    * contribution or decorated host command opens its popup or runs its
-   * action, and every other host command runs detached as its bare line.
+   * action, and every other host command runs detached as its bare line. The
+   * pick hands the caret back to the composer except where it opens a popup,
+   * which owns focus until it settles.
    * @param name - command name without the leading slash.
    * @param session - session projection the pick addresses.
    */
   run(name: string, session: ClientSessionContext): void
+  /**
+   * Return DOM focus to one session's composer, for a composer-less surface
+   * whose pick left the caret nowhere. A session with no composer bound is
+   * left alone.
+   * @param sessionId - the session whose composer takes focus.
+   */
+  focusComposer(sessionId: SessionId): void
 }

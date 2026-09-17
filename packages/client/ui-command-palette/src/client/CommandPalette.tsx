@@ -81,7 +81,9 @@ export function CommandPalette({
   const activeId = active === undefined ? undefined : optionId(state.active)
 
   // Focus ownership: the search input grabs on open. The card never restores
-  // composer focus on close, because the composer is not this surface's.
+  // composer focus on close, because the composer is not this surface's: the
+  // command surface hands the caret back after a pick through its own
+  // per-session hook, and the two actions this surface owns ask it to.
   useEffect(() => {
     if (state.open) searchRef.current?.focus()
   }, [state.open])

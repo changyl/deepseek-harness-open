@@ -25,7 +25,7 @@ Typing a `/` command opens a registered popup, a client action, a host command's
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin alongside `ui-input-trigger` and `ui-conversation`; the `/` source then appears in the trigger menu, and business packages register their command surfaces through `ctx.commandUi`. Typing `/model` opens the registered popup; a host command with an argument claim opens its input or executes directly. The composer's `+` button and a typed `/` open the same menu: an Add section (File, Goal, Plan, Feedback) and a Commands section (Compact, Permission, Model, Export) in usage order, each row with a glyph, a localized title and description, and the command name as an alias where the localized title differs from it.
+Mount this plugin alongside `ui-input-trigger` and `ui-conversation`; the `/` source then appears in the trigger menu, and business packages register their command surfaces through `ctx.commandUi`. Typing `/model` opens the registered popup; a host command with an argument claim opens its input or executes directly. The composer's `+` button and a typed `/` open the same menu: an Add section (File, Goal, Plan, Feedback) and a Commands section (Compact, Permission, Model, Export) in usage order, each row with a glyph, a localized title and description, and the command name as an alias where the localized title differs from it. First-party rows outside those lists — Usage, Effectiveness, and Project — close the Commands section in catalog order with the same localized face.
 
 ### Kinds and decorations
 
@@ -41,7 +41,7 @@ When the composer submits with images or generic files, only a host command decl
 
 ### Composer-less surfaces
 
-A surface with no command token reads `palette(session, signal)` for the rows available to one session — the same synthesis the `/` menu runs at a leading position, in section order and before ranking, without the contribution icons — and calls `run(name, session)` to settle a pick. `run` prefers an available contribution, then a decoration on a resolvable host row, then the host row's bare line, which runs detached; a popup opened this way carries a palette segment, so settling it consumes nothing from a draft the surface never owned. [ui-command-palette](../ui-command-palette/README.md) is the shipped consumer.
+A surface with no command token reads `palette(session, signal)` for the rows available to one session — the same synthesis the `/` menu runs at a leading position, in section order and before ranking, without the contribution icons — and calls `run(name, session)` to settle a pick. `run` prefers an available contribution, then a decoration on a resolvable host row, then the host row's bare line, which runs detached; a popup opened this way carries a palette segment, so settling it consumes nothing from a draft the surface never owned, and the caret returns to the composer when it settles. Every other pick hands the caret back as it dispatches, and `focusComposer(sessionId)` is that same hand-back for an action the surface itself owns. [ui-command-palette](../ui-command-palette/README.md) is the shipped consumer.
 
 -----
 
@@ -51,7 +51,7 @@ A surface with no command token reads `palette(session, signal)` for the rows av
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-`src/client/contract.ts` defines contribution and decoration registration. `CommandDirectory` owns the per-session wire cache and resolves typed commands through `resolution.ts`; that module owns first-party identity matching and localized input spellings. `matchSpace` reads the ready cache synchronously, while `matchEnter` waits for readiness and rejects on warmup failure or cancellation. Forwarded catalog and connection events invalidate the cache. After a matched Host execution, this browser emits `command/executed`; other clients observe only the durable command events. `PopupSelectController` owns popup state, and `PopupSelectView` occupies the input overlay. `presentation.ts` owns row labels, icons, and sections; its helpers and the resolution helpers stay internal to the plugin.
+`src/client/contract.ts` defines contribution and decoration registration. `CommandDirectory` owns the per-session wire cache and resolves typed commands through `resolution.ts`; that module owns first-party identity matching and localized input spellings. `matchSpace` reads the ready cache synchronously, while `matchEnter` waits for readiness and rejects on warmup failure or cancellation. Forwarded catalog and connection events invalidate the cache. After a matched Host execution, this browser emits `command/executed`; other clients observe only the durable command events. `PopupSelectController` owns popup state, and `PopupSelectView` occupies the input overlay. Each session's composer binds its own focus into the runtime, which is what a detached pick and a settled popup both hand the caret back through. `presentation.ts` owns row labels, icons, and sections; its helpers and the resolution helpers stay internal to the plugin.
 
 </details>
 

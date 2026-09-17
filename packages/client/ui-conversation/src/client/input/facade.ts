@@ -642,6 +642,19 @@ export class SessionInputShell implements SessionInput {
     return true
   }
 
+  /**
+   * Return DOM focus to this session's composer. Lexical's own `focus()`
+   * restores the editor selection without focusing the DOM, so the root
+   * element takes the caret first; a composer that is not mounted (the inert
+   * no-session surface, or a teardown that already detached the root) keeps
+   * the selection restore alone.
+   */
+  focus(): void {
+    const root = this.editor.getRootElement()
+    if (root !== null) root.focus({ preventScroll: true })
+    this.editor.focus()
+  }
+
   // ---- effect executor ----
 
   /** The claim token the decoration transform styles; null while unclaimed. */

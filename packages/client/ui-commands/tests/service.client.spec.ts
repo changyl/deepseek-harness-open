@@ -1055,6 +1055,8 @@ describe('palette (composer-less surface)', () => {
       consumes.push(request)
       return true
     })
+    const focus = vi.fn()
+    command.bindComposerFocus(sid('s1'), focus)
     const run = vi.fn()
     command.register(themeContribution({ ui: { kind: 'action', run } }))
 
@@ -1062,6 +1064,8 @@ describe('palette (composer-less surface)', () => {
     expect(run).toHaveBeenCalledExactlyOnceWith(proj('s1'))
     expect(consumes).toEqual([])
     expect(executeCalls).toEqual([])
+    // The pick took the caret with the surface that made it: it comes back.
+    expect(focus).toHaveBeenCalledTimes(1)
   })
 
   it('opens a contribution popup whose palette pick consumes nothing', async () => {
@@ -1073,16 +1077,21 @@ describe('palette (composer-less surface)', () => {
       return true
     })
     await warm(proj('s1'))
+    const focus = vi.fn()
+    command.bindComposerFocus(sid('s1'), focus)
     command.register(themeContribution())
 
     command.run('theme', proj('s1'))
     const popup = command.popupFor(scope.ctx)
     expect(popup.state.getSnapshot()).toMatchObject({ open: true, command: 'theme' })
     await vi.waitFor(() => { expect(popup.state.getSnapshot().status).toBe('ready') })
+    // The popup owns focus while it is open; settling hands it back.
+    expect(focus).not.toHaveBeenCalled()
     void popup.select(0)
     await vi.waitFor(() => { expect(popup.state.getSnapshot().open).toBe(false) })
     expect(consumes).toEqual([])
     expect(executeCalls).toEqual([])
+    expect(focus).toHaveBeenCalledTimes(1)
   })
 
   it('runs a decoration action on a host command through its client face', async () => {
@@ -1099,12 +1108,15 @@ describe('palette (composer-less surface)', () => {
   it('runs a plain host command detached as its bare line', async () => {
     const { command, warm, executeCalls, executions } = await bench()
     await warm(proj('s1'))
+    const focus = vi.fn()
+    command.bindComposerFocus(sid('s1'), focus)
 
     command.run('plan', proj('s1'))
     await vi.waitFor(() => {
       expect(executions).toEqual([{ sessionId: sid('s1'), name: 'plan', result: { kind: 'success' } }])
     })
     expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/plan', images: [] }])
+    expect(focus).toHaveBeenCalledTimes(1)
   })
 
   it('runs a leadingInput host command as its bare line', async () => {
@@ -1120,9 +1132,24 @@ describe('palette (composer-less surface)', () => {
   it('ignores a name the catalog no longer serves', async () => {
     const { command, warm, executeCalls } = await bench()
     await warm(proj('s1'))
+    const focus = vi.fn()
+    command.bindComposerFocus(sid('s1'), focus)
 
     command.run('gone', proj('s1'))
     expect(executeCalls).toEqual([])
+    // The row ran nothing, but the surface that made the pick still let go.
+    expect(focus).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves a session with no composer bound alone', async () => {
+    const { command, warm, executeCalls } = await bench()
+    await warm(proj('s1'))
+    expect(() => { command.focusComposer(sid('s2')) }).not.toThrow()
+
+    expect(() => { command.run('plan', proj('s1')) }).not.toThrow()
+    await vi.waitFor(() => {
+      expect(executeCalls).toEqual([{ sessionId: sid('s1'), line: '/plan', images: [] }])
+    })
   })
 
   it('falls back to the host row when the decoration is unavailable', async () => {
