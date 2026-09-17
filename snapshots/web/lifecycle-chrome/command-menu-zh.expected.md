@@ -9,3 +9,7 @@
   - option "权限 permission 切换权限预设（沙箱模式与审批策略）"
   - option "模型 model 选择本会话使用的模型"
   - option "下载日志 export 将当前会话内容导出为 ZIP"
+  - option "有效性 effectiveness 查看跨会话的结果信号：反馈、变更决策与验证"
+  - option "项目 project 列出项目或渲染一份持久项目看板"
+  - option "report Write a Markdown change summary and verification report for the latest closed turn"
+  - option "用量 usage 查看跨会话的 token 用量与费用"

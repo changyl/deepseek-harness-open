@@ -322,6 +322,41 @@ fork 种子可以包含父 Session 的反馈事件，但 payload 保留父级 `s
 
 Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
+<a id="ctxeffectiveness--effectivenessquery"></a>
+
+### `ctx.effectiveness` — `EffectivenessQuery`
+
+Durable-free cross-session effectiveness query.
+
+```ts cordis-catalog
+/**
+ * Fold the selected corpus into one report.
+ * @param filter - selection narrowing the corpus.
+ * @returns corpus-wide totals, per-route totals, and bounded per-session rows.
+ */
+async query(filter: EffectivenessFilter = {}): Promise<EffectivenessReport>
+```
+
+Source: [`packages/feedback/effectiveness-query/src/index.ts`](../../packages/feedback/effectiveness-query/src/index.ts)
+
+<a id="ctxeffectivenesscontroller--effectivenesscontroller"></a>
+
+### `ctx.effectivenessController` — `EffectivenessController`
+
+Host service backing the generated `ctx.remote.effectiveness` namespace. Every response is a detached plain value; the controller holds no cache, so a client always reads the service's current answer for its filter.
+
+```ts cordis-catalog
+/**
+ * Answer one effectiveness query over the selected corpus.
+ * @param filter - selection narrowing the corpus; an absent filter selects every readable session.
+ * @returns totals, per-route rows, per-session rows, and whether the row bound cut them.
+ * @throws RemoteError `gateway/bad-request` when the filter is malformed.
+ */
+@Remote async query(filter?: EffectivenessFilterWire): Promise<EffectivenessReportWire>
+```
+
+Source: [`packages/api/effectiveness/src/index.ts`](../../packages/api/effectiveness/src/index.ts)
+
 <a id="ctxmessagefeedback--messagefeedbackservice"></a>
 
 ### `ctx.messageFeedback` — `MessageFeedbackService`

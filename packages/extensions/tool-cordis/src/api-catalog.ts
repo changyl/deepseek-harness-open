@@ -101,6 +101,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'agentDefinitions',
+    summary: 'Layered registry of agent-definition providers.',
+    description: 'Layered registry of agent-definition providers. A registration files into the layer of its calling context\'s scope: host rows land in the global layer, while a plugin mounted by an agent preset\'s standing composition lands in that preset\'s layer. A read merges the global layer with the viewing scope\'s chain — the nearest layer\'s entry wins a duplicate name outright, and the rank order decides duplicates only within one layer.',
+    methods: [
+      {
+        signature: 'registerProvider(create: (control: AgentDefinitionProviderControl) => AgentDefinitionProvider): () => void',
+        description: 'Register a borrowed same-process provider synchronously during plugin apply, into the calling context\'s layer: a scoped context registers for that scope alone, an unscoped context registers globally. Duplicate names within one layer throw; remote initialization belongs in `list()`. Fiber disposal unregisters the provider and notifies consumers.',
+        parameters: [{ name: 'create', description: 'synchronous factory receiving this registration\'s lifecycle and invalidation control.' }],
+        returns: 'the exact Cordis effect disposer that unregisters this provider.',
+      },
+      {
+        signature: 'async list(options: AgentDefinitionViewOptions = {}): Promise<AgentDefinitionSummary[]>',
+        description: 'List the winning definition summaries for the current lookup context.',
+        parameters: [{ name: 'options', description: 'view options; `scope` selects the viewing agent\'s layers, `cwd` selects workspace roots, and `signal` cancels discovery.' }],
+        returns: 'sorted summaries; a partially observed catalog omits only the unavailable provider\'s definitions.',
+      },
+      {
+        signature: 'async snapshot(options: AgentDefinitionViewOptions = {}): Promise<AgentDefinitionSnapshot>',
+        description: 'Observe the current catalog and whether discovery completed. A partial observation lets consumers keep last-good state instead of presenting a transient provider failure as removal.',
+        parameters: [{ name: 'options', description: 'view options; `scope` selects the viewing agent\'s layers, `cwd` selects workspace roots, and `signal` cancels discovery.' }],
+        returns: 'sorted summaries plus discovery-completeness state.',
+      },
+      {
+        signature: 'async get(name: string, options: AgentDefinitionViewOptions = {}): Promise<AgentDefinition | undefined>',
+        description: 'Load and validate the winning definition, passing its opaque discovery locator back to the provider.',
+        parameters: [{ name: 'name', description: 'kebab-case definition name.' }, { name: 'options', description: 'view options; `scope` selects the viewing agent\'s layers, `cwd` selects workspace roots, and `signal` cancels work.' }],
+        returns: 'the full definition, including persona prose, or `undefined`.',
+      },
+    ],
+  },
+  {
     key: 'agentLoop',
     summary: 'Concrete agent factory and driver service.',
     description: 'Concrete agent factory and driver service.',
@@ -895,6 +926,33 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'effectiveness',
+    summary: 'Durable-free cross-session effectiveness query.',
+    description: 'Durable-free cross-session effectiveness query.',
+    methods: [
+      {
+        signature: 'async query(filter: EffectivenessFilter = {}): Promise<EffectivenessReport>',
+        description: 'Fold the selected corpus into one report.',
+        parameters: [{ name: 'filter', description: 'selection narrowing the corpus.' }],
+        returns: 'corpus-wide totals, per-route totals, and bounded per-session rows.',
+      },
+    ],
+  },
+  {
+    key: 'effectivenessController',
+    summary: 'Host service backing the generated `ctx.remote.effectiveness` namespace.',
+    description: 'Host service backing the generated `ctx.remote.effectiveness` namespace. Every response is a detached plain value; the controller holds no cache, so a client always reads the service\'s current answer for its filter.',
+    methods: [
+      {
+        signature: '@Remote async query(filter?: EffectivenessFilterWire): Promise<EffectivenessReportWire>',
+        description: 'Answer one effectiveness query over the selected corpus.',
+        parameters: [{ name: 'filter', description: 'selection narrowing the corpus; an absent filter selects every readable session.' }],
+        returns: 'totals, per-route rows, per-session rows, and whether the row bound cut them.',
+        throws: ['RemoteError `gateway/bad-request` when the filter is malformed.'],
+      },
+    ],
+  },
+  {
     key: 'fileReferences',
     summary: 'Host capability for cancellable file-reference discovery.',
     description: 'Host capability for cancellable file-reference discovery.',
@@ -1395,6 +1453,90 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Select whether plan mode should be active. Between turns the method appends the change immediately because no in-turn pre-step will run until another prompt starts a turn. The open-turn fold is the idle signal: agent status stays `running` through post-turn checkpointing, when no further in-turn pre-step runs. During an open turn the selection remains pending until the next accepted in-turn pre-step. Repeated selection of the current or already-pending state is a no-op.',
         parameters: [{ name: 'agent', description: 'The agent to switch.' }, { name: 'active', description: 'Whether plan mode should be active.' }],
         returns: 'what happened: `committed` (logged now), `queued` (awaiting the next accepted in-turn pre-step), `cancelled` (an opposite pending selection was cleared; the logged state already matches), or `noop` (already in that state).',
+      },
+    ],
+  },
+  {
+    key: 'projectController',
+    summary: 'Host service backing the generated `ctx.remote.project` namespace.',
+    description: 'Host service backing the generated `ctx.remote.project` namespace. Every response is a detached plain value; the controller holds no cache, so a client always reads the store\'s current state.',
+    methods: [
+      {
+        signature: '@Remote list(filter?: ProjectFilterWire): ProjectListWire',
+        description: 'List stored projects with the counts a board header renders.',
+        parameters: [{ name: 'filter', description: 'workspace selection and whether closed projects appear.' }],
+        returns: 'the bounded listing and whether the bound cut it.',
+        throws: ['RemoteError `gateway/bad-request` when the filter is malformed.'],
+      },
+      {
+        signature: '@Remote board(id: string): ProjectBoardWire',
+        description: 'Read one project\'s board.',
+        parameters: [{ name: 'id', description: 'project identity as it appears on the wire.' }],
+        returns: 'the project, its status lanes, and its workable and stranded tasks.',
+        throws: ['RemoteError `gateway/bad-request` when the id is empty, `project/not-found` when no record carries it.'],
+      },
+    ],
+  },
+  {
+    key: 'projects',
+    summary: 'Durable project store.',
+    description: 'Durable project store. Opening the domain is the service\'s initialization: until it completes, `ctx.projects` exists but every operation reports the domain as unavailable.',
+    methods: [
+      {
+        signature: 'async create(input: CreateProjectInput): Promise<ProjectView>',
+        description: 'Create one project.',
+        parameters: [{ name: 'input', description: 'title and optional workspace.' }],
+        returns: 'the created project.',
+      },
+      {
+        signature: 'list(filter: ProjectFilter = {}): ProjectView[]',
+        description: 'List stored projects newest first.',
+        parameters: [{ name: 'filter', description: 'workspace and closed-project selection.' }],
+        returns: 'detached project views.',
+      },
+      {
+        signature: 'get(id: ProjectId): ProjectView | undefined',
+        description: 'Read one project.',
+        parameters: [{ name: 'id', description: 'project identity.' }],
+        returns: 'the project view, or `undefined` when no record carries that id.',
+      },
+      {
+        signature: 'board(id: ProjectId): ProjectBoard | undefined',
+        description: 'Read one project\'s board.',
+        parameters: [{ name: 'id', description: 'project identity.' }],
+        returns: 'the board, or `undefined` when no record carries that id.',
+      },
+      {
+        signature: 'update(ref: ProjectRef, patch: { title: string }): Promise<ProjectView>',
+        description: 'Rename one project.',
+        parameters: [{ name: 'ref', description: 'project and the revision the caller observed.' }, { name: 'patch', description: 'the replacement title.' }],
+        returns: 'the updated project.',
+      },
+      {
+        signature: 'close(ref: ProjectRef): Promise<ProjectView>',
+        description: 'Close one project. A closed project refuses further task work.',
+        parameters: [{ name: 'ref', description: 'project and the revision the caller observed.' }],
+        returns: 'the updated project.',
+      },
+      {
+        signature: 'addTask(ref: ProjectRef, input: AddTaskInput): Promise<ProjectView>',
+        description: 'Add one task to a project.',
+        parameters: [{ name: 'ref', description: 'project and the revision the caller observed.' }, { name: 'input', description: 'title and optional dependencies.' }],
+        returns: 'the updated project.',
+        throws: ['ProjectError `project/closed` when the project is closed, or `project/limit-exceeded` at the task bound.'],
+      },
+      {
+        signature: 'updateTask(ref: ProjectRef, taskId: TaskId, patch: UpdateTaskPatch): Promise<ProjectView>',
+        description: 'Change one task\'s title, status, or dependencies.',
+        parameters: [{ name: 'ref', description: 'project and the revision the caller observed.' }, { name: 'taskId', description: 'task to change.' }, { name: 'patch', description: 'the fields to replace.' }],
+        returns: 'the updated project.',
+        throws: ['ProjectError when the project is closed, the task is unknown, or the change violates a dependency rule.'],
+      },
+      {
+        signature: 'linkSession(ref: ProjectRef, taskId: TaskId, sessionId: string): Promise<ProjectView>',
+        description: 'Link one session to a task. Linking the same session twice is a no-op.',
+        parameters: [{ name: 'ref', description: 'project and the revision the caller observed.' }, { name: 'taskId', description: 'task to link.' }, { name: 'sessionId', description: 'session to record.' }],
+        returns: 'the updated project.',
       },
     ],
   },
@@ -2742,6 +2884,52 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'usage',
+    summary: 'Token-usage and cost service.',
+    description: 'Token-usage and cost service. A composition mounts exactly one provider (the durable token source) and at most one pricing table; a query joins the two, so cost can never diverge from the tokens it prices.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: UsageProvider): () => void',
+        description: 'Register the one usage provider that answers queries. Registering twice is a composition error and throws rather than silently replacing the first provider.',
+        parameters: [{ name: 'provider', description: 'the provider supplying durable token facts.' }],
+        returns: 'the exact disposer that unregisters this provider.',
+      },
+      {
+        signature: 'registerPricing(pricing: UsagePricing): () => void',
+        description: 'Register the one pricing table that prices query results. Registering twice is a composition error and throws rather than letting two rate cards disagree silently.',
+        parameters: [{ name: 'pricing', description: 'the deployment\'s pricing table.' }],
+        returns: 'the exact disposer that unregisters this table.',
+      },
+      {
+        signature: 'price(provider: string, model: string): UsageRoutePrice | undefined',
+        description: 'Resolve one route\'s declared price.',
+        parameters: [{ name: 'provider', description: 'registered provider name.' }, { name: 'model', description: 'provider-owned model id.' }],
+        returns: 'the declared price, or `undefined` when no table is registered or the route is unpriced.',
+      },
+      {
+        signature: 'async query(filter: UsageFilter = {}): Promise<UsageReport>',
+        description: 'Answer one usage query, pricing every route the registered table names.',
+        parameters: [{ name: 'filter', description: 'selection narrowing the corpus; an absent filter selects everything the provider holds.' }],
+        returns: 'totals, per-route totals, the unpriced routes, and cost over the priced subset.',
+        throws: ['UsageUnavailableError when no provider is registered.'],
+      },
+    ],
+  },
+  {
+    key: 'usageController',
+    summary: 'Host service backing the generated `ctx.remote.usage` namespace.',
+    description: 'Host service backing the generated `ctx.remote.usage` namespace. Every response is a detached plain value; the controller holds no cache, so a client always reads the service\'s current answer for its filter.',
+    methods: [
+      {
+        signature: '@Remote async query(filter?: UsageFilterWire): Promise<UsageReportWire>',
+        description: 'Answer one usage query, priced by the deployment\'s registered table.',
+        parameters: [{ name: 'filter', description: 'selection narrowing the corpus; an absent filter selects everything the provider holds.' }],
+        returns: 'totals, per-route totals, the unpriced routes, and cost over the priced subset.',
+        throws: ['RemoteError `usage/unavailable` when the composition mounts no usage provider.'],
+      },
+    ],
+  },
+  {
     key: 'userQuestions',
     summary: '`ctx.userQuestions`: validation plus the scoped answerer waterfall.',
     description: '`ctx.userQuestions`: validation plus the scoped answerer waterfall.',
@@ -2963,6 +3151,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'workspaceFileScope', description: 'header-derived workspace root for the Session identity on the wire.' }, { name: 'signal', description: 'generation cancellation.' }],
         returns: '`ready` once the Host observation queue is active and the workspace root is resolved, then queued and live observations in emission order.',
       },
+      {
+        signature: '@Remote async write( workspaceFileScope: WorkspaceFileScope, path: string, request: WorkspaceFileWriteRequest, signal: AbortSignal, ): Promise<WorkspaceFileWriteResult>',
+        description: 'Replace one regular file from the Client editor.\n\nThis is the service\'s only mutation, so it is gated twice beyond the read gates: the Session must be live — a cold Session has no policy override to resolve, and writing fails closed rather than falling back to a deployment default — and the resolved sandbox policy must permit writing at all. A Client can never ask for a wider mode: the escalation vocabulary the Agent tools carry has no counterpart on the wire here. Containment and symlink handling stay the backend\'s, exactly as they are for a tool write.\n\nThe capability gate runs before the path gates, so a refusal resolves nothing. The path is then resolved with the same gates as a read, so the file has to exist and be a regular file; this method edits, it does not create.',
+        parameters: [{ name: 'workspaceFileScope', description: 'header-derived workspace root for the Session identity on the wire.' }, { name: 'path', description: 'absolute path or path relative to the workspace root.' }, { name: 'request', description: 'the new contents, and the version they were read from when guarded.' }, { name: 'signal', description: 'caller cancellation.' }],
+        returns: 'the file\'s new version, and the content it carried before the write.',
+      },
     ],
   },
   {
@@ -3018,6 +3212,14 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
 
 /** Every harness event, sorted by name. */
 export const EVENT_API: readonly EventApiEntry[] = [
+  {
+    name: 'agent-definitions/change',
+    mode: 'emit',
+    signature: '\'agent-definitions/change\'(): void',
+    summary: 'An agent-definition provider was registered, unregistered, or reported that its definitions may have changed.',
+    description: 'An agent-definition provider was registered, unregistered, or reported that its definitions may have changed. This is an unfiltered invalidation notification; consumers refetch the catalog for their own lookup options. Listener failures are contained and cannot veto the registry mutation.',
+    parameters: [],
+  },
   {
     name: 'agent-loop/config-start-failed',
     mode: 'emit',
@@ -3571,6 +3773,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface AdapterRegistrationHandle {\n    (): void;\n    replace(providers: string[]): void;\n}',
   },
   {
+    name: 'AddTaskInput',
+    declaration: 'export interface AddTaskInput {\n    title: string;\n    blockedBy?: readonly TaskId[];\n}',
+  },
+  {
     name: 'AdmittedPromptContentPart',
     declaration: 'export type AdmittedPromptContentPart = {\n    readonly type: \'text\';\n    readonly text: string;\n} | {\n    readonly type: \'image\';\n    readonly attachment: ImageAttachmentRef;\n} | {\n    readonly type: \'file\';\n    readonly attachment: FileAttachmentRef;\n};',
   },
@@ -3581,6 +3787,46 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AgentCancelCause',
     declaration: 'export type AgentCancelCause = {\n    readonly kind: \'user\';\n} | {\n    readonly kind: \'parent\';\n} | {\n    readonly kind: \'hook\';\n    readonly reason: string;\n} | {\n    readonly kind: \'disposed\';\n};',
+  },
+  {
+    name: 'AgentDefinition',
+    declaration: 'export interface AgentDefinition extends AgentDefinitionSummary {\n    readonly instructions: string;\n}',
+  },
+  {
+    name: 'AgentDefinitionCandidate',
+    declaration: 'export interface AgentDefinitionCandidate extends AgentDefinitionSummary {\n    readonly rank: number;\n    readonly locator: unknown;\n}',
+  },
+  {
+    name: 'AgentDefinitionLookupOptions',
+    declaration: 'export interface AgentDefinitionLookupOptions {\n    readonly cwd?: string | undefined;\n    readonly signal?: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'AgentDefinitionProvider',
+    declaration: 'export interface AgentDefinitionProvider {\n    readonly name: string;\n    readonly list: (options: AgentDefinitionLookupOptions) => Promise<readonly AgentDefinitionCandidate[] | AgentDefinitionProviderObservation>;\n    readonly get: (candidate: AgentDefinitionCandidate, options: AgentDefinitionLookupOptions) => Promise<AgentDefinition | undefined>;\n}',
+  },
+  {
+    name: 'AgentDefinitionProviderControl',
+    declaration: 'export interface AgentDefinitionProviderControl {\n    readonly signal: AbortSignal;\n    readonly invalidate: () => void;\n}',
+  },
+  {
+    name: 'AgentDefinitionProviderObservation',
+    declaration: 'export interface AgentDefinitionProviderObservation {\n    readonly definitions: readonly AgentDefinitionCandidate[];\n    readonly complete: boolean;\n}',
+  },
+  {
+    name: 'AgentDefinitionSnapshot',
+    declaration: 'export interface AgentDefinitionSnapshot {\n    readonly definitions: AgentDefinitionSummary[];\n    readonly complete: boolean;\n}',
+  },
+  {
+    name: 'AgentDefinitionSource',
+    declaration: 'export type AgentDefinitionSource = \'project-dsh\' | \'project-agents\' | \'custom\' | \'user-dsh\' | \'user-agents\' | (string & {});',
+  },
+  {
+    name: 'AgentDefinitionSummary',
+    declaration: 'export interface AgentDefinitionSummary {\n    readonly name: string;\n    readonly description: string;\n    readonly source: AgentDefinitionSource;\n    readonly provider: string;\n    readonly tools?: readonly string[];\n    readonly model?: string;\n    readonly reasoningEffort?: string;\n    readonly maxDepth?: number;\n    readonly path?: string;\n}',
+  },
+  {
+    name: 'AgentDefinitionViewOptions',
+    declaration: 'export interface AgentDefinitionViewOptions extends AgentDefinitionLookupOptions {\n    readonly scope?: ScopeKey | undefined;\n}',
   },
   {
     name: 'AgentFactory',
@@ -4031,6 +4277,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface CreateGoalResult {\n    readonly ref: GoalRef;\n}',
   },
   {
+    name: 'CreateProjectInput',
+    declaration: 'export interface CreateProjectInput {\n    title: string;\n    workspace?: string;\n}',
+  },
+  {
     name: 'CreateSessionOptions',
     declaration: 'export interface CreateSessionOptions {\n    readonly seed?: readonly SessionEvent[];\n    readonly inheritedEventCount?: SessionLogOffset;\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly parentSession?: SessionId;\n        readonly createdAt?: number;\n        readonly isSeeded?: boolean;\n        readonly origin?: \'subagent\';\n        readonly delegationDepth?: number;\n        readonly agentPreset?: string;\n    };\n}',
   },
@@ -4187,6 +4437,78 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
   },
   {
+    name: 'EffectivenessChanges',
+    declaration: 'export interface EffectivenessChanges {\n    readonly accepted: number;\n    readonly reverted: number;\n    readonly undecided: number;\n}',
+  },
+  {
+    name: 'EffectivenessChangesWire',
+    declaration: 'export interface EffectivenessChangesWire {\n    readonly accepted: number;\n    readonly reverted: number;\n    readonly undecided: number;\n}',
+  },
+  {
+    name: 'EffectivenessFeedback',
+    declaration: 'export interface EffectivenessFeedback {\n    readonly positive: number;\n    readonly negative: number;\n    readonly byCategory: Readonly<Partial<Record<FeedbackCategory, number>>>;\n}',
+  },
+  {
+    name: 'EffectivenessFeedbackWire',
+    declaration: 'export interface EffectivenessFeedbackWire {\n    readonly positive: number;\n    readonly negative: number;\n    readonly byCategory: Readonly<Partial<Record<FeedbackCategoryWire, number>>>;\n}',
+  },
+  {
+    name: 'EffectivenessFilter',
+    declaration: 'export interface EffectivenessFilter {\n    readonly from?: number;\n    readonly to?: number;\n    readonly sessions?: readonly string[];\n    readonly provider?: string;\n    readonly model?: string;\n}',
+  },
+  {
+    name: 'EffectivenessFilterWire',
+    declaration: 'export interface EffectivenessFilterWire {\n    readonly from?: number;\n    readonly to?: number;\n    readonly sessions?: readonly string[];\n    readonly provider?: string;\n    readonly model?: string;\n}',
+  },
+  {
+    name: 'EffectivenessProjection',
+    declaration: 'export interface EffectivenessProjection {\n    readonly feedback: EffectivenessFeedback;\n    readonly changes: EffectivenessChanges;\n    readonly verification: EffectivenessVerification;\n    readonly turnsWithSignal: number;\n}',
+  },
+  {
+    name: 'EffectivenessProjectionWire',
+    declaration: 'export interface EffectivenessProjectionWire {\n    readonly feedback: EffectivenessFeedbackWire;\n    readonly changes: EffectivenessChangesWire;\n    readonly verification: EffectivenessVerificationWire;\n    readonly turnsWithSignal: number;\n}',
+  },
+  {
+    name: 'EffectivenessReport',
+    declaration: 'export interface EffectivenessReport {\n    readonly totals: EffectivenessProjection & {\n        readonly sessions: number;\n    };\n    readonly routes: readonly EffectivenessRouteRow[];\n    readonly sessions: readonly EffectivenessSessionRow[];\n    readonly truncated: boolean;\n}',
+  },
+  {
+    name: 'EffectivenessReportWire',
+    declaration: 'export interface EffectivenessReportWire {\n    readonly totals: EffectivenessTotalsWire;\n    readonly routes: readonly EffectivenessRouteRowWire[];\n    readonly sessions: readonly EffectivenessSessionRowWire[];\n    readonly truncated: boolean;\n}',
+  },
+  {
+    name: 'EffectivenessRouteRefWire',
+    declaration: 'export interface EffectivenessRouteRefWire {\n    readonly provider: string;\n    readonly model: string;\n}',
+  },
+  {
+    name: 'EffectivenessRouteRow',
+    declaration: 'export interface EffectivenessRouteRow extends EffectivenessProjection {\n    readonly provider: string;\n    readonly model: string;\n    readonly sessions: number;\n}',
+  },
+  {
+    name: 'EffectivenessRouteRowWire',
+    declaration: 'export interface EffectivenessRouteRowWire extends EffectivenessProjectionWire {\n    readonly provider: string;\n    readonly model: string;\n    readonly sessions: number;\n}',
+  },
+  {
+    name: 'EffectivenessSessionRow',
+    declaration: 'export interface EffectivenessSessionRow extends EffectivenessProjection {\n    readonly sessionId: string;\n    readonly createdAt: number;\n    readonly routes: readonly {\n        readonly provider: string;\n        readonly model: string;\n    }[];\n}',
+  },
+  {
+    name: 'EffectivenessSessionRowWire',
+    declaration: 'export interface EffectivenessSessionRowWire extends EffectivenessProjectionWire {\n    readonly sessionId: string;\n    readonly createdAt: number;\n    readonly routes: readonly EffectivenessRouteRefWire[];\n}',
+  },
+  {
+    name: 'EffectivenessTotalsWire',
+    declaration: 'export interface EffectivenessTotalsWire extends EffectivenessProjectionWire {\n    readonly sessions: number;\n}',
+  },
+  {
+    name: 'EffectivenessVerification',
+    declaration: 'export interface EffectivenessVerification {\n    readonly passed: number;\n    readonly failed: number;\n    readonly unknown: number;\n}',
+  },
+  {
+    name: 'EffectivenessVerificationWire',
+    declaration: 'export interface EffectivenessVerificationWire {\n    readonly passed: number;\n    readonly failed: number;\n    readonly unknown: number;\n}',
+  },
+  {
     name: 'EncodedFileAttachment',
     declaration: 'export interface EncodedFileAttachment {\n    data: string;\n    name?: string;\n}',
   },
@@ -4205,6 +4527,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'FeedbackCategory',
     declaration: 'export type FeedbackCategory = \'task-result\' | \'instruction-following\' | \'product-interaction\' | \'service-stability\' | \'resource-cost\' | \'security-privacy-permission\' | \'other\';',
+  },
+  {
+    name: 'FeedbackCategoryWire',
+    declaration: 'export type FeedbackCategoryWire = \'task-result\' | \'instruction-following\' | \'product-interaction\';',
   },
   {
     name: 'FiberState',
@@ -4803,6 +5129,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type PreToolDecision = {\n    kind: \'allow\';\n} | {\n    kind: \'deny\';\n    reason: string;\n} | {\n    kind: \'ask\';\n    reason?: string;\n};',
   },
   {
+    name: 'ProjectBoard',
+    declaration: 'export interface ProjectBoard {\n    readonly project: ProjectView;\n    readonly columns: Readonly<Record<TaskStatus, readonly TaskView[]>>;\n    readonly ready: readonly TaskId[];\n    readonly stranded: readonly TaskId[];\n}',
+  },
+  {
+    name: 'ProjectBoardWire',
+    declaration: 'export interface ProjectBoardWire {\n    readonly project: ProjectViewWire;\n    readonly columns: Readonly<Record<TaskStatus, readonly ProjectTaskWire[]>>;\n    readonly ready: readonly string[];\n    readonly stranded: readonly string[];\n}',
+  },
+  {
+    name: 'ProjectFilter',
+    declaration: 'export interface ProjectFilter {\n    readonly workspace?: string;\n    readonly includeClosed?: boolean;\n}',
+  },
+  {
+    name: 'ProjectFilterWire',
+    declaration: 'export interface ProjectFilterWire {\n    readonly workspace?: string;\n    readonly includeClosed?: boolean;\n}',
+  },
+  {
+    name: 'ProjectId',
+    declaration: 'export type ProjectId = Branded<\'ProjectId\'>;',
+  },
+  {
     name: 'ProjectionChangeListener',
     declaration: 'export type ProjectionChangeListener = (session: Session, key: Extract<keyof SessionProjectionMap, string>, value: unknown, seq: SessionSeq) => void;',
   },
@@ -4821,6 +5167,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ProjectionSnapshot',
     declaration: 'export interface ProjectionSnapshot {\n    asOfSeq: SessionSeqCursor;\n    values: Partial<SessionProjectionMap>;\n}',
+  },
+  {
+    name: 'ProjectListWire',
+    declaration: 'export interface ProjectListWire {\n    readonly projects: readonly ProjectSummaryWire[];\n    readonly truncated: boolean;\n}',
+  },
+  {
+    name: 'ProjectRef',
+    declaration: 'export interface ProjectRef {\n    readonly id: ProjectId;\n    readonly revision: number;\n}',
+  },
+  {
+    name: 'ProjectSummaryWire',
+    declaration: 'export interface ProjectSummaryWire {\n    readonly id: string;\n    readonly title: string;\n    readonly status: ProjectStatus;\n    readonly workspace?: string;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n    readonly revision: number;\n    readonly tasks: number;\n    readonly ready: number;\n    readonly stranded: number;\n}',
+  },
+  {
+    name: 'ProjectTaskWire',
+    declaration: 'export interface ProjectTaskWire {\n    readonly id: string;\n    readonly title: string;\n    readonly status: TaskStatus;\n    readonly blockedBy: readonly string[];\n    readonly sessionIds: readonly string[];\n    readonly createdAt: number;\n    readonly updatedAt: number;\n}',
+  },
+  {
+    name: 'ProjectView',
+    declaration: 'export interface ProjectView {\n    readonly id: ProjectId;\n    readonly title: string;\n    readonly status: ProjectStatus;\n    readonly workspace?: string;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n    readonly revision: number;\n    readonly tasks: readonly TaskView[];\n}',
+  },
+  {
+    name: 'ProjectViewWire',
+    declaration: 'export interface ProjectViewWire {\n    readonly id: string;\n    readonly title: string;\n    readonly status: ProjectStatus;\n    readonly workspace?: string;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n    readonly revision: number;\n    readonly tasks: readonly ProjectTaskWire[];\n}',
   },
   {
     name: 'PromptAssembly',
@@ -5887,6 +6257,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
   },
   {
+    name: 'TaskId',
+    declaration: 'export type TaskId = Branded<\'TaskId\'>;',
+  },
+  {
+    name: 'TaskView',
+    declaration: 'export interface TaskView {\n    readonly id: TaskId;\n    readonly title: string;\n    readonly status: TaskStatus;\n    readonly blockedBy: readonly TaskId[];\n    readonly sessionIds: readonly string[];\n    readonly createdAt: number;\n    readonly updatedAt: number;\n}',
+  },
+  {
     name: 'TeamId',
     declaration: 'export type TeamId = Branded<\'TeamId\'>;',
   },
@@ -6243,8 +6621,92 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TypertTypeModel {\n    readonly name: string;\n    readonly declaration: string;\n}',
   },
   {
+    name: 'UpdateTaskPatch',
+    declaration: 'export interface UpdateTaskPatch {\n    title?: string;\n    status?: TaskStatus;\n    blockedBy?: readonly TaskId[];\n}',
+  },
+  {
     name: 'UpdateTeamTaskRequest',
     declaration: 'export interface UpdateTeamTaskRequest {\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly action: TeamTaskAction;\n    readonly subject?: string;\n    readonly description?: string;\n    readonly blockedBy?: readonly TeamTaskId[];\n    readonly writeScopes?: readonly string[];\n    readonly owner?: string;\n}',
+  },
+  {
+    name: 'UsageBuckets',
+    declaration: 'export interface UsageBuckets {\n    readonly uncachedInputTokens: number;\n    readonly outputTokens: number;\n    readonly cacheReadTokens: number;\n    readonly cacheWriteTokens: number;\n}',
+  },
+  {
+    name: 'UsageCost',
+    declaration: 'export interface UsageCost {\n    readonly currency: string;\n    readonly pricingVersion: string;\n    readonly totalMicros: number;\n    readonly complete: boolean;\n    readonly routes: readonly UsageCostRoute[];\n}',
+  },
+  {
+    name: 'UsageCostRoute',
+    declaration: 'export interface UsageCostRoute extends UsageRouteRef {\n    readonly micros: number;\n    readonly priced: boolean;\n}',
+  },
+  {
+    name: 'UsageCostRouteWire',
+    declaration: 'export interface UsageCostRouteWire extends UsageRouteRefWire {\n    micros: number;\n    priced: boolean;\n}',
+  },
+  {
+    name: 'UsageCostWire',
+    declaration: 'export interface UsageCostWire {\n    currency: string;\n    pricingVersion: string;\n    totalMicros: number;\n    complete: boolean;\n    routes: UsageCostRouteWire[];\n}',
+  },
+  {
+    name: 'UsageCounts',
+    declaration: 'export interface UsageCounts {\n    readonly sessions: number;\n    readonly turns: number;\n    readonly steps: number;\n    readonly unknownUsageSteps: number;\n}',
+  },
+  {
+    name: 'UsageFilter',
+    declaration: 'export interface UsageFilter {\n    readonly from?: number;\n    readonly to?: number;\n    readonly sessions?: readonly string[];\n    readonly provider?: string;\n    readonly model?: string;\n}',
+  },
+  {
+    name: 'UsageFilterWire',
+    declaration: 'export interface UsageFilterWire {\n    from?: number;\n    to?: number;\n    sessions?: string[];\n    provider?: string;\n    model?: string;\n}',
+  },
+  {
+    name: 'UsagePricing',
+    declaration: 'export interface UsagePricing {\n    readonly currency: string;\n    readonly version: string;\n    price(provider: string, model: string): UsageRoutePrice | undefined;\n    routes(): readonly (UsageRouteRef & {\n        readonly price: UsageRoutePrice;\n    })[];\n}',
+  },
+  {
+    name: 'UsageProvider',
+    declaration: 'export interface UsageProvider {\n    readonly name: string;\n    query(filter: UsageFilter): Promise<UsageProviderResult>;\n}',
+  },
+  {
+    name: 'UsageProviderResult',
+    declaration: 'export interface UsageProviderResult {\n    readonly totals: UsageTotals;\n    readonly routes: readonly UsageRouteTotals[];\n}',
+  },
+  {
+    name: 'UsageReport',
+    declaration: 'export interface UsageReport {\n    readonly totals: UsageTotals;\n    readonly routes: readonly UsageRouteTotals[];\n    readonly unpriced: readonly UsageRouteRef[];\n    readonly cost?: UsageCost;\n}',
+  },
+  {
+    name: 'UsageReportWire',
+    declaration: 'export interface UsageReportWire {\n    totals: UsageTotalsWire;\n    routes: UsageRouteTotalsWire[];\n    unpriced: UsageRouteRefWire[];\n    cost?: UsageCostWire;\n}',
+  },
+  {
+    name: 'UsageRoutePrice',
+    declaration: 'export interface UsageRoutePrice {\n    readonly uncachedInputPerMillion: number;\n    readonly outputPerMillion: number;\n    readonly cacheReadPerMillion: number;\n    readonly cacheWritePerMillion: number;\n}',
+  },
+  {
+    name: 'UsageRouteRef',
+    declaration: 'export interface UsageRouteRef {\n    readonly provider: string;\n    readonly model: string;\n}',
+  },
+  {
+    name: 'UsageRouteRefWire',
+    declaration: 'export interface UsageRouteRefWire {\n    provider: string;\n    model: string;\n}',
+  },
+  {
+    name: 'UsageRouteTotals',
+    declaration: 'export interface UsageRouteTotals extends UsageBuckets, UsageRouteRef {\n    readonly sessions: number;\n    readonly steps: number;\n    readonly unknownUsageSteps: number;\n}',
+  },
+  {
+    name: 'UsageRouteTotalsWire',
+    declaration: 'export interface UsageRouteTotalsWire {\n    sessions: number;\n    steps: number;\n    unknownUsageSteps: number;\n    uncachedInputTokens: number;\n    outputTokens: number;\n    cacheReadTokens: number;\n    cacheWriteTokens: number;\n    provider: string;\n    model: string;\n}',
+  },
+  {
+    name: 'UsageTotals',
+    declaration: 'export interface UsageTotals extends UsageBuckets, UsageCounts {\n}',
+  },
+  {
+    name: 'UsageTotalsWire',
+    declaration: 'export interface UsageTotalsWire {\n    sessions: number;\n    turns: number;\n    steps: number;\n    unknownUsageSteps: number;\n    uncachedInputTokens: number;\n    outputTokens: number;\n    cacheReadTokens: number;\n    cacheWriteTokens: number;\n}',
   },
   {
     name: 'UserMessage',
@@ -6481,6 +6943,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceFileWatchFrame',
     declaration: 'export type WorkspaceFileWatchFrame = {\n    readonly kind: \'ready\';\n} | {\n    readonly kind: \'change\';\n    readonly change: WorkspaceFileChange;\n};',
+  },
+  {
+    name: 'WorkspaceFileWriteRequest',
+    declaration: 'export interface WorkspaceFileWriteRequest {\n    readonly text: string;\n    readonly expectedVersion?: string;\n}',
+  },
+  {
+    name: 'WorkspaceFileWriteResult',
+    declaration: 'export interface WorkspaceFileWriteResult extends WorkspaceFileStat {\n    readonly operation: \'create\' | \'update\';\n    readonly before: string | null;\n}',
   },
   {
     name: 'WorkspaceFollowFrame',

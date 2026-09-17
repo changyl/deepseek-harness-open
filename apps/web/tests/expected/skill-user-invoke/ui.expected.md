@@ -3,6 +3,9 @@
     - button "/user-invoke-demo @\"meeting notes.md\" an" [disabled]
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

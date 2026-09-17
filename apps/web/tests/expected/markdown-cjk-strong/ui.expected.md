@@ -1,6 +1,9 @@
 - banner:
   - navigation "Session hierarchy":
     - button "CJK strong emphasis" [disabled]
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

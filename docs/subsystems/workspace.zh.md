@@ -317,6 +317,30 @@ Host Remote file reads and workspace directory observations over the composed fi
  *   root is resolved, then queued and live observations in emission order.
  */
 @Remote({ mode: 'stream' }) changes(workspaceFileScope: WorkspaceFileScope, signal: AbortSignal): AsyncIterable<WorkspaceFileWatchFrame>
+
+/**
+ * Replace one regular file from the Client editor.
+ *
+ * This is the service's only mutation, so it is gated twice beyond the read
+ * gates: the Session must be live — a cold Session has no policy override to
+ * resolve, and writing fails closed rather than falling back to a deployment
+ * default — and the resolved sandbox policy must permit writing at all. A
+ * Client can never ask for a wider mode: the escalation vocabulary the Agent
+ * tools carry has no counterpart on the wire here. Containment and symlink
+ * handling stay the backend's, exactly as they are for a tool write.
+ *
+ * The capability gate runs before the path gates, so a refusal resolves
+ * nothing. The path is then resolved with the same gates as a read, so the
+ * file has to exist and be a regular file; this method edits, it does not
+ * create.
+ *
+ * @param workspaceFileScope - header-derived workspace root for the Session identity on the wire.
+ * @param path - absolute path or path relative to the workspace root.
+ * @param request - the new contents, and the version they were read from when guarded.
+ * @param signal - caller cancellation.
+ * @returns the file's new version, and the content it carried before the write.
+ */
+@Remote async write( workspaceFileScope: WorkspaceFileScope, path: string, request: WorkspaceFileWriteRequest, signal: AbortSignal, ): Promise<WorkspaceFileWriteResult>
 ```
 
 Source: [`packages/api/workspace-files/src/index.ts`](../../packages/api/workspace-files/src/index.ts)

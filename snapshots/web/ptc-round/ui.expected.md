@@ -3,6 +3,9 @@
     - 'button "Using ONE run_code program: run" [disabled]'
   - img
   - text: PTC mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

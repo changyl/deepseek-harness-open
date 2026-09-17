@@ -280,6 +280,74 @@ class ListAgentsOutput2(TypedDict):
     parent: NotRequired[str]
     depth: NotRequired[float]
 
+class ProjectArgs(TypedDict):
+    # list | create | read | add_task | update_task | link_session.
+    action: Literal["list", "create", "read", "add_task", "update_task", "link_session"]
+    # Target project id, from list or create.
+    project_id: NotRequired[str]
+    # Revision returned by the last read of this project.
+    revision: NotRequired[int]
+    # Project title for create, or task title for add_task/update_task.
+    title: NotRequired[str]
+    # Target task id, from read.
+    task_id: NotRequired[str]
+    # Task status for update_task.
+    status: NotRequired[Literal["todo", "doing", "blocked", "done", "cancelled"]]
+    # Complete dependency list for the task; tasks that must finish first.
+    blocked_by: NotRequired[list[str]]
+    # Include closed projects in list.
+    include_closed: NotRequired[bool]
+    # Additional keys beyond those declared are allowed.
+
+class ProjectOutputProjects(TypedDict):
+    id: str
+    title: str
+    status: str
+    revision: int
+    tasks: int
+    ready: int
+    updatedAt: int
+
+class ProjectOutputProject(TypedDict):
+    id: str
+    title: str
+    status: str
+    revision: int
+    tasks: int
+    ready: int
+    updatedAt: int
+
+class ProjectOutputBoardTasks(TypedDict):
+    id: str
+    title: str
+    status: str
+    blockedBy: list[str]
+    sessionIds: list[str]
+
+class ProjectOutputBoard(TypedDict):
+    id: str
+    title: str
+    status: str
+    revision: int
+    ready: list[str]
+    stranded: list[str]
+    tasks: list[ProjectOutputBoardTasks]
+    truncated: bool
+
+class ProjectOutput(TypedDict):
+    # Bounded project summaries from list.
+    projects: NotRequired[list[ProjectOutputProjects]]
+    # Summary of the project a mutation or create returned.
+    project: NotRequired[ProjectOutputProject]
+    # The bounded board a read returned.
+    board: NotRequired[ProjectOutputBoard]
+    # Id of a created project.
+    id: NotRequired[str]
+    # Revision after a mutation; carry it into the next call.
+    revision: NotRequired[int]
+    # Whether the result omitted projects or tasks.
+    truncated: NotRequired[bool]
+
 class RalphArgs(TypedDict):
     # The immutable completion objective for every fresh Ralph round.
     objective: str
@@ -580,6 +648,8 @@ class Tools(Protocol):
         """Read a background job. Stream jobs return only output since the previous read; final-output jobs return their result after settlement. Every response ends with `[status: ...]`. Reads are non-blocking unless `wait: true`, which waits up to the configured cap."""
     async def list_agents(self, args: ListAgentsArgs) -> list[ListAgentsOutput1 | ListAgentsOutput2]:
         """List your continuable background subagents by durable id and label. Use it to recall which ones you started, not to poll for completion — you are told when one finishes. Status comes from the live registry: running means the agent is working right now, idle means it is loaded but between turns (it may be waiting on agents it started), and ready means it exists only in storage — resumable, not terminal, and not a result waiting to be collected; a `send_message` steers a running child at its nearest step boundary or starts a turn for an idle or ready child, and a direct child remains a `send_message` candidate in every status. The snapshot is not a delivery promise — `send_message` performs the authoritative check and may still fail. Children that could not be read are reported as diagnostics instead of being silently dropped. Scope `descendants` walks the whole tree below you in stable pre-order, annotating each entry with its durable direct-parent session id and depth. You may use `send_message` only for depth-1 entries; deeper entries are candidates for `interrupt_agent` only."""
+    async def project(self, args: ProjectArgs) -> ProjectOutput:
+        """Read and change the durable project board shared by every session in this working directory. Actions: list (projects), create (title), read (project_id), add_task (project_id, revision, title, blocked_by?), update_task (project_id, revision, task_id, title?/status?/blocked_by?), link_session (project_id, revision, task_id). Every mutation needs the revision returned by the last read of that project: a stale revision is refused, so re-read and retry. A task cannot start or finish while a task it is blocked_by is unfinished, and dependencies may not form a cycle. Use todo_write for the work of this session; use this board for work that must survive the session."""
     async def ralph(self, args: RalphArgs) -> RalphOutput:
         """Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for Ralph or fresh-agent iteration. Each round opens a new child with no parent conversation or prior child session; the shared workspace is long-term memory, and only a bounded structured report crosses rounds. The call returns when a worker reports completion or a concrete blocker, or at the round limit. Ordinary long-running same-session work belongs to goal tools."""
     async def read(self, args: ReadArgs) -> ReadOutput:

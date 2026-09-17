@@ -25,6 +25,7 @@ Cmd/Ctrl+K and Cmd/Ctrl+Shift+P open a frame-wide command palette from anywhere 
 - Rows are read once per palette open, and typing re-ranks them without another query.
 - The rows keep the section order of the composer's `/` menu, including client contributions and decorations.
 - Per-command icons, live row refresh, and argument entry are not part of the palette: command rows share one glyph, and a command that takes arguments runs bare with its hint shown.
+- A pick ends with the caret back in the composer: as the row dispatches for an action, a bare host command, and the surface's own Stop, and when the popup settles for a command that opens one.
 - Nothing in the palette reaches the model, and the palette adds no prompt, tool schema, or session event.
 
 ## Read the turn-end task report

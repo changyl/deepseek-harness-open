@@ -183,10 +183,10 @@ flowchart LR
   pkg_subagent_dsh_sdk["subagent-dsh-sdk"]
   pkg_tool_subagent_control["tool-subagent-control"]
   pkg_tool_ralph["tool-ralph"]
-  pkg_experimental_agent_team["experimental-agent-team"]
+  pkg_agent_team["agent-team"]
   svc_agentTeams["ctx.agentTeams<br/>Agent Teams coordination domain"]
-  pkg_experimental_tool_agent_team["experimental-tool-agent-team"]
-  pkg_experimental_client_ui_agent_team["experimental-client-ui-agent-team"]
+  pkg_tool_agent_team["tool-agent-team"]
+  pkg_client_ui_agent_team["client-ui-agent-team"]
   pkg_inspector["inspector"]
   svc_inspector["ctx.inspector<br/>Cross-realm runtime inspection"]
   pkg_jobs["jobs"]
@@ -226,16 +226,42 @@ flowchart LR
   pkg_cordis_host_runner["cordis-host-runner"]
   svc_dynamicCordisRunner["ctx.dynamicCordisRunner<br/>Dynamic Cordis package host runner"]
   svc_cordisInspect["ctx.cordisInspect<br/>Dynamic Cordis inspect registry"]
+  pkg_api_effectiveness["api-effectiveness"]
+  svc_effectivenessController["ctx.effectivenessController<br/>Cross-session outcome signals Remote namespace"]
+  pkg_effectiveness_query["effectiveness-query"]
+  svc_effectiveness["ctx.effectiveness<br/>Cross-session effectiveness query"]
+  pkg_api_usage["api-usage"]
+  svc_usageController["ctx.usageController<br/>Token usage and cost Remote namespace"]
+  pkg_ui_usage["ui-usage"]
+  pkg_api_project["api-project"]
+  svc_projectController["ctx.projectController<br/>Durable project board Remote namespace"]
+  pkg_project["project"]
+  svc_projects["ctx.projects<br/>Durable project and task board"]
+  pkg_tool_project["tool-project"]
+  pkg_usage["usage"]
+  svc_usage["ctx.usage<br/>Token usage and cost query"]
+  pkg_usage_ledger["usage-ledger"]
+  pkg_usage_pricing["usage-pricing"]
+  pkg_command_usage["command-usage"]
+  pkg_agent_definitions["agent-definitions"]
+  svc_agentDefinitions["ctx.agentDefinitions<br/>Specialized subagent definition registry"]
+  pkg_agent_definitions_filesystem["agent-definitions-filesystem"]
   pkg_agent --> svc_agents
   pkg_agent_default_model --> svc_agentDefaultModel
+  pkg_agent_definitions --> svc_agentDefinitions
+  pkg_agent_definitions_filesystem --> svc_agentDefinitions
   pkg_agent_loop --> svc_agentLoop
   pkg_agent_presets --> svc_agentPresets
+  pkg_agent_team --> svc_agentTeams
+  pkg_api_effectiveness --> svc_effectivenessController
   pkg_api_gateway --> svc_typertGateway
+  pkg_api_project --> svc_projectController
   pkg_api_session_controller --> svc_sessionController
   pkg_api_session_controller --> svc_sessionFileReferences
   pkg_api_session_controller --> svc_sessionSkillCatalog
   pkg_api_settings_controller --> svc_credentialsController
   pkg_api_settings_controller --> svc_settingsController
+  pkg_api_usage --> svc_usageController
   pkg_api_workspace_controller --> svc_directoryPickerController
   pkg_api_workspace_controller --> svc_workspaceController
   pkg_api_workspace_files --> svc_workspaceFiles
@@ -259,7 +285,7 @@ flowchart LR
   pkg_credentials_local --> svc_credentials
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
   pkg_e2b --> svc_e2b
-  pkg_experimental_agent_team --> svc_agentTeams
+  pkg_effectiveness_query --> svc_effectiveness
   pkg_experimental_code_runtime_python --> svc_codeRuntime
   pkg_file_reference --> svc_fileReferences
   pkg_file_reference_local --> svc_fileReferences
@@ -286,6 +312,7 @@ flowchart LR
   pkg_permission_presets --> svc_permissionPresets
   pkg_plan_mode --> svc_planMode
   pkg_plugin_package_inventory_deepseek --> svc_deepseekLlmApiExtensions
+  pkg_project --> svc_projects
   pkg_pwsh_local --> svc_shell
   pkg_sandbox --> svc_sandbox
   pkg_sandbox_local --> svc_sandbox
@@ -334,6 +361,9 @@ flowchart LR
   pkg_tool_subagent --> svc_subagentModelSelection
   pkg_tools --> svc_tools
   pkg_typert_registry --> svc_typert
+  pkg_usage --> svc_usage
+  pkg_usage_ledger --> svc_usage
+  pkg_usage_pricing --> svc_usage
   pkg_user_approval --> svc_approval
   pkg_user_questions --> svc_userQuestions
   pkg_web --> svc_web
@@ -347,10 +377,11 @@ flowchart LR
   pkg_workspace --> svc_workspaceRegistry
   svc_agentDefaultModel --> pkg_api_session_controller
   svc_agentDefaultModel --> pkg_headless
+  svc_agentDefinitions --> pkg_tool_subagent
   svc_agentLoop --> pkg_base
   svc_agentLoop --> pkg_sdk_minimal
-  svc_agentTeams --> pkg_experimental_client_ui_agent_team
-  svc_agentTeams --> pkg_experimental_tool_agent_team
+  svc_agentTeams --> pkg_client_ui_agent_team
+  svc_agentTeams --> pkg_tool_agent_team
   svc_agents --> pkg_acp
   svc_agents --> pkg_agent_loop
   svc_agents --> pkg_subagent_in_process_driver
@@ -388,6 +419,7 @@ flowchart LR
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
+  svc_projects --> pkg_tool_project
   svc_sandbox --> pkg_bash_sandbox
   svc_sandbox --> pkg_terminal_bash
   svc_sandboxPolicy --> pkg_bash_sandbox
@@ -461,6 +493,8 @@ flowchart LR
   svc_tools --> pkg_tool_web
   svc_typert --> pkg_api_gateway
   svc_typert --> pkg_typert_loader
+  svc_usage --> pkg_command_usage
+  svc_usageController --> pkg_ui_usage
   svc_userQuestions --> pkg_tool_ask_user
   svc_web --> pkg_tool_web
   svc_webServer --> pkg_client_connection
@@ -535,7 +569,7 @@ flowchart LR
 | `ctx.fs` | `seam` | [`fs`](../packages/fs/fs) | [`fs-local`](../packages/fs/fs-local), [`fs-sandbox`](../packages/fs/fs-sandbox), [`fs-e2b`](../packages/e2b/fs-e2b) | [`tool-fs`](../packages/fs/tool-fs) | [`fs-observation-policy`](../packages/fs/fs-observation-policy) | tool-fs 通过 ctx.fs 执行读取／写入／编辑；fs-sandbox 按共享沙箱模式限制变更；fs-observation-policy 通过 fs/* 事件门禁贡献基于观测状态的检查。 |
 | `ctx.compaction` | `seam` | [`compaction`](../packages/compaction/compaction) | [`compaction-basic`](../packages/compaction/compaction-basic) | [`compaction-basic`](../packages/compaction/compaction-basic) | - | 基础后端消费步骤后的压力事件和请求错误恢复事件；不存在面向模型的压缩工具。 |
 | `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-codex`](../packages/subagent/subagent-codex), [`subagent-claude-code`](../packages/subagent/subagent-claude-code), [`subagent-dsh-sdk`](../packages/subagent/subagent-dsh-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/workflow/tool-ralph) | - | 提供方实现传输；该服务还负责可选的、基于 Activation 的延续编排，tool-subagent 选择一次性或可延续委派，tool-subagent-control 传递后续消息，而 tool-ralph 要求一条全新的结构化输出路由。 |
-| `ctx.agentTeams` | `core` | [`experimental-agent-team`](../packages/experimental/agent-team) | - | [`experimental-tool-agent-team`](../packages/experimental/tool-agent-team), [`experimental-client-ui-agent-team`](../packages/experimental/client-ui-agent-team) | - | 负责隐式 Root roster、持久 peer mailbox、共享任务 DAG、continuable child 生命周期与生成式 Team Remote method；tool-agent-team 提供模型控制工具，client-ui-agent-team 挂载浏览器 contribution。 |
+| `ctx.agentTeams` | `core` | [`agent-team`](../packages/subagent/agent-team) | - | [`tool-agent-team`](../packages/subagent/tool-agent-team), [`client-ui-agent-team`](../packages/client/ui-agent-team) | - |
 | `ctx.inspector` | `core` | `inspector` | - | - | - | 负责 Worker 托管的 CDP target，以及独立于传输的 Host 和 Client observation 与 Cordis tree query API。 |
 | `ctx.jobs` | `seam` | [`jobs`](../packages/jobs/jobs) | [`jobs-local`](../packages/jobs/jobs-local) | [`tool-bash`](../packages/shell/tool-bash), [`tool-terminal`](../packages/terminal/tool-terminal), [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-jobs`](../packages/jobs/tool-jobs) | - | 生产方（后台 bash、PTY 发送和 subagent 委派）登记正在运行的工作；tool-jobs 是面向模型的控制器，用于读取、列出和终止这些工作；jobs-local 是进程本地注册表。 |
 | `ctx.web` | `seam` | [`web`](../packages/web/web) | [`web-search-exa`](../packages/web/web-search-exa), [`web-search-perplexity`](../packages/web/web-search-perplexity), [`web-search-deepseek`](../packages/web/web-search-deepseek), [`web-fetch-http`](../packages/web/web-fetch-http) | [`tool-web`](../packages/web/tool-web) | - | 搜索和抓取提供方注册到同一个 ctx.web seam；tool-web 负责稳定的面向模型名称。 |
@@ -548,5 +582,12 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | 提供方注册与选择，加上恰好四种操作的标准化查询执行；该 seam 不提供协议逃生口，后端必须转换为标准化请求和结果。 |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 拥有内存定义注册表、Host 半的 vm 沙箱和 request-run 往返流程；浏览器页面通过其 Remote 命名空间在线访问同一服务。 |
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | 注册 Host inspect 提供方、镜像 Client 提供方 manifest，并通过动态 Cordis 传输路由 Client 查询。 |
+| `ctx.effectivenessController` | `core` | [`api-effectiveness`](../packages/api/effectiveness) | - | - | - | 把有效性报告映射为纯 wire 值、校验请求，并原样携带分类、路由与会话行。 |
+| `ctx.effectiveness` | `core` | [`effectiveness-query`](../packages/feedback/effectiveness-query) | - | - | - | 在同一折叠单元之上回答语料级问题：把每个会话的结果归属到其日志命名过的路由，按需读取规范日志且不缓存。 |
+| `ctx.usageController` | `core` | [`api-usage`](../packages/api/usage) | - | `ui-usage` | - | 把 usage 服务的报告映射为纯 wire 值、校验请求，并把缺少 provider 的组合归类为 usage/unavailable。 |
+| `ctx.projectController` | `core` | [`api-project`](../packages/api/project) | - | - | - | 把项目存储的视图映射为纯 wire 值、对单次列表施加边界，并把未知项目归类为 project/not-found。 |
+| `ctx.projects` | `core` | [`project`](../packages/project/project) | - | [`tool-project`](../packages/project/tool-project) | - | 每个项目一条 storage 域记录，保存其任务与一个 compare-and-set revision，因此一次任务变更与它所提升的 revision 是同一次持久写入。 |
+| `ctx.usage` | `seam` | [`usage`](../packages/usage/usage) | [`usage-ledger`](../packages/usage/usage-ledger), [`usage-pricing`](../packages/usage/usage-pricing) | [`command-usage`](../packages/usage/command-usage) | - | 定义在一次注册 provider 与一张注册费率表之上按读取时组装并计价总量，因此任何持久记录都不携带金额。 |
+| `ctx.agentDefinitions` | `seam` | [`agent-definitions`](../packages/subagent/agent-definitions) | [`agent-definitions-filesystem`](../packages/subagent/agent-definitions-filesystem) | [`tool-subagent`](../packages/subagent/tool-subagent) | - | provider 贡献具名定义；registry 合并目录、解析重名，并在委派子代理时收窄该子代理的组合。 |
 
 维护模式：混合模式。服务从 Cordis 声明中发现；接口、实现和消费方角色在 `scripts/gen-doc-graphs.ts` 中分类，并设有完整性守卫。

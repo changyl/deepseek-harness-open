@@ -183,6 +183,30 @@ export type PresetTrust = 'system' | 'user'
 
 Source: [`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
 
+<a id="deepseek-aidsh-agent-team"></a>
+
+## `@deepseek-ai/dsh-agent-team`
+
+Requires: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
+
+```ts config-catalog
+/** Team-service deployment limits. */
+export interface Config {
+  /** Maximum immutable teammate names retained by one Team. */
+  readonly maxMembers?: number
+  /** Maximum non-deleted tasks retained by one Team. */
+  readonly maxTasks?: number
+  /** Maximum queued-minus-delivered messages for one target member. */
+  readonly maxPendingMessagesPerMember?: number
+  /** Maximum UTF-8 bytes in one complete sender-framed delivery. */
+  readonly maxMessageBytes?: number
+  /** Maximum milliseconds allowed for Team-owned runtime disposal. */
+  readonly disposalTimeoutMs?: number
+}
+```
+
+Source: [`packages/subagent/agent-team/src/types.ts:130`](../packages/subagent/agent-team/src/types.ts)
+
 <a id="deepseek-aidsh-agent-tool-presentation"></a>
 
 ## `@deepseek-ai/dsh-agent-tool-presentation`
@@ -222,6 +246,22 @@ export interface Config {
 ```
 
 Source: [`packages/api/gateway/src/index.ts:119`](../packages/api/gateway/src/index.ts)
+
+<a id="deepseek-aidsh-api-project"></a>
+
+## `@deepseek-ai/dsh-api-project`
+
+Requires: `projects`
+
+```ts config-catalog
+/** Deployment-varying bound on one listing. */
+export interface Config {
+  /** Maximum projects one `list` answer carries. */
+  maxProjectsListed: number
+}
+```
+
+Source: [`packages/api/project/src/index.ts:35`](../packages/api/project/src/index.ts)
 
 <a id="deepseek-aidsh-api-session-controller"></a>
 
@@ -279,7 +319,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/api/workspace-files/src/index.ts:69`](../packages/api/workspace-files/src/index.ts)
+Source: [`packages/api/workspace-files/src/index.ts:70`](../packages/api/workspace-files/src/index.ts)
 
 <a id="deepseek-aidsh-attachment-local"></a>
 
@@ -582,29 +622,21 @@ export interface Config {
 
 Source: [`packages/e2b/e2b/src/index.ts:45`](../packages/e2b/e2b/src/index.ts)
 
-<a id="deepseek-aidsh-experimental-agent-team"></a>
+<a id="deepseek-aidsh-effectiveness-query"></a>
 
-## `@deepseek-ai/dsh-experimental-agent-team`
+## `@deepseek-ai/dsh-effectiveness-query`
 
-Requires: `agents` · `sessions` · `sessionPersistence` · `sessionProjections` · `subagents`
+Requires: `sessionQuery`
 
 ```ts config-catalog
-/** Team-service deployment limits. */
+/** Plugin configuration. */
 export interface Config {
-  /** Maximum immutable teammate names retained by one Team. */
-  readonly maxMembers?: number
-  /** Maximum non-deleted tasks retained by one Team. */
-  readonly maxTasks?: number
-  /** Maximum queued-minus-delivered messages for one target member. */
-  readonly maxPendingMessagesPerMember?: number
-  /** Maximum UTF-8 bytes in one complete sender-framed delivery. */
-  readonly maxMessageBytes?: number
-  /** Maximum milliseconds allowed for Team-owned runtime disposal. */
-  readonly disposalTimeoutMs?: number
+  /** Maximum per-session rows one report returns. */
+  maxSessionsReported: number
 }
 ```
 
-Source: [`packages/experimental/agent-team/src/types.ts:130`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/feedback/effectiveness-query/src/index.ts:78`](../packages/feedback/effectiveness-query/src/index.ts)
 
 <a id="deepseek-aidsh-experimental-code-runtime-python"></a>
 
@@ -740,24 +772,6 @@ export interface InspectorOptions {
 ```
 
 Source: [`packages/experimental/inspector/src/index.ts:66`](../packages/experimental/inspector/src/index.ts)
-
-<a id="deepseek-aidsh-experimental-tool-agent-team"></a>
-
-## `@deepseek-ai/dsh-experimental-tool-agent-team`
-
-Requires: `agents` · `agentTeams` · `tools` · `systemPrompt`
-
-```ts config-catalog
-/** Tool routing configuration. */
-export interface Config {
-  /** Continuable-subagent provider used for fresh teammates. */
-  readonly freshProvider?: string
-  /** Continuable-subagent provider used for completed-prefix fork teammates. */
-  readonly forkProvider?: string
-}
-```
-
-Source: [`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
 
 <a id="deepseek-aidsh-file-reference-local"></a>
 
@@ -1717,6 +1731,41 @@ export interface Config {
 ```
 
 Source: [`packages/llm/plugin-package-inventory-deepseek/src/index.ts:31`](../packages/llm/plugin-package-inventory-deepseek/src/index.ts)
+
+<a id="deepseek-aidsh-project"></a>
+
+## `@deepseek-ai/dsh-project`
+
+Requires: `storageDomain`
+
+```ts config-catalog
+/** Plugin configuration. */
+export interface Config {
+  /**
+   * Maximum tasks one project may hold. The bound exists so a board stays a
+   * readable tool result and one unbounded record cannot grow without limit.
+   */
+  maxTasksPerProject: number
+}
+```
+
+Source: [`packages/project/project/src/index.ts:68`](../packages/project/project/src/index.ts)
+
+<a id="deepseek-aidsh-project-context"></a>
+
+## `@deepseek-ai/dsh-project-context`
+
+Requires: `agents` · `projects`
+
+```ts config-catalog
+/** Deployment-varying bound on one note. */
+export interface Config {
+  /** Maximum linked tasks one note lists. */
+  maxTasksListed: number
+}
+```
+
+Source: [`packages/project/project-context/src/index.ts:27`](../packages/project/project-context/src/index.ts)
 
 <a id="deepseek-aidsh-pwsh-local"></a>
 
@@ -2754,6 +2803,24 @@ export type TokenMeterConfig = Record<string, never>
 
 Source: [`packages/llm/token-meter/src/types.ts:13`](../packages/llm/token-meter/src/types.ts)
 
+<a id="deepseek-aidsh-tool-agent-team"></a>
+
+## `@deepseek-ai/dsh-tool-agent-team`
+
+Requires: `agents` · `agentTeams` · `tools` · `systemPrompt`
+
+```ts config-catalog
+/** Tool routing configuration. */
+export interface Config {
+  /** Continuable-subagent provider used for fresh teammates. */
+  readonly freshProvider?: string
+  /** Continuable-subagent provider used for completed-prefix fork teammates. */
+  readonly forkProvider?: string
+}
+```
+
+Source: [`packages/subagent/tool-agent-team/src/index.ts:17`](../packages/subagent/tool-agent-team/src/index.ts)
+
 <a id="deepseek-aidsh-tool-bash"></a>
 
 ## `@deepseek-ai/dsh-tool-bash`
@@ -2934,6 +3001,26 @@ export interface Config {
 ```
 
 Source: [`packages/fs/tool-present/src/index.ts:15`](../packages/fs/tool-present/src/index.ts)
+
+<a id="deepseek-aidsh-tool-project"></a>
+
+## `@deepseek-ai/dsh-tool-project`
+
+Requires: `tools` · `projects`
+
+```ts config-catalog
+/** Plugin configuration: every bound the tool applies to what it returns. */
+export interface Config {
+  /** Maximum projects a `list` action returns. */
+  maxProjectsListed: number
+  /** Maximum tasks a `read` action returns across all lanes. */
+  maxTasksListed: number
+  /** Maximum characters of one project or task title in a result. */
+  maxTitleLength: number
+}
+```
+
+Source: [`packages/project/tool-project/src/index.ts:33`](../packages/project/tool-project/src/index.ts)
 
 <a id="deepseek-aidsh-tool-pwsh"></a>
 
@@ -3265,6 +3352,66 @@ export interface Config {
 
 Source: [`packages/typert/loader/src/index.ts:47`](../packages/typert/loader/src/index.ts)
 
+<a id="deepseek-aidsh-usage-ledger"></a>
+
+## `@deepseek-ai/dsh-usage-ledger`
+
+Requires: `usage` · `storageDomain` · `sessionQuery` · `sessionPersistence`
+
+```ts config-catalog
+/** Ledger configuration. */
+export interface Config {
+  /**
+   * Delete every stored record at mount, so the next query re-derives all of
+   * them from the canonical logs. Use after a fold change; a normal start
+   * keeps the cache and re-folds only sessions whose revision moved.
+   */
+  rebuildOnMount: boolean
+}
+```
+
+Source: [`packages/usage/usage-ledger/src/index.ts:42`](../packages/usage/usage-ledger/src/index.ts)
+
+<a id="deepseek-aidsh-usage-pricing"></a>
+
+## `@deepseek-ai/dsh-usage-pricing`
+
+Requires: `usage`
+
+```ts config-catalog
+/** Plugin configuration: one currency, one revision label, and the priced routes. */
+export interface Config {
+  /** Currency of every rate in this table. */
+  currency: string
+  /** Deployment-owned revision label echoed into every assembled report. */
+  version: string
+  /** Priced routes; a route absent here is reported unpriced. */
+  routes: UsagePricingRouteConfig[]
+}
+
+/**
+ * One priced route. Rates are integer micro-units of the table's currency per
+ * one million tokens; a bucket rate of 0 means the provider does not charge
+ * for that bucket, not that the route is unpriced.
+ */
+export interface UsagePricingRouteConfig {
+  /** Registered provider name. */
+  provider: string
+  /** Provider-owned model id. */
+  model: string
+  /** Micro-units per million uncached input tokens. */
+  uncachedInputPerMillion: number
+  /** Micro-units per million output tokens. */
+  outputPerMillion: number
+  /** Micro-units per million cache-read input tokens. */
+  cacheReadPerMillion: number
+  /** Micro-units per million cache-write input tokens. */
+  cacheWritePerMillion: number
+}
+```
+
+Source: [`packages/usage/usage-pricing/src/index.ts:44`](../packages/usage/usage-pricing/src/index.ts)
+
 <a id="deepseek-aidsh-user-approval"></a>
 
 ## `@deepseek-ai/dsh-user-approval`
@@ -3503,7 +3650,9 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-acp-app` — requires `cmdlineArgs` ([`packages/bundle/acp-app/src/index.ts`](../packages/bundle/acp-app/src/index.ts))
 - `@deepseek-ai/dsh-agent` ([`packages/core/agent/src/index.ts`](../packages/core/agent/src/index.ts))
 - `@deepseek-ai/dsh-agent-definitions` ([`packages/subagent/agent-definitions/src/index.ts`](../packages/subagent/agent-definitions/src/index.ts))
+- `@deepseek-ai/dsh-api-effectiveness` — requires `effectiveness` ([`packages/api/effectiveness/src/index.ts`](../packages/api/effectiveness/src/index.ts))
 - `@deepseek-ai/dsh-api-remotes` — requires `typertGateway` ([`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts))
+- `@deepseek-ai/dsh-api-usage` — requires `usage` ([`packages/api/usage/src/index.ts`](../packages/api/usage/src/index.ts))
 - `@deepseek-ai/dsh-api-workspace-controller` — requires `typert` · `workspaceRegistry` ([`packages/api/workspace-controller/src/index.ts`](../packages/api/workspace-controller/src/index.ts))
 - `@deepseek-ai/dsh-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
 - `@deepseek-ai/dsh-change-review` — requires `connection` · `sessionQuery` · `fs` · `sessions` · `sandboxPolicy` ([`packages/fs/change-review/src/index.ts`](../packages/fs/change-review/src/index.ts))
@@ -3513,6 +3662,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-client-modules` — requires `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
 - `@deepseek-ai/dsh-client-resources` ([`packages/client/resources/src/index.ts`](../packages/client/resources/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-agent-preset` ([`packages/client/ui-agent-preset/src/index.ts`](../packages/client/ui-agent-preset/src/index.ts))
+- `@deepseek-ai/dsh-client-ui-agent-team` ([`packages/client/ui-agent-team/src/index.ts`](../packages/client/ui-agent-team/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-approval` ([`packages/client/ui-approval/src/index.ts`](../packages/client/ui-approval/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-attachment` ([`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-brand-official` ([`packages/client/ui-brand-official/src/index.ts`](../packages/client/ui-brand-official/src/index.ts))
@@ -3524,6 +3674,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-client-ui-deliverables` — requires `systemPrompt` · `connection` · `sessionQuery` · `sessionController` · `workspaceFiles` · `fs` · `sandboxPolicy` ([`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-directory-picker-browse` ([`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-directory-picker-native` ([`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts))
+- `@deepseek-ai/dsh-client-ui-effectiveness` ([`packages/client/ui-effectiveness/src/index.ts`](../packages/client/ui-effectiveness/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-goal` ([`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-input-trigger` ([`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-jobs` ([`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts))
@@ -3533,6 +3684,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-client-ui-open-in-app` ([`packages/client/ui-open-in-app/src/index.ts`](../packages/client/ui-open-in-app/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-permission-presets` ([`packages/client/ui-permission-presets/src/index.ts`](../packages/client/ui-permission-presets/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-plan` ([`packages/client/ui-plan/src/index.ts`](../packages/client/ui-plan/src/index.ts))
+- `@deepseek-ai/dsh-client-ui-project` ([`packages/client/ui-project/src/index.ts`](../packages/client/ui-project/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-reference` ([`packages/client/ui-reference/src/index.ts`](../packages/client/ui-reference/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-renderer` ([`packages/client/ui-renderer/src/index.ts`](../packages/client/ui-renderer/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-schedule` ([`packages/client/ui-schedule/src/index.ts`](../packages/client/ui-schedule/src/index.ts))
@@ -3552,16 +3704,20 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-client-ui-theme` ([`packages/client/ui-theme/src/index.ts`](../packages/client/ui-theme/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-tool` ([`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-trajectory` ([`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts))
+- `@deepseek-ai/dsh-client-ui-usage` ([`packages/client/ui-usage/src/index.ts`](../packages/client/ui-usage/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-user-questions` ([`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-workflow-run` ([`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts))
 - `@deepseek-ai/dsh-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
 - `@deepseek-ai/dsh-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))
+- `@deepseek-ai/dsh-command-effectiveness` — requires `commands` · `effectiveness` ([`packages/feedback/command-effectiveness/src/index.ts`](../packages/feedback/command-effectiveness/src/index.ts))
 - `@deepseek-ai/dsh-command-feedback` — requires `commands` ([`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts))
 - `@deepseek-ai/dsh-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))
+- `@deepseek-ai/dsh-command-project` — requires `commands` · `projects` ([`packages/project/command-project/src/index.ts`](../packages/project/command-project/src/index.ts))
+- `@deepseek-ai/dsh-command-usage` — requires `commands` · `usage` ([`packages/usage/command-usage/src/index.ts`](../packages/usage/command-usage/src/index.ts))
 - `@deepseek-ai/dsh-commands` ([`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts))
 - `@deepseek-ai/dsh-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
 - `@deepseek-ai/dsh-deepseek-llm-api-extensions` ([`packages/llm/deepseek-llm-api-extensions/src/index.ts`](../packages/llm/deepseek-llm-api-extensions/src/index.ts))
-- `@deepseek-ai/dsh-experimental-client-ui-agent-team` ([`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts))
+- `@deepseek-ai/dsh-effectiveness` — requires `sessionProjections` ([`packages/feedback/effectiveness/src/index.ts`](../packages/feedback/effectiveness/src/index.ts))
 - `@deepseek-ai/dsh-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@deepseek-ai/dsh-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
 - `@deepseek-ai/dsh-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
@@ -3585,6 +3741,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-tool-call-timeout-policy` — requires `tools` ([`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts))
 - `@deepseek-ai/dsh-tool-cordis` — requires `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect` ([`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts))
 - `@deepseek-ai/dsh-tool-subagent-control` — requires `tools` · `subagents` ([`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts))
+- `@deepseek-ai/dsh-usage` ([`packages/usage/usage/src/index.ts`](../packages/usage/usage/src/index.ts))
 - `@deepseek-ai/dsh-user-questions` ([`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts))
 - `@deepseek-ai/dsh-webhook` — requires `agents` · `agentDefaultModel` · `agentPresets` · `permissionPresets` · `sessionTitle` · `workspaceRegistry` ([`packages/webhook/webhook/src/index.ts`](../packages/webhook/webhook/src/index.ts))
 - `@deepseek-ai/dsh-workspace` — requires `storageDomain` · `sessionPersistence` ([`packages/workspace/workspace/src/index.ts`](../packages/workspace/workspace/src/index.ts))
@@ -3615,6 +3772,7 @@ Abstract service classes — a deployment loads a concrete implementation packag
 Imported as libraries by other packages; a `cordis.yml` cannot load them.
 
 - `@deepseek-ai/dsh-agent-loop-testkit` ([`packages/test-support/agent-loop-testkit/src/index.ts`](../packages/test-support/agent-loop-testkit/src/index.ts))
+- `@deepseek-ai/dsh-agent-team-profile` ([`packages/bundle/agent-team-profile/src/index.ts`](../packages/bundle/agent-team-profile/src/index.ts))
 - `@deepseek-ai/dsh-anonymous-user-id` ([`packages/identity/anonymous-user-id/src/index.ts`](../packages/identity/anonymous-user-id/src/index.ts))
 - `@deepseek-ai/dsh-app-boot` ([`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts))
 - `@deepseek-ai/dsh-atomic-write` ([`packages/util/atomic-write/src/index.ts`](../packages/util/atomic-write/src/index.ts))
@@ -3629,8 +3787,6 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@deepseek-ai/dsh-client-web` ([`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts))
 - `@deepseek-ai/dsh-cmdline` ([`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts))
 - `@deepseek-ai/dsh-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
-- `@deepseek-ai/dsh-experimental-agent-team-profile` ([`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts))
-- `@deepseek-ai/dsh-experimental-agent-team-web-profile` ([`packages/experimental/agent-team-web-profile/src/index.ts`](../packages/experimental/agent-team-web-profile/src/index.ts))
 - `@deepseek-ai/dsh-experimental-webworker-packer` ([`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts))
 - `@deepseek-ai/dsh-experimental-webworker-runtime` ([`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts))
 - `@deepseek-ai/dsh-home-paths` ([`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts))

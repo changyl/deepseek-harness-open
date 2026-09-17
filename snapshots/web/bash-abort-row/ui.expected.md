@@ -1,6 +1,9 @@
 - banner:
   - navigation "Session hierarchy":
     - 'button "Run two shell commands: wait" [disabled]'
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

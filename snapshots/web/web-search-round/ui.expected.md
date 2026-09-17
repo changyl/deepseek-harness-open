@@ -3,6 +3,9 @@
     - button "Use web_search once with queries" [disabled]
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

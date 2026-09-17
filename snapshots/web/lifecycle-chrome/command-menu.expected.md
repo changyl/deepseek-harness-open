@@ -9,3 +9,7 @@
   - option "Permission Switch the permission preset (sandbox mode + approval policy)"
   - option "Model Select the model for this conversation"
   - option "Export Download this Session log as a ZIP archive"
+  - 'option "Effectiveness Show cross-session outcome signals: feedback, change decisions, and verification"'
+  - option "Project List projects or render one durable project board"
+  - option "report Write a Markdown change summary and verification report for the latest closed turn"
+  - option "Usage Show token usage and cost across sessions"

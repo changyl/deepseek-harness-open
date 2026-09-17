@@ -5,6 +5,9 @@
     - 'button "Switch subagent: event-sourcing researcher"': event-sourcing researcher
     - text: /
     - 'button "Switch subagent: example editor"': example editor
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

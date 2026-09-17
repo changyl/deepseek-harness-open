@@ -71,12 +71,16 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-settings-general/`](ui-settings-general/README.md) | Provides the general settings section | — |
 | [`ui-settings-models/`](ui-settings-models/README.md) | Provides model-provider configuration and DeepSeek onboarding | — |
 | [`ui-settings-plugin-inventory/`](ui-settings-plugin-inventory/README.md) | Contributes the read-only Host Loader inventory tab to Plugins settings | — |
+| [`ui-usage/`](ui-usage/README.md) | Renders recorded token usage, per-route totals, and read-time cost as a settings section | — |
+| [`ui-project/`](ui-project/README.md) | Renders the durable project board as a settings section | — |
+| [`ui-effectiveness/`](ui-effectiveness/README.md) | Renders cross-session outcome signals as a settings section | — |
 | [`ui-deliverables/`](ui-deliverables/README.md) | Produces the produced-files turn tail and clickable final-response file references | — |
 | [`ui-task-report/`](ui-task-report/README.md) | Renders the turn-end task report card in the turn tail | — |
 | [`ui-message-feedback/`](ui-message-feedback/README.md) | The feedback surface: per-message Like/Dislike in the assistant-message action strip, and the feedback dialog behind both ratings and `/feedback` | — |
 | [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.md) | In-app directory browsing surface for the workspace directory flow | — |
 | [`ui-directory-picker-native/`](ui-directory-picker-native/README.md) | Native directory-picker surface driving the host's OS chooser | — |
 | [`ui-open-in-app/`](ui-open-in-app/README.md) | Session-header split button opening the workspace directory in an installed application | — |
+| [`ui-agent-team/`](ui-agent-team/README.md) | Team roster, shared task board, and teammate navigation in the conversation header | — |
 
 -----
 

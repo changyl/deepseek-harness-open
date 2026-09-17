@@ -13,6 +13,15 @@
     - button "Agent presets":
       - img
       - text: Agent presets
+    - button "Usage":
+      - img
+      - text: Usage
+    - button "Projects":
+      - img
+      - text: Projects
+    - button "Effectiveness":
+      - img
+      - text: Effectiveness
   - button "Open configuration file"
   - button "Close":
     - img

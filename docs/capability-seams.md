@@ -181,10 +181,10 @@ flowchart LR
   pkg_subagent_dsh_sdk["subagent-dsh-sdk"]
   pkg_tool_subagent_control["tool-subagent-control"]
   pkg_tool_ralph["tool-ralph"]
-  pkg_experimental_agent_team["experimental-agent-team"]
+  pkg_agent_team["agent-team"]
   svc_agentTeams["ctx.agentTeams<br/>Agent Teams coordination domain"]
-  pkg_experimental_tool_agent_team["experimental-tool-agent-team"]
-  pkg_experimental_client_ui_agent_team["experimental-client-ui-agent-team"]
+  pkg_tool_agent_team["tool-agent-team"]
+  pkg_client_ui_agent_team["client-ui-agent-team"]
   pkg_inspector["inspector"]
   svc_inspector["ctx.inspector<br/>Cross-realm runtime inspection"]
   pkg_jobs["jobs"]
@@ -224,16 +224,42 @@ flowchart LR
   pkg_cordis_host_runner["cordis-host-runner"]
   svc_dynamicCordisRunner["ctx.dynamicCordisRunner<br/>Dynamic Cordis package host runner"]
   svc_cordisInspect["ctx.cordisInspect<br/>Dynamic Cordis inspect registry"]
+  pkg_api_effectiveness["api-effectiveness"]
+  svc_effectivenessController["ctx.effectivenessController<br/>Cross-session outcome signals Remote namespace"]
+  pkg_effectiveness_query["effectiveness-query"]
+  svc_effectiveness["ctx.effectiveness<br/>Cross-session effectiveness query"]
+  pkg_api_usage["api-usage"]
+  svc_usageController["ctx.usageController<br/>Token usage and cost Remote namespace"]
+  pkg_ui_usage["ui-usage"]
+  pkg_api_project["api-project"]
+  svc_projectController["ctx.projectController<br/>Durable project board Remote namespace"]
+  pkg_project["project"]
+  svc_projects["ctx.projects<br/>Durable project and task board"]
+  pkg_tool_project["tool-project"]
+  pkg_usage["usage"]
+  svc_usage["ctx.usage<br/>Token usage and cost query"]
+  pkg_usage_ledger["usage-ledger"]
+  pkg_usage_pricing["usage-pricing"]
+  pkg_command_usage["command-usage"]
+  pkg_agent_definitions["agent-definitions"]
+  svc_agentDefinitions["ctx.agentDefinitions<br/>Specialized subagent definition registry"]
+  pkg_agent_definitions_filesystem["agent-definitions-filesystem"]
   pkg_agent --> svc_agents
   pkg_agent_default_model --> svc_agentDefaultModel
+  pkg_agent_definitions --> svc_agentDefinitions
+  pkg_agent_definitions_filesystem --> svc_agentDefinitions
   pkg_agent_loop --> svc_agentLoop
   pkg_agent_presets --> svc_agentPresets
+  pkg_agent_team --> svc_agentTeams
+  pkg_api_effectiveness --> svc_effectivenessController
   pkg_api_gateway --> svc_typertGateway
+  pkg_api_project --> svc_projectController
   pkg_api_session_controller --> svc_sessionController
   pkg_api_session_controller --> svc_sessionFileReferences
   pkg_api_session_controller --> svc_sessionSkillCatalog
   pkg_api_settings_controller --> svc_credentialsController
   pkg_api_settings_controller --> svc_settingsController
+  pkg_api_usage --> svc_usageController
   pkg_api_workspace_controller --> svc_directoryPickerController
   pkg_api_workspace_controller --> svc_workspaceController
   pkg_api_workspace_files --> svc_workspaceFiles
@@ -257,7 +283,7 @@ flowchart LR
   pkg_credentials_local --> svc_credentials
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
   pkg_e2b --> svc_e2b
-  pkg_experimental_agent_team --> svc_agentTeams
+  pkg_effectiveness_query --> svc_effectiveness
   pkg_experimental_code_runtime_python --> svc_codeRuntime
   pkg_file_reference --> svc_fileReferences
   pkg_file_reference_local --> svc_fileReferences
@@ -284,6 +310,7 @@ flowchart LR
   pkg_permission_presets --> svc_permissionPresets
   pkg_plan_mode --> svc_planMode
   pkg_plugin_package_inventory_deepseek --> svc_deepseekLlmApiExtensions
+  pkg_project --> svc_projects
   pkg_pwsh_local --> svc_shell
   pkg_sandbox --> svc_sandbox
   pkg_sandbox_local --> svc_sandbox
@@ -332,6 +359,9 @@ flowchart LR
   pkg_tool_subagent --> svc_subagentModelSelection
   pkg_tools --> svc_tools
   pkg_typert_registry --> svc_typert
+  pkg_usage --> svc_usage
+  pkg_usage_ledger --> svc_usage
+  pkg_usage_pricing --> svc_usage
   pkg_user_approval --> svc_approval
   pkg_user_questions --> svc_userQuestions
   pkg_web --> svc_web
@@ -345,10 +375,11 @@ flowchart LR
   pkg_workspace --> svc_workspaceRegistry
   svc_agentDefaultModel --> pkg_api_session_controller
   svc_agentDefaultModel --> pkg_headless
+  svc_agentDefinitions --> pkg_tool_subagent
   svc_agentLoop --> pkg_base
   svc_agentLoop --> pkg_sdk_minimal
-  svc_agentTeams --> pkg_experimental_client_ui_agent_team
-  svc_agentTeams --> pkg_experimental_tool_agent_team
+  svc_agentTeams --> pkg_client_ui_agent_team
+  svc_agentTeams --> pkg_tool_agent_team
   svc_agents --> pkg_acp
   svc_agents --> pkg_agent_loop
   svc_agents --> pkg_subagent_in_process_driver
@@ -386,6 +417,7 @@ flowchart LR
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
+  svc_projects --> pkg_tool_project
   svc_sandbox --> pkg_bash_sandbox
   svc_sandbox --> pkg_terminal_bash
   svc_sandboxPolicy --> pkg_bash_sandbox
@@ -459,6 +491,8 @@ flowchart LR
   svc_tools --> pkg_tool_web
   svc_typert --> pkg_api_gateway
   svc_typert --> pkg_typert_loader
+  svc_usage --> pkg_command_usage
+  svc_usageController --> pkg_ui_usage
   svc_userQuestions --> pkg_tool_ask_user
   svc_web --> pkg_tool_web
   svc_webServer --> pkg_client_connection
@@ -533,7 +567,7 @@ flowchart LR
 | `ctx.fs` | `seam` | [`fs`](../packages/fs/fs) | [`fs-local`](../packages/fs/fs-local), [`fs-sandbox`](../packages/fs/fs-sandbox), [`fs-e2b`](../packages/e2b/fs-e2b) | [`tool-fs`](../packages/fs/tool-fs) | [`fs-observation-policy`](../packages/fs/fs-observation-policy) | tool-fs executes read/write/edit through ctx.fs; fs-sandbox fences mutations by the shared sandbox mode; fs-observation-policy contributes observed-state checks through the fs/* event gate. |
 | `ctx.compaction` | `seam` | [`compaction`](../packages/compaction/compaction) | [`compaction-basic`](../packages/compaction/compaction-basic) | [`compaction-basic`](../packages/compaction/compaction-basic) | - | The basic backend consumes post-step pressure and request-error recovery events; there is no model-facing compact tool. |
 | `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-codex`](../packages/subagent/subagent-codex), [`subagent-claude-code`](../packages/subagent/subagent-claude-code), [`subagent-dsh-sdk`](../packages/subagent/subagent-dsh-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/workflow/tool-ralph) | - | Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route. |
-| `ctx.agentTeams` | `core` | [`experimental-agent-team`](../packages/experimental/agent-team) | - | [`experimental-tool-agent-team`](../packages/experimental/tool-agent-team), [`experimental-client-ui-agent-team`](../packages/experimental/client-ui-agent-team) | - | Owns the implicit-root roster, durable peer mailbox, shared task DAG, continuable-child lifecycle, and generated Team Remote methods; tool-agent-team contributes model controls and client-ui-agent-team mounts the browser contribution. |
+| `ctx.agentTeams` | `core` | [`agent-team`](../packages/subagent/agent-team) | - | [`tool-agent-team`](../packages/subagent/tool-agent-team), [`client-ui-agent-team`](../packages/client/ui-agent-team) | - | Owns the implicit-root roster, durable peer mailbox, shared task DAG, continuable-child lifecycle, and generated Team Remote methods; tool-agent-team contributes model controls and client-ui-agent-team mounts the browser contribution. |
 | `ctx.inspector` | `core` | `inspector` | - | - | - | Owns the Worker-hosted CDP target and the transport-independent Host and Client observation and Cordis-tree query API. |
 | `ctx.jobs` | `seam` | [`jobs`](../packages/jobs/jobs) | [`jobs-local`](../packages/jobs/jobs-local) | [`tool-bash`](../packages/shell/tool-bash), [`tool-terminal`](../packages/terminal/tool-terminal), [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-jobs`](../packages/jobs/tool-jobs) | - | Producers (background bash, PTY sends, and subagent delegations) register running work; tool-jobs is the model-facing controller that reads, lists, and kills it; jobs-local is the process-local registry. |
 | `ctx.web` | `seam` | [`web`](../packages/web/web) | [`web-search-exa`](../packages/web/web-search-exa), [`web-search-perplexity`](../packages/web/web-search-perplexity), [`web-search-deepseek`](../packages/web/web-search-deepseek), [`web-fetch-http`](../packages/web/web-fetch-http) | [`tool-web`](../packages/web/tool-web) | - | Search and fetch providers register into one ctx.web seam; tool-web owns the stable model-facing names. |
@@ -546,5 +580,12 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Owns the in-memory definition registry, the vm sandbox for host halves, and the request-run round trip; browser pages reach the same service over the wire through its remote namespace. |
 | `ctx.cordisInspect` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Registers host inspect providers, mirrors the client provider manifest, and routes client queries through the dynamic Cordis transport. |
+| `ctx.effectivenessController` | `core` | [`api-effectiveness`](../packages/api/effectiveness) | - | - | - | Maps the effectiveness report onto plain wire values, validates the request, and carries the category, route, and session rows unchanged. |
+| `ctx.effectiveness` | `core` | [`effectiveness-query`](../packages/feedback/effectiveness-query) | - | - | - | Folds the selected corpus through the same unit the per-session projection uses and attributes each session outcomes to the routes its log named; it reads canonical logs on demand and caches nothing. |
+| `ctx.usageController` | `core` | [`api-usage`](../packages/api/usage) | - | `ui-usage` | - | Maps the usage service report onto plain wire values, validates the request, and classifies an absent provider as usage/unavailable. |
+| `ctx.projectController` | `core` | [`api-project`](../packages/api/project) | - | - | - | Maps the project store views onto plain wire values, bounds one listing, and classifies an unknown project as project/not-found. |
+| `ctx.projects` | `core` | [`project`](../packages/project/project) | - | [`tool-project`](../packages/project/tool-project) | - | One storage-domain record per project holds its tasks and a compare-and-set revision, so a task change and the revision it bumps are one durable write. |
+| `ctx.usage` | `seam` | [`usage`](../packages/usage/usage) | [`usage-ledger`](../packages/usage/usage-ledger), [`usage-pricing`](../packages/usage/usage-pricing) | [`command-usage`](../packages/usage/command-usage) | - | The definition assembles totals from one registered provider and prices them through one registered rate card at read time, so no durable record ever carries an amount. |
+| `ctx.agentDefinitions` | `seam` | [`agent-definitions`](../packages/subagent/agent-definitions) | [`agent-definitions-filesystem`](../packages/subagent/agent-definitions-filesystem) | [`tool-subagent`](../packages/subagent/tool-subagent) | - | Providers contribute named definitions; the registry merges catalogs, resolves duplicate names, and narrows the spawning agent composition when a child is delegated. |
 
 Maintenance mode: hybrid: services are discovered from Cordis declarations; interface/implementation/consumer roles are classified in `scripts/gen-doc-graphs.ts` with a completeness guard.

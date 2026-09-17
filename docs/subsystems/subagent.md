@@ -493,6 +493,54 @@ A selected definition maps onto the one-shot start request fields: `instructions
 
 Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
+<a id="ctxagentdefinitions--agentdefinitionsregistry"></a>
+
+### `ctx.agentDefinitions` — `AgentDefinitionsRegistry`
+
+Layered registry of agent-definition providers. A registration files into the layer of its calling context's scope: host rows land in the global layer, while a plugin mounted by an agent preset's standing composition lands in that preset's layer. A read merges the global layer with the viewing scope's chain — the nearest layer's entry wins a duplicate name outright, and the rank order decides duplicates only within one layer.
+
+```ts cordis-catalog
+/**
+ * Register a borrowed same-process provider synchronously during plugin
+ * apply, into the calling context's layer: a scoped context registers for
+ * that scope alone, an unscoped context registers globally. Duplicate names
+ * within one layer throw; remote initialization belongs in `list()`. Fiber
+ * disposal unregisters the provider and notifies consumers.
+ * @param create - synchronous factory receiving this registration's lifecycle and invalidation control.
+ * @returns the exact Cordis effect disposer that unregisters this provider.
+ */
+registerProvider(create: (control: AgentDefinitionProviderControl) => AgentDefinitionProvider): () => void
+
+/**
+ * List the winning definition summaries for the current lookup context.
+ * @param options - view options; `scope` selects the viewing agent's layers,
+ *   `cwd` selects workspace roots, and `signal` cancels discovery.
+ * @returns sorted summaries; a partially observed catalog omits only the unavailable provider's definitions.
+ */
+async list(options: AgentDefinitionViewOptions = {}): Promise<AgentDefinitionSummary[]>
+
+/**
+ * Observe the current catalog and whether discovery completed. A partial
+ * observation lets consumers keep last-good state instead of presenting a
+ * transient provider failure as removal.
+ * @param options - view options; `scope` selects the viewing agent's layers,
+ *   `cwd` selects workspace roots, and `signal` cancels discovery.
+ * @returns sorted summaries plus discovery-completeness state.
+ */
+async snapshot(options: AgentDefinitionViewOptions = {}): Promise<AgentDefinitionSnapshot>
+
+/**
+ * Load and validate the winning definition, passing its opaque discovery
+ * locator back to the provider.
+ * @param name - kebab-case definition name.
+ * @param options - view options; `scope` selects the viewing agent's layers, `cwd` selects workspace roots, and `signal` cancels work.
+ * @returns the full definition, including persona prose, or `undefined`.
+ */
+async get(name: string, options: AgentDefinitionViewOptions = {}): Promise<AgentDefinition | undefined>
+```
+
+Source: [`packages/subagent/agent-definitions/src/index.ts`](../../packages/subagent/agent-definitions/src/index.ts)
+
 <a id="ctxsubagentmodelselection--subagentmodelselectionconfig"></a>
 
 ### `ctx.subagentModelSelection` — `SubagentModelSelectionConfig`
@@ -710,6 +758,30 @@ async start(name: string, request: SubagentStartRequest): Promise<SubagentRun>
 Types: [Agent](core.md) · [ContentBlock](llm-streaming.md) · [MessageId](llm-streaming.md) · [SessionId](core.md)
 
 Source: [`packages/subagent/subagent/src/index.ts`](../../packages/subagent/subagent/src/index.ts)
+
+<a id="agent-definitions-events"></a>
+
+### `agent-definitions/*` events
+
+<a id="agent-definitionschange--emit"></a>
+
+#### `agent-definitions/change` — emit
+
+An agent-definition provider was registered, unregistered, or reported that its definitions may have changed. This is an unfiltered invalidation notification; consumers refetch the catalog for their own lookup options. Listener failures are contained and cannot veto the registry mutation.
+
+```ts cordis-catalog
+/**
+ * An agent-definition provider was registered, unregistered, or reported
+ * that its definitions may have changed. This is an unfiltered
+ * invalidation notification; consumers refetch the catalog for their own
+ * lookup options. Listener failures are contained and cannot veto the
+ * registry mutation.
+ * @mode emit
+ */
+'agent-definitions/change'(): void
+```
+
+Source: [`packages/subagent/agent-definitions/src/index.ts`](../../packages/subagent/agent-definitions/src/index.ts)
 
 <a id="subagent-events"></a>
 

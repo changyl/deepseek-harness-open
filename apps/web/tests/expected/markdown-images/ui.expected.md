@@ -1,6 +1,9 @@
 - banner:
   - navigation "Session hierarchy":
     - button "Markdown image policy" [disabled]
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

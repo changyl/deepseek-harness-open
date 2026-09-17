@@ -3,6 +3,9 @@
     - button "Read the attached file with" [disabled]
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

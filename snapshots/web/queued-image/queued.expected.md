@@ -3,6 +3,9 @@
     - button "Reply with a one-sentence description" [disabled]
   - img
   - text: Standard mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

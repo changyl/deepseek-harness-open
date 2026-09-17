@@ -3,6 +3,9 @@
     - button "Use the bash tool to" [disabled]
   - img
   - text: Minimal mode
+  - button "Agent Team":
+    - img
+    - text: Agent Team
   - button "More actions":
     - img
   - button "Open right sidebar":

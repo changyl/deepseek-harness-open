@@ -118,12 +118,20 @@ flowchart LR
   cfg --> plugin_dsh_base_plan_mode
   plugin_dsh_base_token_meter["token-meter<br/>@deepseek-ai/dsh-token-meter"]
   cfg --> plugin_dsh_base_token_meter
+  plugin_dsh_base_usage["usage<br/>@deepseek-ai/dsh-usage"]
+  cfg --> plugin_dsh_base_usage
+  plugin_dsh_base_usage_ledger["usage-ledger<br/>@deepseek-ai/dsh-usage-ledger"]
+  cfg --> plugin_dsh_base_usage_ledger
+  plugin_dsh_base_command_usage["command-usage<br/>@deepseek-ai/dsh-command-usage"]
+  cfg --> plugin_dsh_base_command_usage
   plugin_dsh_base_compaction_basic["compaction-basic<br/>@deepseek-ai/dsh-compaction-basic"]
   cfg --> plugin_dsh_base_compaction_basic
   plugin_dsh_base_command_compact["command-compact<br/>@deepseek-ai/dsh-command-compact"]
   cfg --> plugin_dsh_base_command_compact
   plugin_dsh_base_subagent["subagent<br/>@deepseek-ai/dsh-subagent"]
   cfg --> plugin_dsh_base_subagent
+  plugin_dsh_base_agent_team["agent-team<br/>@deepseek-ai/dsh-agent-team"]
+  cfg --> plugin_dsh_base_agent_team
   plugin_dsh_base_subagent_spawn_in_process["subagent-spawn-in-process<br/>@deepseek-ai/dsh-subagent-spawn-in-process"]
   cfg --> plugin_dsh_base_subagent_spawn_in_process
   plugin_dsh_base_subagent_fork_in_process["subagent-fork-in-process<br/>@deepseek-ai/dsh-subagent-fork-in-process"]
@@ -152,6 +160,18 @@ flowchart LR
   cfg --> plugin_dsh_base_tool_result_pruner
   plugin_dsh_base_tool_todo["tool-todo<br/>@deepseek-ai/dsh-tool-todo"]
   cfg --> plugin_dsh_base_tool_todo
+  plugin_dsh_base_project["project<br/>@deepseek-ai/dsh-project"]
+  cfg --> plugin_dsh_base_project
+  plugin_dsh_base_tool_project["tool-project<br/>@deepseek-ai/dsh-tool-project"]
+  cfg --> plugin_dsh_base_tool_project
+  plugin_dsh_base_project_context["project-context<br/>@deepseek-ai/dsh-project-context"]
+  cfg --> plugin_dsh_base_project_context
+  plugin_dsh_base_command_project["command-project<br/>@deepseek-ai/dsh-command-project"]
+  cfg --> plugin_dsh_base_command_project
+  plugin_dsh_base_effectiveness_query["effectiveness-query<br/>@deepseek-ai/dsh-effectiveness-query"]
+  cfg --> plugin_dsh_base_effectiveness_query
+  plugin_dsh_base_command_effectiveness["command-effectiveness<br/>@deepseek-ai/dsh-command-effectiveness"]
+  cfg --> plugin_dsh_base_command_effectiveness
   plugin_dsh_base_tool_goal["tool-goal<br/>@deepseek-ai/dsh-tool-goal"]
   cfg --> plugin_dsh_base_tool_goal
   plugin_dsh_base_tool_ralph["tool-ralph<br/>@deepseek-ai/dsh-tool-ralph"]
@@ -235,9 +255,13 @@ flowchart LR
 | `command-goal` | `@deepseek-ai/dsh-command-goal` |
 | `plan-mode` | `@deepseek-ai/dsh-plan-mode` |
 | `token-meter` | `@deepseek-ai/dsh-token-meter` |
+| `usage` | `@deepseek-ai/dsh-usage` |
+| `usage-ledger` | `@deepseek-ai/dsh-usage-ledger` |
+| `command-usage` | `@deepseek-ai/dsh-command-usage` |
 | `compaction-basic` | `@deepseek-ai/dsh-compaction-basic` |
 | `command-compact` | `@deepseek-ai/dsh-command-compact` |
 | `subagent` | `@deepseek-ai/dsh-subagent` |
+| `agent-team` | `@deepseek-ai/dsh-agent-team` |
 | `subagent-spawn-in-process` | `@deepseek-ai/dsh-subagent-spawn-in-process` |
 | `subagent-fork-in-process` | `@deepseek-ai/dsh-subagent-fork-in-process` |
 | `tool-subagent-control` | `@deepseek-ai/dsh-tool-subagent-control` |
@@ -252,6 +276,12 @@ flowchart LR
 | `session-checkpoint-policy` | `@deepseek-ai/dsh-session-checkpoint-policy` |
 | `tool-result-pruner` | `@deepseek-ai/dsh-compaction-tool-result-pruner` |
 | `tool-todo` | `@deepseek-ai/dsh-tool-todo` |
+| `project` | `@deepseek-ai/dsh-project` |
+| `tool-project` | `@deepseek-ai/dsh-tool-project` |
+| `project-context` | `@deepseek-ai/dsh-project-context` |
+| `command-project` | `@deepseek-ai/dsh-command-project` |
+| `effectiveness-query` | `@deepseek-ai/dsh-effectiveness-query` |
+| `command-effectiveness` | `@deepseek-ai/dsh-command-effectiveness` |
 | `tool-goal` | `@deepseek-ai/dsh-tool-goal` |
 | `tool-ralph` | `@deepseek-ai/dsh-tool-ralph` |
 | `repeat-tool-reminder` | `@deepseek-ai/dsh-repeat-tool-reminder` |
