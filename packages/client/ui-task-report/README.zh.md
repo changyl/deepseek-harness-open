@@ -27,7 +27,7 @@ kind: "package-reference"
 
 把本插件与 `ui-deliverables`、`ui-chat` 一起挂载；此后每个记录了任务报告的回合都会在操作行上方显示该行。它会先给出报告标题，再给出报告携带的事实：改动文件数、行数合计与验证统计。末尾的控件会像产出文件 chip 一样，在会话自己的查看器中打开报告文件。
 
-报告未被写出的回合会显示拒绝原因而不是控件，因此 `read-only` 会话仍会说明缘由，而不是渲染一个无效按钮。没有报告的回合什么都不渲染：链式条目会拒绝它们，尾部保持为空。
+报告未被写出的回合会显示拒绝原因而不是控件，因此 `read-only` 会话仍会说明缘由，而不是渲染一个无效按钮。没有报告的回合什么都不渲染：卡片会读取该回合的报告数据，数据缺失时不渲染，尾部保持为空。
 
 -----
 
@@ -37,7 +37,7 @@ kind: "package-reference"
 <details>
 <summary>实现内部细节——点击展开</summary>
 
-一个仅含状态的 `ConversationNodeDefinition` 把 `task-report/generated` 折叠为按轮次的 `taskReport` 值：`turn/start` 开启 Context，报告事件替换该值，`buildLocationData` 仅在 payload 身份变化时重新发布。随后一个链式条目认领数据中携带该值的已完成轮次，并把报告与宿主的文件打开器交给卡片；两个读取器都位于插件内，组件通过 props 获得一切。
+一个仅含状态的 `ConversationNodeDefinition` 把 `task-report/generated` 折叠为按轮次的 `taskReport` 值：`turn/start` 开启 Context，报告事件替换该值，`buildLocationData` 仅在 payload 身份变化时重新发布。卡片是回合尾部列表中的一个条目，它从所渲染的回合中读取该值，并从 props 获得宿主的文件打开器；两个读取器都位于插件内。
 
 卡片没有状态，也不访问服务。它渲染标题、它能陈述的事实，以及打开控件或拒绝原因行二者之一；既无改动也无验证的报告只渲染标题与控件。所有文案都在 `taskReport` locale 命名空间中，因此语言切换会通过框架的 locale revision 重新渲染。
 
@@ -50,7 +50,7 @@ kind: "package-reference"
 
 - [dsh-task-report](../../session/task-report/README.zh.md)——折叠每个已结束轮次并记录本卡片所渲染事件的宿主插件。
 - [ui-deliverables](../ui-deliverables/README.zh.md)——面向产出文件与改动的兄弟回合尾部条目。
-- [ui-chat](../ui-chat/README.zh.md)——声明本卡片所占用的链式坑位 `conversation.chat.turnTail`。
+- [ui-chat](../ui-chat/README.zh.md)——声明本卡片所占用的列表坑位 `conversation.chat.turnTail`。
 - [Slots 参考](../../../docs/subsystems/slots.zh.md)——坑位种类、作用域，以及注册方获得的 props 份额。
 
 -----
@@ -84,4 +84,4 @@ kind: "package-reference"
 
 </details>
 
-**运行时不变式：**不发布配套文件。本包不拥有任何跨插件可变状态；其注册——字典、按轮次的折叠与链式条目——通过 HMR 安全测试证明可释放。
+**运行时不变式：**不发布配套文件。本包不拥有任何跨插件可变状态；其注册——字典、按轮次的折叠与回合尾部条目——通过 HMR 安全测试证明可释放。

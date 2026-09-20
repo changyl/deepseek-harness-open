@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-task-report",
   "description": "Turn-tail task report card: the change summary and verification report the host recorded for a closed turn",
-  "version": "0.1.5-rc.2",
+  "version": "0.1.6-alpha.2",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",

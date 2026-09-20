@@ -55,6 +55,7 @@ function bench(options: BenchOptions = {}) {
     list: { getSnapshot: () => ({ current }) },
     binding,
   } as unknown as ISessions
+  const currentSession = { getSnapshot: () => ({ key: current }) } as never
   const destination = options.startSessionResult
   const startSession = vi.fn(() => Promise.resolve(destination))
   const workspace = 'workspace' in options ? options.workspace : { startSession }
@@ -62,6 +63,7 @@ function bench(options: BenchOptions = {}) {
   const controller = new CommandPaletteController({
     commands: { palette, run, focusComposer } as unknown as CommandUiContract,
     sessions,
+    currentSession,
     workspace: () => workspace,
     t,
   })

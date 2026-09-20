@@ -29,8 +29,6 @@ Use goal tools for one long-running completion objective in the current session.
 
 Use the workflow tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.
 
-Use the ralph tool ONLY when the direct human explicitly asks for a Ralph loop or fresh-agent iterative execution. Each Ralph round starts a fresh child with no conversation seed and uses the shared workspace as durable memory. Completion and blockers are worker reports, not independent evaluation. Use same-session goal tools for ordinary long-running objectives, and plain subagents or workflows for bounded delegation and fan-out.
-
 Use subagent in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set `run_in_background: false` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.
 
 ## Writing code for run_code
@@ -141,32 +139,6 @@ interface ToolArgsMap {
   list_agents: {
     /** children (default) lists direct children only; descendants walks the complete tree below you. */
     scope?: "children" | "descendants";
-  } & Record<string, JsonValue>;
-  /** Read and change the durable project board shared by every session in this working directory. Actions: list (projects), create (title), read (project_id), add_task (project_id, revision, title, blocked_by?), update_task (project_id, revision, task_id, title?/status?/blocked_by?), link_session (project_id, revision, task_id). Every mutation needs the revision returned by the last read of that project: a stale revision is refused, so re-read and retry. A task cannot start or finish while a task it is blocked_by is unfinished, and dependencies may not form a cycle. Use todo_write for the work of this session; use this board for work that must survive the session. */
-  project: {
-    /** list | create | read | add_task | update_task | link_session. */
-    action: "list" | "create" | "read" | "add_task" | "update_task" | "link_session";
-    /** Target project id, from list or create. */
-    project_id?: string;
-    /** Revision returned by the last read of this project. */
-    revision?: number;
-    /** Project title for create, or task title for add_task/update_task. */
-    title?: string;
-    /** Target task id, from read. */
-    task_id?: string;
-    /** Task status for update_task. */
-    status?: "todo" | "doing" | "blocked" | "done" | "cancelled";
-    /** Complete dependency list for the task; tasks that must finish first. */
-    blocked_by?: string[];
-    /** Include closed projects in list. */
-    include_closed?: boolean;
-  } & Record<string, JsonValue>;
-  /** Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for Ralph or fresh-agent iteration. Each round opens a new child with no parent conversation or prior child session; the shared workspace is long-term memory, and only a bounded structured report crosses rounds. The call returns when a worker reports completion or a concrete blocker, or at the round limit. Ordinary long-running same-session work belongs to goal tools. */
-  ralph: {
-    /** The immutable completion objective for every fresh Ralph round. */
-    objective: string;
-    /** Optional positive safe-integer round cap, bounded by the deployment ceiling. */
-    maxRounds?: number;
   } & Record<string, JsonValue>;
   /** Read a UTF-8 text file and return line-numbered content. */
   read: {
@@ -416,56 +388,6 @@ interface ToolOutputMap {
     parent?: string;
     depth?: number;
   })[];
-  project: {
-    /** Bounded project summaries from list. */
-    projects?: {
-      id: string;
-      title: string;
-      status: string;
-      revision: number;
-      tasks: number;
-      ready: number;
-      updatedAt: number;
-    }[];
-    /** Summary of the project a mutation or create returned. */
-    project?: {
-      id: string;
-      title: string;
-      status: string;
-      revision: number;
-      tasks: number;
-      ready: number;
-      updatedAt: number;
-    };
-    /** The bounded board a read returned. */
-    board?: {
-      id: string;
-      title: string;
-      status: string;
-      revision: number;
-      ready: string[];
-      stranded: string[];
-      tasks: {
-        id: string;
-        title: string;
-        status: string;
-        blockedBy: string[];
-        sessionIds: string[];
-      }[];
-      truncated: boolean;
-    };
-    /** Id of a created project. */
-    id?: string;
-    /** Revision after a mutation; carry it into the next call. */
-    revision?: number;
-    /** Whether the result omitted projects or tasks. */
-    truncated?: boolean;
-  };
-  ralph: {
-    runId: string;
-    agentsStarted: number;
-    result: JsonValue;
-  };
   read: {
     path: string;
     offset: number;

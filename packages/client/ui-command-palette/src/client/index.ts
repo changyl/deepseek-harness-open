@@ -33,7 +33,7 @@ declare module '@deepseek-ai/cordis' {
 }
 
 /** Required services: the slot registry, locale registry, command surface, and session objects. */
-export const inject = ['slots', 'locale', 'commandUi', 'sessions']
+export const inject = ['slots', 'locale', 'commandUi', 'sessions', 'uiSession']
 
 /**
  * Mount the shortcut registry and the palette overlay, and bind the palette's
@@ -44,10 +44,13 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-command-palette: dictionaries')
   ctx.plugin(ShortcutRegistry)
 
-  ctx.inject(['slots', 'shortcuts', 'commandUi', 'sessions', 'locale'], (scope: ClientContext) => {
+  ctx.inject(['slots', 'shortcuts', 'commandUi', 'sessions', 'uiSession', 'locale'], (scope: ClientContext) => {
     const controller = new CommandPaletteController({
       commands: scope.commandUi,
       sessions: scope.sessions,
+      // ui-session owns the current Session selection; the palette reads it at
+      // open time through the same source the scoped renderer binds.
+      currentSession: scope.uiSession.adapter.current,
       // Workspace navigation is optional and read per pick: the palette
       // still runs commands when a deployment mounts no Workspace UI, and the
       // Workspace UI can register after this plugin's activation.

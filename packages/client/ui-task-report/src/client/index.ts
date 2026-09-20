@@ -1,8 +1,8 @@
 /**
  * Task-report card plugin, browser half: registers the `task-report/generated`
- * fold and contributes its row to the chat view's turn-tail chain. Composing
+ * fold and contributes its row to the chat view's turn-tail list. Composing
  * this plugin out of cordis.yml removes the row entirely; the owning view then
- * renders an empty chain for every turn.
+ * renders an empty list for every turn.
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: pulls the 'conversation.chat.turnTail' SlotMap declaration (the
@@ -13,7 +13,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { TaskReportCard } from './TaskReportCard.tsx'
 import { en, NS, zh } from './locales.ts'
-import { selectTaskReport, taskReportDefinition } from './turn-report.ts'
+import { taskReportDefinition } from './turn-report.ts'
 
 export type { TaskReportKey } from './locales.ts'
 export type { TaskReportCardProps } from './TaskReportCard.tsx'
@@ -32,7 +32,7 @@ export function apply(ctx: ClientContext): void {
   ctx.uiConversation.events.register(taskReportDefinition)
   ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register({
     name: 'conversation.chat.turnTail',
-    select: selectTaskReport,
+    id: '@deepseek-ai/dsh-client-ui-task-report',
     locale: NS,
   }, TaskReportCard))
 }

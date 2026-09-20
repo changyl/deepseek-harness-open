@@ -8,6 +8,7 @@
  * not the slot runtime.
  */
 import { onTestFinished, vi } from 'vitest'
+import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { Mock } from 'vitest'
 import { act } from '@testing-library/react'
 import { createElement, useSyncExternalStore } from 'react'
@@ -33,6 +34,11 @@ import { TextBody } from '../src/client/text/TextBody.tsx'
 import { textBodyDefinition } from '../src/client/text/index.ts'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 import type { SidebarRightTabActions } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+
+type BodySlot = PropsRenderSlots<'sidebar.right.tab.document'>['renderSlot']
+
+/** Preserve the body-slot callback used by component fixtures. */
+export function documentSlots(body: BodySlot): TextPreviewProps['renderSlot'] { return body }
 
 export const TAB_ID = 'tab-1' as TabId
 export const SESSION = 's-1' as SessionId
@@ -206,9 +212,9 @@ export function harness(
   const neighbours = new Map<string, SessionFileChange>()
   const ranges = new Map<string, { before: number; total: number }>()
   const changeKey = (address: string, seq: number): string => `${address}#${seq}`
-  const renderSlot: TextPreviewProps['renderSlot'] = (_key, owner, opts) => createElement(TextBody, {
+  const renderSlot = documentSlots((_key, owner, opts) => createElement(TextBody, {
     ...owner, useTabInfo: opts.hookContext, sessionId: SESSION, useResource,
-  } as unknown as DocumentPreviewProps)
+  } as unknown as DocumentPreviewProps))
   const props = (
     navigation: { params?: unknown; revision: number } = { revision: 1 },
     pane: { fullscreen?: boolean } = {},
@@ -229,7 +235,7 @@ export function harness(
     actions: instance.actions,
     loadPage: face.loadPage,
     reloadPages: face.reloadPages,
-    loadAll: face.loadAll,
+    prepareRenderer: face.prepareRenderer, loadAll: face.loadAll,
     reloadAll: face.reloadAll,
     openDraft: face.openDraft,
     closeDraft: face.closeDraft,

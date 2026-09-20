@@ -1,7 +1,7 @@
 /**
  * ui-task-report browser half on a real SlotRegistry: the plugin occupies the
- * chat view's turn-tail chain with its selector and registers the turn-scoped
- * fold; teardown releases both, and the inert node half contributes nothing.
+ * chat view's turn-tail list with its card and registers the turn-scoped fold;
+ * teardown releases both, and the inert node half contributes nothing.
  */
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
@@ -12,7 +12,7 @@ import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conv
 import { TaskReportCard } from '../src/client/TaskReportCard.tsx'
 import { apply, inject } from '../src/client/index.ts'
 import { en, NS, zh } from '../src/client/locales.ts'
-import { selectTaskReport, taskReportDefinition } from '../src/client/turn-report.ts'
+import { taskReportDefinition } from '../src/client/turn-report.ts'
 import { apply as applyNode } from '../src/index.ts'
 
 /** Boot the browser half over a real slot tree that declares the turn tail. */
@@ -21,7 +21,7 @@ async function bench() {
   await ctx.plugin(SlotRegistry).await()
   ctx.slots.register({
     name: 'root',
-    children: { 'conversation.chat.turnTail': { kind: 'chain', scope: 'session' } },
+    children: { 'conversation.chat.turnTail': { kind: 'list', scope: 'session' } },
   } as never, () => null)
   const definitions: ConversationNodeDefinition[] = []
   const register = vi.fn((definition: ConversationNodeDefinition) => {
@@ -58,7 +58,7 @@ describe('ui-task-report browser apply', () => {
 
     const entry = ctx.slots.entries('conversation.chat.turnTail')[0]
     expect(entry?.component).toBe(TaskReportCard)
-    expect(entry?.select).toBe(selectTaskReport)
+    expect(entry?.options.id).toBe('@deepseek-ai/dsh-client-ui-task-report')
     expect(entry?.locale).toBe(NS)
   })
 

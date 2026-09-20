@@ -41,8 +41,9 @@ import { TextEditor } from './TextEditor.tsx'
 import { hostFileOf } from './rpc.ts'
 import type { TextStore } from './store.ts'
 import type { DocumentContent } from './document/contract.ts'
-import { matchingDocumentPreviews } from './document/registry.ts'
+import { binaryDocumentPath, matchingDocumentPreviews } from './document/registry.ts'
 import type { DocumentPreviewDefinition } from './document/registry.ts'
+import { unviewableBinaryPath } from './document/unviewable.ts'
 import { PLAIN_BODY_ID } from './text/index.ts'
 import { loadedPages, lastLineLoaded, scrollToLine } from './text/lines.ts'
 import css from './TextPreview.module.css'
@@ -75,6 +76,23 @@ function usePathClipped(
 
 /** What the body draws: the Turn change in one column, the same change in two, or the file itself. */
 type ChangeView = 'change' | 'split' | 'file'
+
+/** The header's path: directories greyed, the final segment in full ink, faded when clipped. */
+function HeaderPath({ pathRef, pathTextRef, path }: {
+  pathRef: RefObject<HTMLDivElement>
+  pathTextRef: RefObject<HTMLSpanElement>
+  path: string
+}): ReactNode {
+  const { directory, name } = pathPartsOf(path)
+  return (
+    <div ref={pathRef} className={css.path} title={path} data-textpreview-path>
+      <span ref={pathTextRef} className={css.pathText}>
+        {directory !== '' && <span className={css.pathDirectory}>{directory}</span>}
+        <span className={css.pathName}>{name}</span>
+      </span>
+    </div>
+  )
+}
 
 /** Private registration inputs; the framework binds the registry source to useDocumentPreviews. */
 export interface TextPreviewInjected extends TextInjected {
@@ -136,7 +154,7 @@ export type TextPreviewProps =
  */
 export function TextPreview({
   useTabInfo, useResource, useStore, actions, loadPage, reloadPages,
-  loadAll, reloadAll, useDocumentPreviews, readFileChange, reviewChange, readReview,
+  loadAll, reloadAll, prepareRenderer, useDocumentPreviews, readFileChange, reviewChange, readReview,
   readNeighbourChange, readHunkRange, renderSlot, t, openDraft, closeDraft, saveDraft,
 }: TextPreviewProps): ReactNode {
   const { tab, sidebar } = useTabInfo()
@@ -146,14 +164,18 @@ export function TextPreview({
   const file = useMemo(() => hostFileOf(tab.contentId), [tab.contentId])
   const state = useStore(s => s.byTab[tab.id])
   const definitions = useDocumentPreviews(value => value)
+  const unviewable = useMemo(() => unviewableBinaryPath(file.path), [file.path])
   const candidates = useMemo(() => {
     const matched = matchingDocumentPreviews(definitions, file.path)
+    if (matched.length > 0 && binaryDocumentPath(definitions, file.path)) return matched
+    if (matched.length === 0 && unviewable) return matched
     const fallback = definitions.find(definition => definition.id === PLAIN_BODY_ID)
     return fallback === undefined ? matched : [...matched, fallback]
-  }, [definitions, file.path])
+  }, [definitions, file.path, unviewable])
   const selected = candidates.find(candidate => candidate.id === state?.rendererId) ?? candidates[0]
   const mode = selected?.loading
-  const current = (state?.mode ?? 'text-pages') === mode ? state : undefined
+  const contentRendererId = mode === 'renderer' ? selected?.id : undefined
+  const current = (state?.mode ?? 'text-pages') === mode && state?.contentRendererId === contentRendererId ? state : undefined
   // Whether an editing session is open, or opening. Read here rather than beside
   // the other edit derivations because the paging effects below ask it too: a
   // fullscreen split keeps filling the preview half while the reader types.
@@ -203,7 +225,7 @@ export function TextPreview({
   const pages = current?.pages
   const loaded = useMemo(() => loadedPages(pages ?? {}), [pages])
   const loadedThrough = lastLineLoaded(loaded)
-  const hasContent = loaded.length > 0 || current?.complete !== undefined
+  const hasContent = mode === 'renderer' ? current?.version !== undefined : loaded.length > 0 || current?.complete !== undefined
   storedScrollTopRef.current = state?.scrollTop ?? 0
   const bindBody = useCallback((body: HTMLDivElement | null): void => {
     const previous = bodyRef.current
@@ -220,10 +242,11 @@ export function TextPreview({
   // reads nothing, because the store outlives the body.
   const started = current !== undefined
   useEffect(() => {
-    if (started || !canRead || mode === undefined) return
+    if (started || !canRead || mode === undefined || selected === undefined) return
     if (mode === 'text-pages') loadPage(tab.id, file, 1, signal, meta.value?.version)
-    else loadAll(tab.id, file, signal, meta.value?.version)
-  }, [started, tab.id, file, signal, loadPage, loadAll, canRead, mode, meta.value?.version])
+    else if (mode === 'bytes-complete') loadAll(tab.id, file, signal, meta.value?.version)
+    else prepareRenderer(tab.id, signal, selected.id, meta.value?.version)
+  }, [started, tab.id, file, signal, loadPage, loadAll, prepareRenderer, canRead, mode, selected, meta.value?.version])
 
   // The two-column layout draws the change among the file's own lines, so its
   // reader needs the whole file and pages keep loading while it is selected —
@@ -276,13 +299,24 @@ export function TextPreview({
     selected?.id, mode, file, canRead, meta.value?.version,
   ])
 
+  const rendererReload = useCallback((): void => {
+    if (canRead && selected !== undefined) prepareRenderer(tab.id, signal, selected.id, meta.value?.version, true)
+  }, [canRead, prepareRenderer, tab.id, signal, selected?.id, meta.value?.version])
   const content = useMemo((): DocumentContent | undefined => {
+    if (mode === 'renderer') {
+      if (current === undefined) return undefined
+      const revision = current.loadRevision
+      return { kind: 'renderer', revision, reload: rendererReload,
+        loaded: (version) => { actions.rendered(tab.id, revision, version) } }
+    }
     if (mode === 'bytes-complete') {
-      return current?.complete === undefined ? undefined : { kind: 'bytes', data: current.complete.data }
+      return current?.complete === undefined ? undefined : {
+        kind: 'bytes', data: current.complete.data,
+      }
     }
     if (current === undefined || loaded.length === 0) return undefined
     return { kind: 'text', pages: loaded, text: loaded.filter(page => page.lines > 0).map(page => page.text).join('\n'), eof: current.eof }
-  }, [mode, loaded, current?.complete, current?.eof])
+  }, [mode, loaded, current?.complete, current?.eof, current?.loadRevision, rendererReload, actions, tab.id])
 
   // The whole-file comparison draws the file's own lines; a read that is still
   // paging, or one the byte renderers own, leaves the change unplaced. The split
@@ -321,6 +355,25 @@ export function TextPreview({
     body.scrollTop = Math.max(0, anchor.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop)
   }, [viewMode, changeSeq, changedFileLines])
 
+  // A known binary suffix with no matching renderer never reads: no plain-text
+  // fallback, no viewer control, only the path and the unsupported line. Every
+  // hook stays above this return, so the render order matches either outcome.
+  if (selected === undefined && unviewable) {
+    const { name: unsupportedName } = pathPartsOf(displayPath)
+    return (
+      <div className={css.preview} data-textpreview-state="unsupported" data-textpreview-url={tab.contentId}>
+        <div className={css.header}>
+          <HeaderPath pathRef={pathRef} pathTextRef={pathTextRef} path={displayPath} />
+        </div>
+        <div className={css.body} data-textpreview-body>
+          <div className={css.empty} data-textpreview-unsupported>
+            <FileTypeIcon kind={classifyFileType(unsupportedName)} size={36} className={css.emptyIcon} />
+            <p className={css.emptyLine}>{t('unsupportedFile')}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
   if (state === undefined || selected === undefined) {
     return (
       <div className={css.status} data-textpreview-state="loading">
@@ -331,7 +384,7 @@ export function TextPreview({
     )
   }
   const next = loadedThrough + 1
-  const { directory, name } = pathPartsOf(displayPath)
+  const { name } = pathPartsOf(displayPath)
   const observedVersion = meta.value?.version
   const changed = current?.version !== undefined && observedVersion !== undefined
     && observedVersion !== current.version && observedVersion !== current.observedVersion
@@ -342,7 +395,8 @@ export function TextPreview({
   const reload = (): void => {
     if (!canRead) return
     if (mode === 'text-pages') reloadPages(tab.id, file, signal, meta.value?.version)
-    else reloadAll(tab.id, file, signal, meta.value?.version)
+    else if (mode === 'bytes-complete') reloadAll(tab.id, file, signal, meta.value?.version)
+    else rendererReload()
   }
   // An editing session replaces two sources at once: the pages, and the change
   // view. Both are answers to "show me this file", and the editor is a third.
@@ -488,12 +542,7 @@ export function TextPreview({
           </p>
         ))}
       <div className={css.header}>
-        <div ref={pathRef} className={css.path} title={displayPath} data-textpreview-path>
-          <span ref={pathTextRef} className={css.pathText}>
-            {directory !== '' && <span className={css.pathDirectory}>{directory}</span>}
-            <span className={css.pathName}>{name}</span>
-          </span>
-        </div>
+        <HeaderPath pathRef={pathRef} pathTextRef={pathTextRef} path={displayPath} />
         {changeHunks !== undefined && (
           // Two controls over one subject: the first says whether the change is
           // showing at all, the second how it is drawn. Each pressed state is
@@ -651,21 +700,24 @@ export function TextPreview({
             {dirty && <span className={css.dirtyMark} data-textpreview-dirty>{t('edit.dirty')}</span>}
           </>
         )}
-        <Menu
-          open={menuOpen}
-          anchor={(
-            <button type="button" className={clsx(css.tool, css.viewerTool)} aria-label={t('openWith')} title={selected.title()} data-document-viewer-menu onClick={() => { setMenuOpen(value => !value) }}>
-              {selected.title()}
-            </button>
+        {candidates.length > 1
+          && (
+            <Menu
+              open={menuOpen}
+              anchor={(
+                <button type="button" className={clsx(css.tool, css.viewerTool)} aria-label={t('openWith')} title={selected.title()} data-document-viewer-menu onClick={() => { setMenuOpen(value => !value) }}>
+                  {selected.title()}
+                </button>
+              )}
+              items={candidates.map(candidate => ({ id: candidate.id, label: candidate.title() }))}
+              selectedId={selected.id}
+              onSelect={(id) => { actions.selected(tab.id, id); setMenuOpen(false) }}
+              onClose={() => { setMenuOpen(false) }}
+              align="end"
+              portal
+              dense
+            />
           )}
-          items={candidates.map(candidate => ({ id: candidate.id, label: candidate.title() }))}
-          selectedId={selected.id}
-          onSelect={(id) => { actions.selected(tab.id, id); setMenuOpen(false) }}
-          onClose={() => { setMenuOpen(false) }}
-          align="end"
-          portal
-          dense
-        />
         {selected.wrap === true && (
           // The tooltip names the action while the stable aria name and
           // `aria-pressed` expose the control and its current state.
@@ -744,8 +796,8 @@ export function TextPreview({
             )
             : (
               <>
-                {!hasContent && current?.failure === undefined && (
-                  <LoadingIndicator className={css.statusLine} label={t('loading')} />
+                {mode !== 'renderer' && !hasContent && current?.failure === undefined && (
+                  <LoadingIndicator className={clsx(css.statusLine, css.bodyLoading)} label={t('loading')} />
                 )}
                 {content !== undefined && renderSlot('sidebar.right.tab.document', {
                   resourceAddress: tab.contentId, content, wrap: state.wrap, scrollportRef: bindScrollport,

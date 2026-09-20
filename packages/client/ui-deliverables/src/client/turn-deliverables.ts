@@ -1,7 +1,9 @@
 /**
  * Turn-scoped produced-file Definition and readers. Client-only and
- * model-free: the vocabulary comes from successful first-party mutation
- * calls, never presentation data or the closing prose.
+ * model-free: produced paths come from successful first-party mutation calls,
+ * changed files from the Host's recorded git summary, reader decisions from
+ * `change/review`, and deliveries from `present`; never from presentation data
+ * or the closing prose.
  */
 import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
 import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client'
@@ -9,6 +11,7 @@ import type { ConversationMatch, ConversationNodeContext, ConversationNodeDefini
 import { narrowDiffHunks, type DiffHunk, type MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PresentedFile } from '@deepseek-ai/dsh-tool-present/types'
 import type { ChangeReviewDecision } from '@deepseek-ai/dsh-change-review'
+import { isChangesEvent } from '../changes.ts'
 import { basename, isPresentedData, isPresentedFile } from '../presented.ts'
 
 /** A declared file with its authorized open coordinates. */
@@ -42,16 +45,22 @@ export interface ProducedReview {
   readonly decision: ChangeReviewDecision
 }
 
+/** The latest `workspace/changes` announcement of one Turn; the Host serves its summary by this sequence. */
+export interface ChangesTurnData {
+  readonly seq: number
+}
+
 /** Immutable produced-file facts published against one Turn. */
 export interface DeliverablesTurnData {
   readonly produced: readonly ProducedPath[]
   readonly presented?: readonly PresentedPath[]
   readonly reviews?: readonly ProducedReview[]
+  readonly changes?: ChangesTurnData
 }
 
 declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
   interface ConversationTurnDataMap {
-    /** Successful mutation paths accumulated in this Turn. */
+    /** Successful mutation paths, recorded changed files, and deliveries accumulated in this Turn. */
     deliverables: DeliverablesTurnData
   }
 }
@@ -204,7 +213,7 @@ export function selectProducedFiles(owner: TurnTailOwnerProps): readonly string[
   return paths.length === 0 ? null : paths
 }
 
-/** Memo for {@link changesForClosing}, per Turn `produced` array and closing seq. */
+/** Memo for {@link producedChangesForClosing}, per Turn `produced` array and closing seq. */
 const changesByProduced = new WeakMap<readonly ProducedPath[], Map<number, readonly ProducedChange[]>>()
 
 /**
@@ -224,7 +233,7 @@ const changesByProduced = new WeakMap<readonly ProducedPath[], Map<number, reado
  * @param seq - closing Assistant seq; later Tool settlements are excluded.
  * @returns one change per path in first-seen order; empty when the turn applied none.
  */
-export function changesForClosing(
+export function producedChangesForClosing(
   data: Readonly<DeliverablesTurnData> | undefined,
   seq = Number.POSITIVE_INFINITY,
 ): readonly ProducedChange[] {
@@ -261,12 +270,22 @@ export function selectProducedReviews(owner: TurnTailOwnerProps): readonly Produ
  * @returns the changes, or null when the Turn applied none.
  */
 export function selectProducedChanges(owner: TurnTailOwnerProps): readonly ProducedChange[] | null {
-  const changes = changesForClosing(owner.turn.data.get('deliverables'), owner.seq)
+  const changes = producedChangesForClosing(owner.turn.data.get('deliverables'), owner.seq)
   return changes.length === 0 ? null : changes
+}
+
+/**
+ * The turn's latest change announcement.
+ * @param owner - closing turn.
+ * @returns the announcement, or null when the Host recorded none.
+ */
+export function changesForClosing(owner: TurnTailOwnerProps): ChangesTurnData | null {
+  return owner.turn.data.get('deliverables')?.changes ?? null
 }
 
 /** Fold one accepted Match into the Turn's accumulator. */
 function applyUpdate(state: DeliverablesState, match: ConversationMatch): DeliverablesState {
+  if (match.event.type === 'workspace/changes') return { ...state, changes: { seq: match.event.seq } }
   if (match.event.type === 'deliverables/presented') {
     const { files } = match.event.data
     const seq = match.event.seq
@@ -344,6 +363,7 @@ export const deliverablesDefinition: ConversationNodeDefinition<DeliverablesStat
     if (event.type === 'tool/call') return { id: String(event.data.turn), role: 'update' }
     if (event.type === 'deliverables/presented') return isPresentedData(event.data) ? { id: String(event.data.turn), role: 'update' } : null
     if (event.type === 'change/review') return { id: String(event.data.turn), role: 'update' }
+    if (event.type === 'workspace/changes') return isChangesEvent(event.data) ? { id: String(event.data.turn), role: 'update' } : null
     if (event.type === 'tool/result' && isAppendSurfaceEvent(event)) {
       return { id: String(event.data.turn), role: 'update' }
     }
@@ -362,7 +382,8 @@ export const deliverablesDefinition: ConversationNodeDefinition<DeliverablesStat
       && previous.key === 'deliverables'
       && previous.value.produced === state.produced
       && previous.value.presented === state.presented
-      && previous.value.reviews === state.reviews) return previous
+      && previous.value.reviews === state.reviews
+      && previous.value.changes === state.changes) return previous
     return {
       kind: 'turn',
       turn: state.turn,
@@ -371,6 +392,7 @@ export const deliverablesDefinition: ConversationNodeDefinition<DeliverablesStat
         produced: state.produced,
         ...state.presented === undefined ? {} : { presented: state.presented },
         ...state.reviews === undefined ? {} : { reviews: state.reviews },
+        ...state.changes === undefined ? {} : { changes: state.changes },
       },
     }
   },

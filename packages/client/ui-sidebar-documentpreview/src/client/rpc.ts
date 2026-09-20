@@ -133,9 +133,9 @@ export type DocumentFileBytes = Omit<WorkspaceFileBytes, 'data'> & { readonly da
  * Read a complete file through the Host endpoint.
  * @param file - Session and path decoded from the tab address.
  * @param signal - owning tab lifetime.
- * @returns complete wire bytes, including declared failures.
+ * @returns complete binary bytes, including declared failures.
  */
-export type ReadDocumentBytes = (file: SessionFile, signal: AbortSignal) => Promise<RemoteResult<WorkspaceFileBytes>>
+export type ReadDocumentBytes = (file: SessionFile, signal: AbortSignal) => Promise<RemoteResult<DocumentFileBytes>>
 
 /**
  * Decode one successful Remote byte result for document renderers.
@@ -143,21 +143,33 @@ export type ReadDocumentBytes = (file: SessionFile, signal: AbortSignal) => Prom
  * @returns the same metadata with native bytes; malformed base64 throws.
  */
 export function documentFileBytes(file: WorkspaceFileBytes): DocumentFileBytes {
-  return { ...file, data: Uint8Array.from(atob(file.data), character => character.charCodeAt(0)) }
+  const binary = atob(file.data)
+  const data = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index++) data[index] = binary.charCodeAt(index)
+  return { ...file, data }
 }
 
 /**
- * Decode one whole-file result into editor text.
+ * Decode already-decoded document bytes into editor text.
  *
  * `ignoreBOM` keeps a leading byte-order mark in the text instead of letting
  * `TextDecoder` swallow it, so a file that carries one round-trips through a
  * save. Decoding never throws — malformed bytes become U+FFFD — which is why
  * editing is offered only for a file the paged read already accepted as text.
+ * @param file - decoded document bytes.
+ * @returns the file as text, byte-order mark included.
+ */
+export function decodeDocumentText(file: DocumentFileBytes): string {
+  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(file.data)
+}
+
+/**
+ * Decode one whole-file result into editor text.
  * @param file - Host byte result with base64 data.
  * @returns the file as text, byte-order mark included.
  */
 export function documentFileText(file: WorkspaceFileBytes): string {
-  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(documentFileBytes(file).data)
+  return decodeDocumentText(documentFileBytes(file))
 }
 
 /** Replace one file's contents through the Host endpoint. */

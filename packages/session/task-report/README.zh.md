@@ -67,7 +67,7 @@ kind: "package-reference"
 
 当问题不在报告自身行为时，阅读这些页面。
 
-- [tool-present](../../fs/tool-present/README.zh.md)——模型拥有的交付声明，其 `write`/`edit` 结果为本插件提供改动证据。
+- [tool-present](../../deliverables/tool-present/README.zh.md)——模型拥有的交付声明，其 `write`/`edit` 结果为本插件提供改动证据。
 - [change-review](../../fs/change-review/README.zh.md)——读者针对同一批改动记录接受／回滚决定的地方。
 - [session-query](../../session-query/session-query/README.zh.md)——本插件所折叠的日志读取器。
 - [ui-task-report](../../client/ui-task-report/README.zh.md)——在回合尾部渲染所记录报告的 Web 卡片。

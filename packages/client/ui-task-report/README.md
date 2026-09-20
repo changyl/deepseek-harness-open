@@ -27,7 +27,7 @@ This package renders the task report of a completed turn in the chat view's turn
 
 Mount this plugin beside `ui-deliverables` and `ui-chat`; the row then appears above the action strip of every turn that recorded a task report. It states the report title, then the facts the report carries: the changed-file count, the line totals, and the verification tally. The trailing control opens the report file in the session's own viewer, the same way a produced-file chip does.
 
-A turn whose report was not written shows the refusal instead of the control, so a read-only session still explains itself rather than rendering an inert button. Turns without a report render nothing at all: the chain entry declines them, and the tail stays empty.
+A turn whose report was not written shows the refusal instead of the control, so a read-only session still explains itself rather than rendering an inert button. Turns without a report render nothing at all: the card reads the turn's report data and renders nothing when it is absent, so the tail stays empty.
 
 -----
 
@@ -37,7 +37,7 @@ A turn whose report was not written shows the refusal instead of the control, so
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-One state-only `ConversationNodeDefinition` folds `task-report/generated` into the turn-scoped `taskReport` value: `turn/start` opens the Context, the report event replaces the value, and `buildLocationData` republishes only when the payload identity moves. A chain entry then claims any completed turn whose data carries that value and hands the card the report plus the owner's file opener; both readers live in the plugin, and the component receives everything through props.
+One state-only `ConversationNodeDefinition` folds `task-report/generated` into the turn-scoped `taskReport` value: `turn/start` opens the Context, the report event replaces the value, and `buildLocationData` republishes only when the payload identity moves. The card is a turn-tail list entry that reads that value from the Turn it renders and takes the owner's file opener from its props; both readers live in the plugin.
 
 The card has no state and no service access. It renders the title, the facts it can state, and either the open control or the refusal line; a report with neither changes nor verification renders as title and control alone. All copy lives in the `taskReport` locale namespace, so a language switch re-renders through the framework's locale revision.
 
@@ -50,7 +50,7 @@ The card has no state and no service access. It renders the title, the facts it 
 
 - [dsh-task-report](../../session/task-report/README.md) — the host plugin that folds each closed turn and records the event this card renders.
 - [ui-deliverables](../ui-deliverables/README.md) — the sibling turn-tail entry for produced files and changes.
-- [ui-chat](../ui-chat/README.md) — declares `conversation.chat.turnTail`, the chain this card occupies.
+- [ui-chat](../ui-chat/README.md) — declares `conversation.chat.turnTail`, the list this card occupies.
 - [Slots reference](../../../docs/subsystems/slots.md) — slot kinds, scopes, and the props shares a registrant receives.
 
 -----
@@ -84,4 +84,4 @@ None.
 
 </details>
 
-**Runtime invariant:** No companion is published. The package owns no cross-plugin mutable state; its registrations — the dictionaries, the turn-scoped fold, and the chain entry — prove disposal through the HMR-safety spec.
+**Runtime invariant:** No companion is published. The package owns no cross-plugin mutable state; its registrations — the dictionaries, the turn-scoped fold, and the turn-tail entry — prove disposal through the HMR-safety spec.

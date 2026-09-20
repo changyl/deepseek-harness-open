@@ -26,8 +26,6 @@ Use the web_fetch tool to retrieve the content of a specific HTTP(S) URL (for ex
 
 Use goal tools for one long-running completion objective in the current session. create_goal may infer goal intent from a direct human request in any language; do not create a goal for routine single-turn work. Call get_goal before update_goal and copy its exact goal_id and revision. After session resume or fork, an active goal is disarmed: when a human asks to continue or resume in any wording or language, use update_goal action resume to rearm it. Mark complete only when the objective is actually achieved. Mark blocked only after the same blocking condition persists for at least 3 consecutive goal rounds, and report that concrete condition in blocked_reason; difficulty, uncertainty, or useful remaining work is not blocked.
 
-Use the ralph tool ONLY when the direct human explicitly asks for a Ralph loop or fresh-agent iterative execution. Each Ralph round starts a fresh child with no conversation seed and uses the shared workspace as durable memory. Completion and blockers are worker reports, not independent evaluation. Use same-session goal tools for ordinary long-running objectives, and plain subagents or workflows for bounded delegation and fan-out.
-
 Use subagent in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set `run_in_background: false` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.
 
 Use subagent_fork in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set `run_in_background: false` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.
@@ -170,32 +168,6 @@ interface ToolArgsMap {
       /** Brief description for the user. */
       description?: string;
     }[];
-  } & Record<string, JsonValue>;
-  /** Read and change the durable project board shared by every session in this working directory. Actions: list (projects), create (title), read (project_id), add_task (project_id, revision, title, blocked_by?), update_task (project_id, revision, task_id, title?/status?/blocked_by?), link_session (project_id, revision, task_id). Every mutation needs the revision returned by the last read of that project: a stale revision is refused, so re-read and retry. A task cannot start or finish while a task it is blocked_by is unfinished, and dependencies may not form a cycle. Use todo_write for the work of this session; use this board for work that must survive the session. */
-  project: {
-    /** list | create | read | add_task | update_task | link_session. */
-    action: "list" | "create" | "read" | "add_task" | "update_task" | "link_session";
-    /** Target project id, from list or create. */
-    project_id?: string;
-    /** Revision returned by the last read of this project. */
-    revision?: number;
-    /** Project title for create, or task title for add_task/update_task. */
-    title?: string;
-    /** Target task id, from read. */
-    task_id?: string;
-    /** Task status for update_task. */
-    status?: "todo" | "doing" | "blocked" | "done" | "cancelled";
-    /** Complete dependency list for the task; tasks that must finish first. */
-    blocked_by?: string[];
-    /** Include closed projects in list. */
-    include_closed?: boolean;
-  } & Record<string, JsonValue>;
-  /** Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for Ralph or fresh-agent iteration. Each round opens a new child with no parent conversation or prior child session; the shared workspace is long-term memory, and only a bounded structured report crosses rounds. The call returns when a worker reports completion or a concrete blocker, or at the round limit. Ordinary long-running same-session work belongs to goal tools. */
-  ralph: {
-    /** The immutable completion objective for every fresh Ralph round. */
-    objective: string;
-    /** Optional positive safe-integer round cap, bounded by the deployment ceiling. */
-    maxRounds?: number;
   } & Record<string, JsonValue>;
   /** Read a UTF-8 text file and return line-numbered content. */
   read: {
@@ -438,56 +410,6 @@ interface ToolOutputMap {
       description?: string;
     }[];
   };
-  project: {
-    /** Bounded project summaries from list. */
-    projects?: {
-      id: string;
-      title: string;
-      status: string;
-      revision: number;
-      tasks: number;
-      ready: number;
-      updatedAt: number;
-    }[];
-    /** Summary of the project a mutation or create returned. */
-    project?: {
-      id: string;
-      title: string;
-      status: string;
-      revision: number;
-      tasks: number;
-      ready: number;
-      updatedAt: number;
-    };
-    /** The bounded board a read returned. */
-    board?: {
-      id: string;
-      title: string;
-      status: string;
-      revision: number;
-      ready: string[];
-      stranded: string[];
-      tasks: {
-        id: string;
-        title: string;
-        status: string;
-        blockedBy: string[];
-        sessionIds: string[];
-      }[];
-      truncated: boolean;
-    };
-    /** Id of a created project. */
-    id?: string;
-    /** Revision after a mutation; carry it into the next call. */
-    revision?: number;
-    /** Whether the result omitted projects or tasks. */
-    truncated?: boolean;
-  };
-  ralph: {
-    runId: string;
-    agentsStarted: number;
-    result: JsonValue;
-  };
   read: {
     path: string;
     offset: number;
@@ -622,7 +544,7 @@ declare const tools: {
 }
 ```
 
-When you successfully create or modify files, mention the primary outputs in your final response. To make those and any other changed-file references clickable in Web, format them as Markdown inline code using the exact file-tool path, or a basename when unique among the files changed in that turn.
+When you successfully create or modify files, mention the primary outputs in your final response. Outside commands, configuration expressions, and code blocks, link every mention of an existing file, including repeats and tables, to its full path relative to the working directory or absolute; append #L24 or #L24-L30 to the target for known lines. Use the filename or a clear alias as the label, adding only enough parent directories to distinguish files; keep full paths out of labels. Default to the name alone; when precise locations matter, append :24 or :24–30, with no # or L in the line suffix.
 
 The DeepSeek Harness implementation checkout is at {{sourceRoot}}. The checkout location and current working directory are separate values and may differ; never infer the working directory from this path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend DSH itself.
 

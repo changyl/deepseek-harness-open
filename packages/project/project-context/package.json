@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-project-context",
   "description": "Tell the model which durable project tasks this session is linked to",
-  "version": "0.1.5-rc.2",
+  "version": "0.1.6-alpha.2",
   "publishConfig": {
     "access": "public"
   },

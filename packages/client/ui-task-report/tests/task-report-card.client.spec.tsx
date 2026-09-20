@@ -1,6 +1,7 @@
 /**
  * The task-report card: the facts it states for a written report, its failure
- * copy when nothing was written, and the open gesture.
+ * copy when nothing was written, the open gesture, and its absence on a Turn
+ * that recorded no report.
  */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -20,10 +21,21 @@ function report(over: Partial<TaskReportEventData> = {}): TaskReportEventData {
   return { turn: 1, reason: 'completed', changes: [], verification: [], ...over }
 }
 
-/** Render the card over one report. */
-function renderCard(payload: TaskReportEventData) {
+/** Render the card over one Turn whose data does or does not carry a report. */
+function renderCard(payload: TaskReportEventData | undefined) {
   const openFile = vi.fn()
-  render(<TaskReportCard matched={{ report: payload, openFile }} t={t} />)
+  const props = {
+    turn: {
+      turn: 1,
+      data: {
+        get: (key: string) => (key === 'taskReport' && payload !== undefined ? { report: payload } : undefined),
+      },
+    },
+    seq: 9,
+    openFile,
+    t,
+  } as unknown as TaskReportCardProps
+  render(<TaskReportCard {...props} />)
   return { openFile }
 }
 
@@ -69,5 +81,19 @@ describe('TaskReportCard', () => {
   it('renders an unexplained refusal without inventing a reason', () => {
     renderCard(report({}))
     expect(screen.getByText('未写入：')).toBeDefined()
+  })
+
+  it('renders nothing when the Turn recorded no report', () => {
+    const { container } = render(
+      <TaskReportCard
+        {...{
+          turn: { turn: 1, data: { get: () => undefined } },
+          seq: 9,
+          openFile: vi.fn(),
+          t,
+        } as unknown as TaskReportCardProps}
+      />,
+    )
+    expect(container.firstChild).toBeNull()
   })
 })

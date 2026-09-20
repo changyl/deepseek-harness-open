@@ -17,11 +17,10 @@
  * write to. A tab that never read has no bucket to forget.
  */
 import type { BoundActions } from '@deepseek-ai/dsh-client-store'
-import type { RemoteFailure } from '@deepseek-ai/dsh-api-remotes/client'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile, WriteWorkspaceFile } from './rpc.ts'
-import { documentFileBytes, documentFileText } from './rpc.ts'
+import { decodeDocumentText } from './rpc.ts'
 import type { TextStore } from './store.ts'
 import type { DocumentLoadMode } from './document/registry.ts'
 
@@ -56,7 +55,9 @@ export interface TextInjected {
    * @param signal - tab lifetime.
    * @param observedVersion - metadata version observed at read start.
    */
-  readonly loadAll: (tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string) => void
+  readonly loadAll: (
+    tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string,
+  ) => void
   /**
    * Discard the old complete result and read again.
    * @param tabId - owning tab.
@@ -64,7 +65,9 @@ export interface TextInjected {
    * @param signal - tab lifetime.
    * @param observedVersion - metadata version observed at read start.
    */
-  readonly reloadAll: (tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string) => void
+  readonly reloadAll: (
+    tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string,
+  ) => void
   /**
    * Open an editing session by reading the whole file.
    *
@@ -102,6 +105,15 @@ export interface TextInjected {
     expectedVersion: string | undefined,
     signal: AbortSignal,
   ) => void
+  /**
+   * Begin a renderer-owned load without reading source bytes.
+   * @param tabId - owning tab.
+   * @param signal - tab lifetime.
+   * @param rendererId - selected implementation.
+   * @param observedVersion - metadata version observed at request start.
+   * @param reload - discard the previous content revision.
+   */
+  readonly prepareRenderer: (tabId: TabId, signal: AbortSignal, rendererId: string, observedVersion?: string, reload?: boolean) => void
 }
 
 /**
@@ -116,6 +128,8 @@ interface TabReads {
   mode: DocumentLoadMode
   /** Bumped whenever a draft read starts or the session closes, retiring the one before it. */
   draft: number
+  rendererId?: string
+  controller?: AbortController
 }
 
 /**
@@ -140,14 +154,18 @@ export function textFace(
       const created: TabReads = { generation: 0, version: undefined, mode: 'text-pages', draft: 0 }
       tabs.set(tabId, created)
       signal.addEventListener('abort', () => {
+        created.controller?.abort()
         tabs.delete(tabId)
         actions.forget(tabId)
       }, { once: true })
       return created
     }
-    const modeOf = (tabId: TabId, signal: AbortSignal, mode: DocumentLoadMode): TabReads => {
+    const modeOf = (tabId: TabId, signal: AbortSignal, mode: DocumentLoadMode, rendererId?: string): TabReads => {
       const reads = readsOf(tabId, signal)
-      if (reads.mode !== mode) {
+      if (reads.mode !== mode || reads.rendererId !== rendererId) {
+        reads.controller?.abort()
+        if (rendererId === undefined) delete reads.rendererId
+        else reads.rendererId = rendererId
         reads.mode = mode
         reads.generation++
         reads.version = undefined
@@ -176,26 +194,31 @@ export function textFace(
         actions.page(tabId, result.value)
       })
     }
-    const loadAll = (tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string): void => {
+    const loadAll = (
+      tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string,
+    ): void => {
       if (signal.aborted) return
       const reads = modeOf(tabId, signal, 'bytes-complete')
-      const { generation } = reads
+      reads.controller?.abort()
+      const controller = new AbortController()
+      reads.controller = controller
+      const lifetime = AbortSignal.any([signal, controller.signal])
       actions.loading(tabId, 'bytes-complete', observedVersion)
-      void readAll(file, signal).then((result) => {
-        if (signal.aborted || reads.generation !== generation) return
+      void readAll(file, lifetime).then((result) => {
+        if (lifetime.aborted) return
         if (!result.ok) {
           actions.failed(tabId, result.error)
           return
         }
-        let file
-        try {
-          file = documentFileBytes(result.value)
-        } catch (error) {
-          actions.failed(tabId, malformedBytes(error))
-          return
-        }
+        const file = result.value
         reads.version = file.version
         actions.complete(tabId, file)
+      }, (error: unknown) => {
+        if (lifetime.aborted) return
+        actions.failed(tabId, Object.assign(
+          new Error(error instanceof Error ? error.message : String(error), { cause: error }),
+          { name: 'RemoteError', isDSHRemoteError: true as const, code: 'gateway/internal' as const, details: {} },
+        ))
       })
     }
     const restart = (
@@ -203,6 +226,7 @@ export function textFace(
     ): void => {
       if (signal.aborted) return
       const reads = readsOf(tabId, signal)
+      reads.controller?.abort()
       reads.generation += 1
       reads.version = undefined
       actions.reset(tabId)
@@ -220,14 +244,14 @@ export function textFace(
           actions.editFailed(tabId, result.error)
           return
         }
-        let text
-        try {
-          text = documentFileText(result.value)
-        } catch (error) {
-          actions.editFailed(tabId, malformedBytes(error))
-          return
-        }
-        actions.editOpened(tabId, text, result.value.version)
+        // `readAll` already decoded the base64 payload; text decoding never throws.
+        actions.editOpened(tabId, decodeDocumentText(result.value), result.value.version)
+      }, (error: unknown) => {
+        if (signal.aborted || reads.draft !== token) return
+        actions.editFailed(tabId, Object.assign(
+          new Error(error instanceof Error ? error.message : String(error), { cause: error }),
+          { name: 'RemoteError', isDSHRemoteError: true as const, code: 'gateway/internal' as const, details: {} },
+        ))
       })
     }
     const saveDraft = (
@@ -260,19 +284,13 @@ export function textFace(
         if (held !== undefined) held.draft += 1
         actions.editClosed(tabId)
       },
+      prepareRenderer: (tabId, signal, rendererId, observedVersion, reload = false) => {
+        if (signal.aborted) return
+        modeOf(tabId, signal, 'renderer', rendererId)
+        if (reload) actions.reset(tabId)
+        actions.loading(tabId, 'renderer', observedVersion, rendererId)
+      },
       reloadAll: (tabId, file, signal, observedVersion) => { restart(tabId, file, signal, observedVersion, 'bytes-complete') },
     }
   }
-}
-
-/**
- * The failure a whole-file read settles as when its base64 payload is malformed.
- * @param error - the decoder's own error, kept as the cause.
- * @returns a Remote-shaped refusal the failure line can render.
- */
-function malformedBytes(error: unknown): RemoteFailure {
-  return Object.assign(
-    new Error('document file byte response has malformed base64 data', { cause: error }),
-    { name: 'RemoteError', isDSHRemoteError: true as const, code: 'gateway/internal' as const, details: {} },
-  )
 }

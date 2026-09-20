@@ -93,6 +93,12 @@
 .block[data-diff-highlight] .line {
   width: max-content;
   min-width: 100%;
+.context {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.context::before {
+  content: '  ';
 }
 
 .expand {

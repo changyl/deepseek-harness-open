@@ -12,6 +12,7 @@
  */
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { rankByName } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { HostObservable, StandardSourceBinding } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { CommandPaletteRow, CommandUiContract } from '@deepseek-ai/dsh-client-ui-commands/client'
 import type { UiWorkspace } from '@deepseek-ai/dsh-client-ui-workspace/client'
@@ -96,8 +97,13 @@ export function filterEntries(entries: readonly PaletteEntry[], query: string): 
 export interface CommandPaletteDeps {
   /** Command surface: palette rows and bare-invocation dispatch. */
   readonly commands: CommandUiContract
-  /** Session Controller: the current session and its cancel verb. */
+  /** Session Controller: per-Session bindings and their cancel verb. */
   readonly sessions: ISessions
+  /**
+   * ui-session's current Session binding source. Read once at open time, when
+   * the palette captures the session its rows and actions address.
+   */
+  readonly currentSession: HostObservable<StandardSourceBinding>
   /**
    * Workspace navigation, absent when the deployment mounts no Workspace UI.
    * Read per pick, never captured at registration: the palette waits on the
@@ -125,7 +131,8 @@ export class CommandPaletteController {
   private abort: AbortController | undefined
 
   /**
-   * @param deps - command surface, session controller, workspace navigation, and copy.
+   * @param deps - command surface, session controller, current Session source,
+   * workspace navigation, and copy.
    */
   constructor(private readonly deps: CommandPaletteDeps) {}
 
@@ -140,7 +147,7 @@ export class CommandPaletteController {
    * a retry or a second open supersedes the in-flight load.
    */
   open(): void {
-    const sessionId = this.deps.sessions.list.getSnapshot().current
+    const sessionId = this.deps.currentSession.getSnapshot().key as SessionId | undefined
     this.set({
       open: true,
       status: sessionId === undefined ? 'no-session' : 'loading',

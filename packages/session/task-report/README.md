@@ -67,7 +67,7 @@ Writing happens before recording: the document is rendered, resolved against `se
 
 Read these when the report's own behavior is not the question.
 
-- [tool-present](../../fs/tool-present/README.md) — the model-owned delivery declaration whose `write`/`edit` results supply this plugin's change evidence.
+- [tool-present](../../deliverables/tool-present/README.md) — the model-owned delivery declaration whose `write`/`edit` results supply this plugin's change evidence.
 - [change-review](../../fs/change-review/README.md) — the accept/revert decisions a reader records over those same changes.
 - [session-query](../../session-query/session-query/README.md) — the log reader this plugin folds.
 - [ui-task-report](../../client/ui-task-report/README.md) — the Web card that renders the recorded report in the turn tail.

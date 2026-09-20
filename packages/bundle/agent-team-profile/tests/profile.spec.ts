@@ -36,8 +36,8 @@ describe('Agent Teams profile bundle', () => {
     }[]
     expect(patches.find(patch => patch.id === 'tool-subagent-control')).toMatchObject({ disabled: true })
     expect(patches.find(patch => patch.id === 'tool-subagent-list-agents')).toMatchObject({ disabled: true })
-    expect(patches.find(patch => patch.id === 'tool-subagent')?.config).toMatchObject({ backgroundMode: 'one-shot' })
-    expect(patches.find(patch => patch.id === 'tool-subagent-fork')?.config).toMatchObject({ backgroundMode: 'one-shot' })
+    expect(patches.find(patch => patch.id === 'tool-subagent')).toMatchObject({ disabled: true })
+    expect(patches.find(patch => patch.id === 'tool-subagent-fork')).toMatchObject({ disabled: true })
     const inserted = patches.flatMap(patch => patch.insert ?? [])
     // The service row lives in dsh-base; this layer must not repeat it, or the
     // composition would carry the same plugin id twice.

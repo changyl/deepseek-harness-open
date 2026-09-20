@@ -39,6 +39,11 @@ async function bench() {
     list: { getSnapshot: () => ({ current: SESSION }) },
     binding: () => undefined,
   } as never)
+  // ui-session owns the current Session selection: the palette reads its
+  // `session` scope binding source at open time.
+  ctx.provide('uiSession', {
+    adapter: { current: { getSnapshot: () => ({ key: SESSION }) } },
+  } as never)
   // The locale plugin binds a settings scope, which reads the connection handle
   // and the forwarded-event port.
   ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
@@ -62,7 +67,7 @@ function keydown(key: string, over: KeyboardEventInit = {}): KeyboardEvent {
 
 describe('ui-command-palette browser apply', () => {
   it('declares every service it binds', () => {
-    expect(inject).toEqual(['slots', 'locale', 'commandUi', 'sessions'])
+    expect(inject).toEqual(['slots', 'locale', 'commandUi', 'sessions', 'uiSession'])
   })
 
   it('node-half apply is an intentional no-op', () => {

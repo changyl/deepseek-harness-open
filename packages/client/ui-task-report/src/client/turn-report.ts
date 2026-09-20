@@ -25,7 +25,7 @@ interface TaskReportState extends Partial<TaskReportTurnData> {
   readonly turn: number
 }
 
-/** What the chain selector hands the card. */
+/** The report reader's match for one turn. */
 export interface TaskReportMatch {
   readonly report: TaskReportEventData
   /** Open the written report in the session's own viewer. */

@@ -1,28 +1,30 @@
 /**
  * Task-report card: the closing turn's change summary and verification result,
  * rendered in the turn tail beside the assistant action row. Pure presentation:
- * every fact arrives through the chain selector's match and the locale seat.
+ * every fact arrives through the Turn owner currency, the report reader, and the
+ * locale seat; a Turn without a report renders nothing.
  */
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { Button, IconChecklistOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { TaskReportEventData } from '@deepseek-ai/dsh-task-report/types'
-import type { TaskReportMatch } from './turn-report.ts'
+import { selectTaskReport } from './turn-report.ts'
 import { NS, type TaskReportTranslate } from './locales.ts'
 import css from './TaskReportCard.module.css'
 
-/** Props of the turn-tail card: the selector's match plus the locale seat. */
-export type TaskReportCardProps = { matched: TaskReportMatch } & PropsLocale<typeof NS>
+/** Props of the turn-tail card: the Turn owner currency plus the locale seat. */
+export type TaskReportCardProps = PropsRuntime<'conversation.chat.turnTail'> & PropsLocale<typeof NS>
 
 /**
  * Render one turn's task report row.
- * @param props - matched report facts and the localized copy seat.
- * @returns the report row, or nothing when the report has no facts to state.
+ * @param props - Turn owner currency and the localized copy seat.
+ * @returns the report row, or nothing when the Turn has no report.
  */
-export function TaskReportCard({ matched, t }: TaskReportCardProps): ReactNode {
-  const { report } = matched
-  const facts = useMemo(() => factList(report, t), [report, t])
+export function TaskReportCard({ turn, seq, openFile, t }: TaskReportCardProps): ReactNode {
+  const report = selectTaskReport({ turn, seq, openFile })?.report
+  const facts = useMemo(() => report === undefined ? [] : factList(report, t), [report, t])
+  if (report === undefined) return null
   const path = report.path
 
   return (
@@ -35,7 +37,7 @@ export function TaskReportCard({ matched, t }: TaskReportCardProps): ReactNode {
         : (
           <Button
             variant="ghost"
-            onClick={() => { matched.openFile(path) }}
+            onClick={() => { openFile(path) }}
           >
             {t('row.open')}
           </Button>

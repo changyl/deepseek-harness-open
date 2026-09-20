@@ -322,7 +322,7 @@ export abstract class ReleaseFamily {
 class DshFamily extends ReleaseFamily {
   readonly id = 'dsh'
   readonly patterns = [
-    'packages/!(experimental)/*/package.json',
+    'packages/*/*/package.json',
     'apps/*/package.json',
   ] as const
   readonly tagPrefix = 'dsh-v'
