@@ -41,8 +41,10 @@ export interface UiWorkspace {
   /**
    * Start a New Session flow and navigate to its Session.
    * @param workspaceId - explicit target; absent inherits the current or most recent Workspace.
+   * @returns the Session the flow landed on, or undefined when no Workspace could
+   * be resolved, or when a later navigation superseded this one.
    */
-  startSession(workspaceId?: WorkspaceId): void
+  startSession(workspaceId?: WorkspaceId): Promise<SessionId | undefined>
   /**
    * Archive a Session and clear it when it is the current selection.
    * @param sessionId - Session to archive.
@@ -151,7 +153,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     if (!navigation.aborted) this.openSession(childId)
   }
 
-  startSession(workspaceId?: WorkspaceId): void {
+  async startSession(workspaceId?: WorkspaceId): Promise<SessionId | undefined> {
     const workspace = this.workspaces.list.getSnapshot()
     const sessions = this.sessions.list.getSnapshot()
     const current = sessions.current
@@ -165,11 +167,19 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     if (target === undefined) {
       this.sessions.clear()
       this.ctx.layout.selectPanel(null)
-      return
+      return undefined
     }
-    void this.openWorkspace(target).catch(
-      (reason: unknown) => { console.warn('new session failed:', reason) },
-    )
+    // `beforeOpen` is the only place the destination is observable: the flow
+    // reuses an existing blank Session or creates one, and a superseding
+    // navigation skips the callback entirely.
+    let destination: SessionId | undefined
+    try {
+      await this.openWorkspace(target, (sessionId) => { destination = sessionId })
+    } catch (reason) {
+      console.warn('new session failed:', reason)
+      return undefined
+    }
+    return destination
   }
 
   async archiveSession(sessionId: SessionId): Promise<void> {

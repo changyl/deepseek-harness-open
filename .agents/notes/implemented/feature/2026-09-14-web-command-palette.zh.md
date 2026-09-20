@@ -24,7 +24,7 @@ Web GUI 过去只能通过输入框触达命令：输入 `/name`，或打开输�
 
 `CommandPaletteController` 持有一个快照 store，以及 overlay 的注入面与快捷键绑定都会调用的动词。打开时记录当前会话 id，发布本界面自己拥有的操作——始终有「新会话」，该会话有正在运行的轮次时有「停止生成」——并启动一次加载。输入只在本地对已加载的行重新排序，不再发出查询，因此每次打开只触达一次线路。加载代数计数器加上 `AbortController` 使被取代或已关闭的加载不写入任何内容，这正是快捷键开关与重试按钮能够共用同一个 `open()` 的原因。
 
-行是判别联合（`new-session`、`stop`、`command`），选择按该判别字段派发：通过可选服务调用 `ctx.uiWorkspace.startSession()`、所绑定会话的 `cancel()`，或 `ctx.commandUi.run(name, session)`。命令行携带读取其目录时所针对的会话 id，因此派发无需第二次查找，也不会与已展示的内容发生漂移。
+行是判别联合（`new-session`、`stop`、`command`），选择按该判别字段派发：在每次选择时读取可选的 `ctx.uiWorkspace.startSession()` 服务、所绑定会话的 `cancel()`，或 `ctx.commandUi.run(name, session)`。命令行携带读取其目录时所针对的会话 id，因此派发无需第二次查找，也不会与已展示的内容发生漂移。
 
 ### 一个键盘注册表，而不是每个功能各一个监听器
 

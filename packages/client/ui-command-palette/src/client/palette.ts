@@ -98,8 +98,13 @@ export interface CommandPaletteDeps {
   readonly commands: CommandUiContract
   /** Session Controller: the current session and its cancel verb. */
   readonly sessions: ISessions
-  /** Workspace navigation, absent when the deployment mounts no Workspace UI. */
-  readonly workspace: Pick<UiWorkspace, 'startSession'> | undefined
+  /**
+   * Workspace navigation, absent when the deployment mounts no Workspace UI.
+   * Read per pick, never captured at registration: the palette waits on the
+   * command surface and the Session Controller, while the Workspace UI also
+   * needs its directory-picker Remote, so it can register later.
+   */
+  readonly workspace: () => Pick<UiWorkspace, 'startSession'> | undefined
   /** Palette copy, re-read on every open. */
   readonly t: CommandPaletteTranslate
 }
@@ -198,7 +203,7 @@ export class CommandPaletteController {
     this.close()
     switch (entry.kind) {
       case 'new-session':
-        this.deps.workspace?.startSession()
+        this.newSession()
         return
       case 'stop':
         this.stop(entry.sessionId)
@@ -206,6 +211,26 @@ export class CommandPaletteController {
       case 'command':
         this.deps.commands.run(entry.name, { sessionId: entry.sessionId })
     }
+  }
+
+  /**
+   * Start a new session and hand the caret to the composer it lands on, once
+   * the flow reports that destination. The new-session flow reuses the current
+   * blank session when one exists, so its composer does not remount and takes
+   * no focus of its own; a session created fresh mounts one, whose unlock
+   * effect focuses it, and the hand-back below is then a no-op.
+   */
+  private newSession(): void {
+    const workspace = this.deps.workspace()
+    if (workspace === undefined) return
+    workspace.startSession().then(
+      (sessionId) => {
+        if (sessionId !== undefined) this.deps.commands.focusComposer(sessionId)
+      },
+      (error: unknown) => {
+        console.warn('command palette: new session failed:', error)
+      },
+    )
   }
 
   /**

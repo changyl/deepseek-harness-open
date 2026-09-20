@@ -30,10 +30,11 @@ async function bench() {
     children: { 'shell.overlay': { kind: 'list', scope: 'root' } },
   } as never, () => null)
 
-  const startSession = vi.fn()
+  const startSession = vi.fn(async () => SESSION)
   const run = vi.fn()
+  const focusComposer = vi.fn()
   ctx.provide('uiWorkspace', { startSession } as never)
-  ctx.provide('commandUi', { palette: async () => [], run } as never)
+  ctx.provide('commandUi', { palette: async () => [], run, focusComposer } as never)
   ctx.provide('sessions', {
     list: { getSnapshot: () => ({ current: SESSION }) },
     binding: () => undefined,
@@ -51,7 +52,7 @@ async function bench() {
   const entry = ctx.slots.entries('shell.overlay')[0]
   if (entry === undefined) throw new Error('shell.overlay entry not registered')
   const injected = (entry.inject as unknown as () => CommandPaletteInjected)()
-  return { ctx, fiber, entry, injected, startSession, run }
+  return { ctx, fiber, entry, injected, startSession, focusComposer, run }
 }
 
 /** Build one keydown for the registry's own dispatch. */
@@ -99,12 +100,13 @@ describe('ui-command-palette browser apply', () => {
     expect(palette().open).toBe(false)
   })
 
-  it('starts a session and reloads commands through the injected verbs', async () => {
-    const { injected, startSession, run } = await bench()
+  it('starts a session, hands the caret to where it landed, and reloads commands through the injected verbs', async () => {
+    const { injected, startSession, focusComposer, run } = await bench()
     injected.retry()
     injected.run('action:new-session')
     expect(startSession).toHaveBeenCalledTimes(1)
     expect(run).not.toHaveBeenCalled()
+    await vi.waitFor(() => { expect(focusComposer).toHaveBeenCalledExactlyOnceWith(SESSION) })
   })
 
   it('releases the slot entry, the chords, and the dictionaries with the fiber', async () => {

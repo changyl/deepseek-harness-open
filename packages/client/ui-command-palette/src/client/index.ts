@@ -48,9 +48,10 @@ export function apply(ctx: ClientContext): void {
     const controller = new CommandPaletteController({
       commands: scope.commandUi,
       sessions: scope.sessions,
-      // Workspace navigation is optional: the palette still runs commands
-      // when a deployment mounts no Workspace UI.
-      workspace: scope.get('uiWorkspace'),
+      // Workspace navigation is optional and read per pick: the palette
+      // still runs commands when a deployment mounts no Workspace UI, and the
+      // Workspace UI can register after this plugin's activation.
+      workspace: () => scope.get('uiWorkspace'),
       t: scope.locale.bind(NS),
     })
 

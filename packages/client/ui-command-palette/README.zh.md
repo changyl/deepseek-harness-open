@@ -33,7 +33,7 @@ kind: "package-reference"
 
 ### 选择会做什么
 
-客户端命令贡献项或被装饰的宿主命令会打开自己的弹窗或运行自己的动作，与从菜单选择该行完全一致。其他宿主命令以裸命令行分离执行，因此 `/plan` 会进入计划模式，`/compact` 会立即压缩。命令面板不会向输入框插入任何内容，也不会从中删除任何内容——命令面板的选择不拥有任何命令 token，所以你输入的草稿会留在原处——并且选择完成后光标回到输入框：动作、裸宿主命令与「停止」在派发时立即回到，会打开弹窗的命令则在弹窗落实时回到。
+客户端命令贡献项或被装饰的宿主命令会打开自己的弹窗或运行自己的动作，与从菜单选择该行完全一致。其他宿主命令以裸命令行分离执行，因此 `/plan` 会进入计划模式，`/compact` 会立即压缩。命令面板不会向输入框插入任何内容，也不会从中删除任何内容——命令面板的选择不拥有任何命令 token，所以你输入的草稿会留在原处——并且选择完成后光标回到输入框：动作、裸宿主命令与「停止」在派发时立即回到，新建会话则在新会话流程报告其落到的会话后回到（该流程复用的当前空白会话不会重新挂载输入框，因此不会自行取得焦点）。会打开弹窗的命令则把光标留在弹窗，弹窗落实时再交还。
 
 没有当前会话时，面板只列出「新会话」并给出说明，因为命令是按会话解析的。
 
@@ -51,7 +51,7 @@ kind: "package-reference"
 
 `CommandPaletteController` 就是全部行为：一个 overlay 渲染的快照 store，以及一组动词（`open`/`close`/`toggle`、`setQuery`、`move`、`highlight`、`run`），注入面与快捷键绑定都调用它们。`open()` 记录当前会话 id，立即发布操作行，并启动一次加载；`load()` 读取 `ctx.commandUi.palette(session, signal)` 并追加命令行。加载代数计数器加上 `AbortController` 使已关闭或被取代的面板不写入任何内容，因此缓慢的目录不会重新打开已被关闭的界面。
 
-行只有数据。`PaletteEntry` 是判别联合——`new-session`、`stop` 与 `command`（后者携带读取其目录时所针对的会话 id）——选择按该判别字段派发：`ctx.uiWorkspace.startSession()`、所绑定会话的 `cancel()`，或 `ctx.commandUi.run(name, session)`。贡献项的图标不会进入行：`ComponentType` 既不是 JSON 兼容值也不是回调，而 UI 域只共享这两类值，因此 overlay 按条目类型各画一个字形。
+行只有数据。`PaletteEntry` 是判别联合——`new-session`、`stop` 与 `command`（后者携带读取其目录时所针对的会话 id）——选择按该判别字段派发：`ctx.uiWorkspace.startSession()`、所绑定会话的 `cancel()`，或 `ctx.commandUi.run(name, session)`。工作区导航在每次选择时读取，绝不在注册时捕获：命令面板等待的是命令界面与会话控制器，而工作区 UI 还需要它的目录选择 Remote，因此可能更晚注册。新建会话聚焦 `startSession()` 兑现的那个会话的输入框；全新创建的会话则会自行挂载输入框，由其解锁 effect 取得光标。贡献项的图标不会进入行：`ComponentType` 既不是 JSON 兼容值也不是回调，而 UI 域只共享这两类值，因此 overlay 按条目类型各画一个字形。
 
 overlay 注册进跨框架的 `shell.overlay` 列表坑位，并通过共享的 `Modal` 原子组件渲染；后者把卡片 portal 到 body、模糊页面，并拥有遮罩点击与 Escape 键。命令面板自身只处理上箭头、下箭头与 Enter；搜索输入框在打开时取得焦点并保持焦点，高亮是虚拟的，由卡片滚动到可见位置。
 

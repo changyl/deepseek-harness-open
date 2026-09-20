@@ -33,7 +33,9 @@ function fakeSession(running: boolean, cancel: () => Promise<unknown> = async ()
 interface BenchOptions {
   current?: SessionId | undefined
   session?: FakeSession | undefined
-  workspace?: { startSession(workspaceId?: unknown): void } | undefined
+  workspace?: { startSession(): Promise<SessionId | undefined> } | undefined
+  /** Destination the new-session flow reports; undefined models a superseded flow. */
+  startSessionResult?: SessionId | undefined
   rows?: readonly CommandPaletteRow[] | Error
   palette?: (signal: AbortSignal) => Promise<readonly CommandPaletteRow[]>
 }
@@ -53,13 +55,14 @@ function bench(options: BenchOptions = {}) {
     list: { getSnapshot: () => ({ current }) },
     binding,
   } as unknown as ISessions
-  const startSession = vi.fn()
+  const destination = options.startSessionResult
+  const startSession = vi.fn(() => Promise.resolve(destination))
   const workspace = 'workspace' in options ? options.workspace : { startSession }
   const focusComposer = vi.fn()
   const controller = new CommandPaletteController({
     commands: { palette, run, focusComposer } as unknown as CommandUiContract,
     sessions,
-    workspace,
+    workspace: () => workspace,
     t,
   })
   return { controller, palette, run, focusComposer, binding, startSession }
@@ -233,14 +236,22 @@ describe('CommandPaletteController', () => {
     expect(focusComposer).not.toHaveBeenCalled()
   })
 
-  it('starts a new session, and survives a deployment without Workspace navigation', async () => {
-    const withWorkspace = bench({})
+  it('starts a new session, hands the caret to the session it landed on, and survives no Workspace navigation', async () => {
+    const DESTINATION = 'session-destination' as SessionId
+    const withWorkspace = bench({ startSessionResult: DESTINATION })
     withWorkspace.controller.open()
     withWorkspace.controller.run('action:new-session')
     expect(withWorkspace.startSession).toHaveBeenCalledTimes(1)
-    // The new session's own composer takes the caret on its unlock; a hand-back
-    // naming the session the pick left would be wrong.
-    expect(withWorkspace.focusComposer).not.toHaveBeenCalled()
+    // The flow reuses a current blank session, so no composer remounts to take
+    // the caret; the pick hands it to the destination the flow reports.
+    await vi.waitFor(() => { expect(withWorkspace.focusComposer).toHaveBeenCalledExactlyOnceWith(DESTINATION) })
+
+    // A superseded flow reports no destination, so nothing takes the caret.
+    const superseded = bench({ startSessionResult: undefined })
+    superseded.controller.open()
+    superseded.controller.run('action:new-session')
+    await Promise.resolve()
+    expect(superseded.focusComposer).not.toHaveBeenCalled()
 
     const withoutWorkspace = bench({ workspace: undefined })
     withoutWorkspace.controller.open()

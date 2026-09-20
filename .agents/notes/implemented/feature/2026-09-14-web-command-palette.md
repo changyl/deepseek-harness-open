@@ -24,7 +24,7 @@ The palette row type deliberately omits the contribution icon. A `ComponentType`
 
 `CommandPaletteController` holds one snapshot store and the verbs that the overlay's inject face and the shortcut bindings both call. Opening captures the current session id, publishes the actions this surface owns — New Session always, Stop while that session has a running turn — and starts one load. Typing re-ranks the loaded rows locally and issues no further query, so the wire is touched once per open. A load generation counter plus an `AbortController` keep a superseded or closed load from writing, which is what lets the shortcut toggle and the retry button share one `open()`.
 
-Rows are a discriminated union (`new-session`, `stop`, `command`), and a pick dispatches on that discriminant: `ctx.uiWorkspace.startSession()` through an optional service, the bound session's `cancel()`, or `ctx.commandUi.run(name, session)`. A command row carries the session id its catalog was read for, so the dispatch needs no second lookup and cannot drift from what was displayed.
+Rows are a discriminated union (`new-session`, `stop`, `command`), and a pick dispatches on that discriminant: `ctx.uiWorkspace.startSession()` through an optional service read at pick time, the bound session's `cancel()`, or `ctx.commandUi.run(name, session)`. A command row carries the session id its catalog was read for, so the dispatch needs no second lookup and cannot drift from what was displayed.
 
 ### One keyboard registry, not one listener per feature
 

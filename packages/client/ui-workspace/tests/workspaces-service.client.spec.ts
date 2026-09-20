@@ -391,33 +391,43 @@ describe('UiWorkspaceService', () => {
     })
     b.sessions.create.mockImplementation(async options => sid(`opened-${String(options?.workspaceId)}`))
 
-    b.uiWorkspace.startSession(wid('recent-home'))
-    await vi.waitFor(() => {
-      expect(b.sessions.open).toHaveBeenLastCalledWith(sid('opened-recent-home'))
-    })
+    await expect(b.uiWorkspace.startSession(wid('recent-home'))).resolves.toBe(sid('opened-recent-home'))
+    expect(b.sessions.open).toHaveBeenLastCalledWith(sid('opened-recent-home'))
 
     b.sessions.open(current.id)
-    b.uiWorkspace.startSession()
-    await vi.waitFor(() => {
-      expect(b.sessions.open).toHaveBeenLastCalledWith(sid('opened-current-home'))
-    })
+    await expect(b.uiWorkspace.startSession()).resolves.toBe(sid('opened-current-home'))
+    expect(b.sessions.open).toHaveBeenLastCalledWith(sid('opened-current-home'))
 
     b.sessions.clear()
-    b.uiWorkspace.startSession()
-    await vi.waitFor(() => {
-      expect(b.sessions.open).toHaveBeenLastCalledWith(sid('opened-recent-home'))
-    })
+    await expect(b.uiWorkspace.startSession()).resolves.toBe(sid('opened-recent-home'))
+    expect(b.sessions.open).toHaveBeenLastCalledWith(sid('opened-recent-home'))
 
+    // No Workspace to target reports no destination, so a caller hands the
+    // caret nowhere rather than addressing a Session the flow never reached.
     const empty = bench()
-    empty.uiWorkspace.startSession()
+    await expect(empty.uiWorkspace.startSession()).resolves.toBeUndefined()
     expect(empty.sessions.clear).toHaveBeenCalledOnce()
 
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     b.sessions.create.mockRejectedValueOnce(new Error('create failed'))
-    b.uiWorkspace.startSession(wid('recent-home'))
+    await expect(b.uiWorkspace.startSession(wid('recent-home'))).resolves.toBeUndefined()
     await vi.waitFor(() => {
       expect(warning).toHaveBeenCalledWith('new session failed:', expect.any(Error))
     })
+  })
+
+  it('reports no destination when a later navigation supersedes New Session', async () => {
+    const b = bench({
+      sessions: sessionState([summary('current')], sid('current')),
+      workspaces: workspaceState([workspace('alpha')]),
+    })
+    const created = Promise.withResolvers<SessionId>()
+    b.sessions.create.mockReturnValue(created.promise)
+    const started = b.uiWorkspace.startSession(wid('alpha'))
+    b.layout.selectPanel('panel-a' as MainPanelId)
+    created.resolve(sid('late'))
+    await expect(started).resolves.toBeUndefined()
+    expect(b.sessions.open).not.toHaveBeenCalled()
   })
 
   it('opens the recent Workspace after both baselines arrive', async () => {

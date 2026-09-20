@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-16-composer-focus-after-palette-pick.md
-2026-09-16-composer-focus-after-palette-pick.md: 5f8a5e2e43efdfeba015a9f250e77da3422e3257
-2026-09-16-composer-focus-after-palette-pick.zh.md: 96bf9887529b6713d1337227fa1809a0e205a738
+2026-09-16-composer-focus-after-palette-pick.md: 65a263c9ce1f2fd45c749c3bf8d89b0ba34c5e96
+2026-09-16-composer-focus-after-palette-pick.zh.md: 31262b1906edf85c4afb527f3727b5ca5021aceb
