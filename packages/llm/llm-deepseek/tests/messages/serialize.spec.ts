@@ -54,7 +54,7 @@ describe('Messages request conversion', () => {
     ])
   })
 
-  it('accepts native trailing updates without a top-level prompt and rejects unrepresentable positions', () => {
+  it('accepts native trailing updates without a top-level prompt and projects unrepresentable positions', () => {
     const update = createSystemMessage('update', 'test')
     expect(nativeBody([user(), update])).toMatchObject({ messages: [
       { role: 'user' }, { role: 'system', content: [{ type: 'text', text: 'update' }] },
@@ -62,7 +62,12 @@ describe('Messages request conversion', () => {
     expect(nativeBody([user(), update]).system).toBeUndefined()
     expect(() => nativeBody([user(), assistant([{ type: 'text', text: 'done' }]), update])).toThrow(/preceding user/)
     expect(() => nativeBody([user(), createSystemMessage('', 'test')])).toThrow(/empty in-history/)
-    expect(() => nativeBody([user(), assistant([call(), call('b')]), update, result()])).toThrow(/immediate results/)
+    expect(nativeBody([user(), assistant([call(), call('b')]), update, result()]).messages).toEqual([
+      { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 'read', input: { path: 'a' } }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'a', content: [{ type: 'text', text: 'result' }], is_error: false }] },
+      { role: 'system', content: [{ type: 'text', text: 'update' }] },
+    ])
   })
 
   it('groups parallel results before ordinary text and keeps tool failure content', () => {
@@ -142,11 +147,39 @@ describe('Messages request conversion', () => {
   })
 
   it.each([
-    [result()], [assistant([call()])], [assistant([call()]), user()],
-    [assistant([call(), call()]), result()],
-    [assistant([call()]), result(), result()],
-  ])('rejects unmatched or duplicated tool history %#', (...messages) => {
-    expect(() => body(messages)).toThrow(/tool/)
+    { name: 'an orphan tool result', history: [result()], messages: [{ role: 'user', content: [] }] },
+    { name: 'a history ending in an unanswered call', history: [user(), assistant([call()])],
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hello' }] }] },
+    { name: 'an unanswered call before later input', history: [user(), assistant([call()]), user('continue')],
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hello' }, { type: 'text', text: 'continue' }] }] },
+    { name: 'a partially answered parallel group', history: [user(), assistant([call(), call('b')]), result()],
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+        { role: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 'read', input: { path: 'a' } }] },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'a', content: [{ type: 'text', text: 'result' }], is_error: false }] },
+      ] },
+    { name: 'an unanswered call beside assistant text', history: [user(), assistant([{ type: 'text', text: 'working' }, call()]), user('continue')],
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+        { role: 'assistant', content: [{ type: 'text', text: 'working' }] },
+        { role: 'user', content: [{ type: 'text', text: 'continue' }] },
+      ] },
+    { name: 'a repeated call id', history: [user(), assistant([call(), call()]), result()],
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+        { role: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 'read', input: { path: 'a' } }] },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'a', content: [{ type: 'text', text: 'result' }], is_error: false }] },
+      ] },
+    { name: 'a duplicated result', history: [user(), assistant([call()]), result(), result()],
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+        { role: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 'read', input: { path: 'a' } }] },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'a', content: [{ type: 'text', text: 'result' }], is_error: false }] },
+      ] },
+  ])('projects $name instead of rejecting the request', ({ history, messages }) => {
+    const saved = JSON.stringify(history)
+    expect(body(history).messages).toEqual(messages)
+    expect(JSON.stringify(history)).toBe(saved)
   })
 
   it.each(['{', '', '[]', 'null', '42', 'true', '"text"', '{"description":"最快，但"某个说法"没有证据。"}'])('uses empty input for malformed or non-object historical tool arguments %s', (arguments_) => {

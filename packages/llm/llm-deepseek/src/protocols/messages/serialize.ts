@@ -38,6 +38,78 @@ function assistant(message: Message, model: string, onReplayDegrade?: (reason: s
   })
 }
 
+/** One assistant turn's tool calls, retained until its results arrive. */
+interface UnansweredCalls {
+  message: WireMessage
+  ids: Set<string>
+}
+
+/**
+ * Project tool pairings onto what Messages can represent. Every `tool_use` needs
+ * its `tool_result` in the immediately following user turn, and every
+ * `tool_result` needs its call, but a durable log can hold neither: a turn that
+ * failed between recording a call and its result, or a result whose call a
+ * superseded history dropped. The unrepresentable block is dropped rather than
+ * rejecting the request, because a rejected session can never be replayed again.
+ * @param messages - the merged wire history, mutated in place.
+ * @returns the history without unanswered calls or orphan results, with a message
+ *   emptied of every block removed and same-role neighbors merged.
+ */
+function repairToolPairing(messages: WireMessage[]): WireMessage[] {
+  const repaired: WireMessage[] = []
+  let unanswered: UnansweredCalls | undefined
+  const dropUnanswered = (): void => {
+    if (unanswered === undefined) return
+    const pending = unanswered
+    unanswered = undefined
+    pending.message.content = pending.message.content.filter(block => block.type !== 'tool_use' || !pending.ids.has(block.id))
+  }
+  for (const message of messages) {
+    if (message.role === 'assistant') {
+      const declared = new Set<string>()
+      // A repeated call id cannot be answered unambiguously; the first declaration owns it.
+      message.content = message.content.filter((block) => {
+        if (block.type !== 'tool_use') return true
+        if (declared.has(block.id)) return false
+        declared.add(block.id)
+        return true
+      })
+      unanswered = { message, ids: declared }
+      repaired.push(message)
+      continue
+    }
+    if (message.role === 'system') {
+      repaired.push(message)
+      continue
+    }
+    const results = message.content.filter(block => block.type === 'tool_result' && unanswered?.ids.delete(block.tool_use_id) === true)
+    message.content = [...results, ...message.content.filter(block => block.type !== 'tool_result')]
+    dropUnanswered()
+    repaired.push(message)
+  }
+  dropUnanswered()
+  // An assistant turn stripped to nothing carries no model input; user turns stay
+  // so the required user/assistant alternation survives their removed results.
+  return mergeSameRole(repaired.filter(message => message.role !== 'assistant' || message.content.length > 0))
+}
+
+/**
+ * Fuse consecutive user or assistant turns, which Messages requires to
+ * alternate. Only a removed block can leave such neighbors behind, and each
+ * in-history system update stays its own message.
+ * @param messages - the repaired history.
+ * @returns the history with same-role conversation runs merged.
+ */
+function mergeSameRole(messages: WireMessage[]): WireMessage[] {
+  const merged: WireMessage[] = []
+  for (const message of messages) {
+    const previous = merged.at(-1)
+    if (previous?.role === message.role && message.role !== 'system') previous.content.push(...message.content)
+    else merged.push(message)
+  }
+  return merged
+}
+
 /** Serialize one complete request using already prepared image bytes.
  * @param options - provider-neutral request.
  * @param connection - validated defaults and thinking policy.
@@ -46,7 +118,7 @@ function assistant(message: Message, model: string, onReplayDegrade?: (reason: s
  * @param access - execution-world paths for image descriptions.
  * @param onReplayDegrade - diagnostic for discarded native replay metadata.
  * @param fileIds - resolved Files references; omission selects inline image bytes.
- * @returns the Messages API JSON body.
+ * @returns the Messages API JSON body, with tool pairings Messages cannot represent dropped.
  */
 export function serialize(
   options: GenerateOptions, connection: Connection, history: readonly Message[],
@@ -103,29 +175,14 @@ export function serialize(
     else messages.push({ role: message.role, content })
   }
   flushSystemUpdates()
-  let pending = new Set<string>()
-  for (const message of messages) {
-    if (message.role === 'assistant') {
-      const calls = message.content.filter(block => block.type === 'tool_use')
-      pending = new Set(calls.map(block => block.id))
-      if (pending.size !== calls.length) throw new LlmError('DeepSeek Messages duplicate tool call id', 'INVALID_REQUEST')
-    } else if (message.role === 'user') {
-      const results = message.content.filter(block => block.type === 'tool_result')
-      for (const result of results) {
-        if (!pending.delete(result.tool_use_id)) throw new LlmError('DeepSeek Messages tool result has no matching call', 'INVALID_REQUEST')
-      }
-      if (pending.size > 0) throw new LlmError('DeepSeek Messages tool calls need immediate results', 'INVALID_REQUEST')
-      message.content = [...results, ...message.content.filter(block => block.type !== 'tool_result')]
-    }
-  }
-  if (pending.size > 0) throw new LlmError('DeepSeek Messages history ends with unresolved tools', 'INVALID_REQUEST')
+  const paired = repairToolPairing(messages)
   const effort = options.purpose === 'session-title' ? 'off' : options.reasoningEffort ?? (connection.defaults.reasoningEffort ?? (connection.defaults.thinking === 'disabled' ? 'off' : 'high'))
   if (!['off', 'low', 'high', 'max'].includes(effort) || (connection.defaults.thinking === 'disabled' && effort !== 'off')) {
     throw new LlmError(`DeepSeek Messages does not support reasoning effort ${effort}`, 'UNSUPPORTED_REASONING_EFFORT')
   }
   const system = [options.system, historySystem].filter(Boolean).join('\n\n')
   return {
-    model: options.model, stream: true, messages,
+    model: options.model, stream: true, messages: paired,
     max_tokens: options.maxTokens ?? model?.maxTokens ?? connection.maxTokens,
     thinking: { type: effort === 'off' ? 'disabled' : 'enabled' },
     ...effort === 'off' ? {} : { output_config: { effort: effort as 'low' | 'high' | 'max' } },

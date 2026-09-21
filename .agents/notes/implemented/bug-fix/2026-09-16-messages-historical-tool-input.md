@@ -20,7 +20,7 @@ This supersedes the historical argument rejection in the [Messages adapter decis
 
 **Repair or overwrite stored arguments.** Guessing missing quotes or retaining a parsed prefix can change the requested operation. Request-only empty input preserves the original evidence and requires no migration.
 
-**Drop the call.** Its result still cites the call id; keeping both preserves the tool exchange without inventing arguments.
+**Drop the call.** Its result still cites the call id; keeping both preserves the tool exchange without inventing arguments. A call with no result at all is the separate case the [unpaired-history rule](2026-09-21-messages-unpaired-tool-history.md) owns.
 
 ## Consequences
 
