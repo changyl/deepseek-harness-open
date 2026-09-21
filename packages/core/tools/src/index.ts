@@ -457,10 +457,14 @@ export interface ToolRuntimeScheduler {
 }
 
 /**
- * Scheduler entry point omitted from the generated named service API.
+ * Scheduler entry point omitted from the generated named service API. The key
+ * comes from the global symbol registry because one deployment can load this
+ * package twice: the CLI source launch registers this package's built artifact
+ * as a plugin while the imports inside it resolve to its source. Both copies
+ * must name the same staged view, or every tool dispatch finds no scheduler.
  * @internal
  */
-export const TOOL_RUNTIME_SCHEDULER: unique symbol = Symbol('@deepseek-ai/dsh-tools.scheduler')
+export const TOOL_RUNTIME_SCHEDULER: unique symbol = Symbol.for('@deepseek-ai/dsh-tools.scheduler')
 
 /** Canonical error code for cancellation after a tool body was invoked. */
 export const TOOL_ABORTED = 'ABORTED'

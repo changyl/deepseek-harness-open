@@ -9,7 +9,7 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import ApprovalService, { type ApprovalOutcome, type ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import ToolRuntime, {
   defineContentToolFixture, defineTool, JsonSchemaError, parameterSchemaSpecToJsonSchema, validateArgs, ToolArgsError, ToolNotFoundError,
-  TOOL_ABORTED, TOOL_ABORTED_BEFORE_DISPATCH,
+  TOOL_ABORTED, TOOL_ABORTED_BEFORE_DISPATCH, TOOL_RUNTIME_SCHEDULER,
   type InferArgs, type ParameterSchemaSpec, type PreToolDecision, type PostToolDecision,
   type JsonSchemaNode, type ToolDefinition, type ToolDispatchExecution, type ToolExecutionResult, type ToolExecutionToken,
 } from '@deepseek-ai/dsh-tools'
@@ -2503,6 +2503,18 @@ describe('ToolRuntime.get', () => {
   it('get() returns undefined for unknown tool names', async () => {
     const ctx = await setup()
     expect(ctx.tools.get('nope')).toBeUndefined()
+  })
+})
+
+describe('tool scheduler handshake', () => {
+  it('is reachable through the global symbol registry so a duplicate package copy finds the same view', async () => {
+    const ctx = await setup()
+    // The CLI source launch loads this package's built artifact as the plugin
+    // that owns the service and its source for the imports inside that artifact.
+    const registryKey = Symbol.for('@deepseek-ai/dsh-tools.scheduler')
+    expect(TOOL_RUNTIME_SCHEDULER).toBe(registryKey)
+    const service = ctx.tools as unknown as Record<symbol, unknown>
+    expect(service[registryKey]).toBe(service[TOOL_RUNTIME_SCHEDULER])
   })
 })
 

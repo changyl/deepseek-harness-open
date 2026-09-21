@@ -82,7 +82,7 @@ PTC mode 仍不使用此调度器，因为模型只会发出一个原生 `run_co
 
 **并行执行完整的工具流水线。** 这样可以让循环继续使用公开的单调用 API，但会并发运行 pre-execute 和 post-execute 中间件。现有防护和钩子桥可能承载有序状态，因此只允许派发重叠。
 
-**公开分阶段方法或调度 waterfall（瀑布式事件）。** 公开的 `prepare` / `dispatch` / `finalize` 方法或 `tools/execution-mode` 事件，会在另一个消费方需要它之前扩大扩展接口。循环使用内部调度器视图，而 `executionMode(exec)` 为策略钩子保留了插入点。
+**公开分阶段方法或调度 waterfall（瀑布式事件）。** 公开的 `prepare` / `dispatch` / `finalize` 方法或 `tools/execution-mode` 事件，会在另一个消费方需要它之前扩大扩展接口。循环使用内部调度器视图，而 `executionMode(exec)` 为策略钩子保留了插入点。[注册表键控的符号](../bug-fix/2026-09-21-tool-scheduler-registry-symbol.zh.md)让该视图在某次部署把本包加载两次时仍然可达。
 
 **将调度器故障转换为工具结果。** AgentLoop 无法判断被拒绝的派发是否已调用工具主体；ToolRuntime 负责工具主体调用状态和类型化工具结果。因此，内部调度器故障保持为终态，而不会被重新分类为 `ABORTED` 结果。
 
