@@ -79,7 +79,8 @@ function mount(initial: TerminalViewState | undefined = idle, dictionary = en) {
     rename: vi.fn(async () => {}), connect: vi.fn(), write: vi.fn(), resize: vi.fn(), acknowledge: vi.fn(),
   }
   const openTab = vi.fn()
-  const tab = () => ({ tab: { id: 'tab', title: 'Terminal', visible, actions: { openTab } } })
+  const closeTab = vi.fn()
+  const tab = () => ({ tab: { id: 'tab', title: 'Terminal', visible, actions: { openTab, close: closeTab } } })
   // The test supplies the owner and model hooks consumed here; the remaining slot props are framework-owned.
   const props = {
     view: () => model,
@@ -89,7 +90,7 @@ function mount(initial: TerminalViewState | undefined = idle, dictionary = en) {
   } as unknown as TerminalBodyProps
   const view = render(<TerminalBody {...props} />)
   return {
-    view, props, model, detach, openTab,
+    view, props, model, detach, openTab, closeTab,
     changeTheme() { theme = { ...theme, revision: theme.revision + 1 }; view.rerender(<TerminalBody {...props} />) },
     update(next: TerminalViewState | undefined, shown = visible) {
       state = next; visible = shown; view.rerender(<TerminalBody {...props} />)
@@ -415,4 +416,14 @@ it('offers a new terminal after process exit while preserving its final output f
   expect(h.view.queryByRole('button', { name: en.reconnect })).toBeNull()
   fireEvent.click(h.view.getByRole('button', { name: en.new }))
   expect(h.openTab).toHaveBeenCalledExactlyOnceWith('terminal', { replaceTab: true })
+})
+
+it.each([en, zh])('lets a failed card close itself and leaves other states to their own recovery action', (dictionary) => {
+  const h = mount({ ...idle, phase: 'failed', error: 'session is already owned by an active write handle' }, dictionary)
+  fireEvent.click(h.view.getByRole('button', { name: dictionary.close }))
+  expect(h.closeTab).toHaveBeenCalledOnce()
+  expect(h.model.refresh).not.toHaveBeenCalled()
+  expect(h.model.connect).not.toHaveBeenCalled()
+  h.update({ ...idle, phase: 'disconnected' })
+  expect(h.view.queryByRole('button', { name: dictionary.close })).toBeNull()
 })

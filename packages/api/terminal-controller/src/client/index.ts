@@ -215,7 +215,15 @@ export class ClientTerminals extends Service {
       }
       this.requests.remove(record.id)
     })().catch((error: unknown) => {
-      if (remoteErrorOf(error)?.code === 'session/not-found') {
+      // The Gateway resolves a close's Agent before the controller runs, so a
+      // Session-domain refusal never reached the terminal controller: no window
+      // here can end that process. Retire the request rather than retrying it
+      // forever; the Host's unattended grace period reclaims a terminal no
+      // window holds. The code is read as a wire value: the Session failure
+      // vocabulary belongs to api-session-controller, which this face does not
+      // compile.
+      const code: string | undefined = remoteErrorOf(error)?.code
+      if (code === 'session/not-found' || code === 'session/writer-held' || code === 'session/agent-busy') {
         this.requests.remove(record.id)
         return
       }

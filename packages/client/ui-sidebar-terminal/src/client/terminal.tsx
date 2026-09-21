@@ -61,6 +61,7 @@ export function TerminalBody({ useTabInfo, useTerminal, useTheme, view, t }: Ter
         {retry && (state.info === undefined
           ? <Button variant="outline" size="sm" onClick={() => { void model.refresh() }}>{t(state.phase === 'disconnected' ? 'reconnect' : 'retry')}</Button>
           : <Button variant="outline" size="sm" onClick={() => { model.connect() }}>{t('reconnect')}</Button>)}
+        {state.phase === 'failed' && <Button variant="outline" size="sm" onClick={() => { tab.actions.close() }}>{t('close')}</Button>}
         {ended && newTerminal}
       </div>}
       {state.info !== undefined && <TerminalScreen state={state} model={model} visible={tab.visible} label={t('title')} theme={theme} />}

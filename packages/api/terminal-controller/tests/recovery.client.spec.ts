@@ -481,6 +481,28 @@ it.each(['saved', 'view'] as const)('clears a %s close request after the Host co
   expect(h.remote.close).toHaveBeenCalledOnce()
 })
 
+const unresolvableSession = {
+  'session/writer-held': () => new RemoteError('session/writer-held', 'Held elsewhere', { sessionId }),
+  'session/agent-busy': () => new RemoteError('session/agent-busy', 'Owned by a child', { reason: 'subagent-owned' }),
+} as const
+
+it.each(['session/writer-held', 'session/agent-busy'] as const)(
+  'retires a saved close request when the Host cannot resolve the Session Agent (%s)',
+  async (code) => {
+    const data = storage()
+    const h = fixture()
+    new TerminalCloseRequests().save({ sessionId, id: info.id, title: 'Build' })
+    vi.mocked(h.remote.close).mockResolvedValue({ ok: false, error: unresolvableSession[code]() })
+    const { service, dispose } = await h.service()
+    await expect.poll(() => vi.mocked(h.remote.close).mock.calls.length).toBe(1)
+    await dispose()
+    expect([...data.entries()]).toEqual([])
+    expect(service.closeFailures.getSnapshot()).toEqual([])
+    await h.service()
+    expect(h.remote.close).toHaveBeenCalledOnce()
+  },
+)
+
 it('waits for both active and detached stream finalizers during plugin disposal without closing Host processes', async () => {
   const h = fixture()
   const { service, dispose } = await h.service()
