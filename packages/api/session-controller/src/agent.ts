@@ -103,40 +103,6 @@ export function apiSessionSubagentOwnershipError(sessionId: SessionId): ApiSessi
 }
 
 /**
- * Build the stable caller-facing rejection for a Session whose write path is
- * already held.
- *
- * Another harness instance sharing this deployment's session root holds the
- * cross-process write lease, or this process still has an in-flight open for
- * the same identity. Resuming is refused rather than queued: a second writer
- * would tear the log.
- * @param sessionId - Session identity whose write ownership is taken.
- * @returns a stable Session-domain failure.
- */
-export function apiSessionWriteOwnedError(sessionId: SessionId): ApiSessionAgentError {
-  return new RemoteError(
-    'session/agent-busy',
-    `session "${sessionId}" is already owned by an active write handle`,
-    { reason: 'close the other harness instance that has this session open, or retry once its in-flight open settles' },
-  )
-}
-
-/**
- * Whether a resume rejection is a Session write claim already held.
- *
- * `@deepseek-ai/dsh-session-persistence` is an optional peer of this package,
- * so its error class cannot be imported for `instanceof` at module scope. The
- * class publishes `SessionAlreadyOwnedError` as its `name`; that string is the
- * discriminator an optional consumer can read
- * (`packages/session/session-persistence/src/errors.ts`).
- * @param error - rejection from the resume path.
- * @returns whether the Session's write path is already owned.
- */
-function isSessionAlreadyOwned(error: unknown): boolean {
-  return error instanceof Error && error.name === 'SessionAlreadyOwnedError'
-}
-
-/**
  * Inspect one cold Session without repairing, resuming, or publishing it.
  * @param ctx - Host context carrying Session persistence.
  * @param sessionId - durable Session identity.
@@ -249,11 +215,8 @@ export class ApiSessionAgentController {
       if (racedSession !== undefined && hasApiSessionSubagentOwner(this.ctx, racedSession, undefined)) {
         return { error: apiSessionSubagentOwnershipError(sessionId) }
       }
-      // A taken write handle is a state the caller can act on, not an internal
-      // fault: the session is open in another harness instance sharing this
-      // session root, or this process has an open for it still settling.
-      if (isSessionAlreadyOwned(error)) {
-        return { error: apiSessionWriteOwnedError(sessionId) }
+      if (error instanceof Error && error.name === 'SessionAlreadyOwnedError') {
+        return { error: new RemoteError('session/writer-held', error.message, { sessionId }) }
       }
       return {
         error: new RemoteError(

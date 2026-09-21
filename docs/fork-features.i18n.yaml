@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/fork-features.md
-fork-features.md: 328c4e6b7b96ee9d8e6d2a7a28a7797e4294773f
-fork-features.zh.md: 276d964f739fe7d4fa86ac6b0711e75dd71c03f9
+fork-features.md: ba6a1a9827643ba0225700732f33b09aa60c8736
+fork-features.zh.md: 84666e9444f4de66e2013b2962113179cf0aeb98

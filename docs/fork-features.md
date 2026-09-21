@@ -69,10 +69,6 @@ The right Sidebar draws a change with the same Shiki grammar its own preview sel
 - While highlighting is active, removed and added rows take a tinted band and the `- ` / `+ ` prefix keeps its own color, so which side a line belongs to never depends on the syntax palette.
 - A caller that passes no language tokenizes nothing and draws every row plain, which is what the chat tool cards do.
 
-## Read a contended session write as an actionable state
-
-Two harness instances that share one session root contend for the same cross-process write lease. [`dsh-api-session-controller`](../packages/api/session-controller/README.md) classifies that contention as `session/agent-busy` with the reason "close the other harness instance that has this session open, or retry once its in-flight open settles", instead of folding it into an unclassified `gateway/internal` failure. The rejection is a state the caller can act on rather than an internal fault.
-
 ## Further exploration
 
 - [Architecture](architecture.md) maps the plugin composition these packages join.

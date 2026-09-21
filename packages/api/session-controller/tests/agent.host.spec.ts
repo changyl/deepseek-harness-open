@@ -247,19 +247,11 @@ describe('ApiSession Agent lookup and recovery', () => {
     })
     const resume = vi.spyOn(ctx.agents, 'resume').mockRejectedValue(new SessionAlreadyOwnedError(meta.id))
     await expect(agents.resolveAgent(meta.id)).resolves.toMatchObject({
-      error: {
-        code: 'session/agent-busy',
-        message: `session "${meta.id}" is already owned by an active write handle`,
-        details: { reason: expect.stringContaining('other harness instance') as string },
-      },
+      error: { code: 'session/writer-held', details: { sessionId: meta.id } },
     })
     resume.mockRejectedValue(Object.assign(new Error('another module copy'), { name: 'SessionAlreadyOwnedError' }))
     await expect(agents.resolveAgent(meta.id)).resolves.toMatchObject({
-      error: {
-        code: 'session/agent-busy',
-        message: `session "${meta.id}" is already owned by an active write handle`,
-        details: { reason: expect.stringContaining('other harness instance') as string },
-      },
+      error: { code: 'session/writer-held', details: { sessionId: meta.id } },
     })
     resume.mockRejectedValue(new Error('unrelated failure'))
     await expect(agents.resolveAgent(meta.id)).resolves.toMatchObject({

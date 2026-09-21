@@ -69,10 +69,6 @@ Cmd/Ctrl+K 与 Cmd/Ctrl+Shift+P 可以在 Web GUI 的任意位置打开覆盖整
 - 高亮生效时，删除行与新增行使用带底色的行带，`- ` / `+ ` 前缀保持自己的颜色，因此一行属于哪一侧永远不依赖语法配色。
 - 未传入语言的调用方不做分词、每一行都按纯文本绘制，chat 工具卡片正是如此。
 
-## 把写入句柄冲突识别为可处理的状态
-
-共享同一个会话根目录的两个 harness 实例会争用同一份跨进程写入租约。[`dsh-api-session-controller`](../packages/api/session-controller/README.zh.md) 把这种争用归类为 `session/agent-busy`，并附带原因「关闭另一个打开了该会话的 harness 实例，或等它的打开操作结算后重试」，而不是折叠为未分类的 `gateway/internal` 失败。该拒绝是调用方可以据以行动的状态，而不是内部故障。
-
 ## 延伸阅读
 
 - [架构](architecture.zh.md) 给出这些包所加入的插件组合地图。
