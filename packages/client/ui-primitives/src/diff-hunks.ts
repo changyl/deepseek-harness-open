@@ -13,6 +13,7 @@
  * can validate durable result metadata without importing a component module.
  * @module
  */
+import { structuredPatch } from 'diff'
 import type { HighlightSpan } from './markdown/highlight.ts'
 
 /**
@@ -94,10 +95,38 @@ export function contentLines(text: string): string[] {
 }
 
 /**
+ * Bound synchronous edit-graph search; one replacement consumes two edits.
+ * Beyond it the comparison stops aligning and reports a complete replacement,
+ * which keeps a heavily changed fragment from stalling the reader's browser.
+ */
+const MAX_DIFF_EDIT_LENGTH = 256
+
+/**
+ * Derive one hunk's exact local patches, or its whole-fragment replacement when
+ * the edit search exceeds {@link MAX_DIFF_EDIT_LENGTH}. Both sides are
+ * normalized to newline-terminated lines first, so a patch never carries a
+ * missing-final-newline marker and an interior blank line survives as its own
+ * context line.
+ * @param diff - the hunk to decompose.
+ * @returns the patch hunks, each holding `-`/`+`/` `-prefixed lines.
+ */
+function localHunks(diff: DiffHunk): readonly { readonly lines: readonly string[] }[] {
+  const oldLines = contentLines(diff.oldText ?? '')
+  const newLines = contentLines(diff.newText)
+  const normalize = (lines: readonly string[]): string => lines.map(line => `${line}\n`).join('')
+  return structuredPatch('', '', normalize(oldLines), normalize(newLines), undefined, undefined, {
+    context: 3,
+    maxEditLength: MAX_DIFF_EDIT_LENGTH,
+  })?.hunks
+    ?? [{ lines: [...oldLines.map(line => `-${line}`), ...newLines.map(line => `+${line}`)] }]
+}
+
+/**
  * Total added/removed line counts across hunks — the same numbers a footer
  * prints, exported so a summary row can show them without rebuilding a body.
- * Every old-side line counts toward `removed` and every new-side line toward
- * `added`, under {@link contentLines}'s terminator rule.
+ * Only lines a patch adds or removes count: shared context is excluded, and a
+ * fragment past {@link MAX_DIFF_EDIT_LENGTH} counts both complete sides as a
+ * coarse replacement.
  * @param diffs - the hunks to count.
  * @returns the +/- totals.
  */
@@ -105,19 +134,23 @@ export function diffTotals(diffs: readonly DiffHunk[]): { added: number; removed
   let added = 0
   let removed = 0
   for (const diff of diffs) {
-    if (diff.oldText !== null) removed += contentLines(diff.oldText).length
-    added += contentLines(diff.newText).length
+    for (const hunk of localHunks(diff)) {
+      for (const line of hunk.lines) {
+        if (line.startsWith('+')) added += 1
+        if (line.startsWith('-')) removed += 1
+      }
+    }
   }
   return { added, removed }
 }
 
 /** A single rendered unified body line and its role, so a height cap slices a flat list. */
 export interface DiffRow {
-  kind: 'path' | 'del' | 'add' | 'gap'
+  kind: 'path' | 'del' | 'add' | 'context' | 'gap'
   text: string
   /**
-   * 0-based hunk this row opens, on the header or gap row that starts one. A
-   * reader jumps between changes by scrolling to these rows.
+   * 0-based change region this row opens, on the header or gap row that starts
+   * one. A reader jumps between changes by scrolling to these rows.
    */
   hunk?: number | undefined
   /** The grammar's runs for {@link text}, absent when the row draws its text plain. */
@@ -161,9 +194,12 @@ function walkHunks<Row>(
 
 /**
  * Flatten the hunks into the unified body's rows plus the footer counts. A path
- * header opens each new file; a same-file second hunk (a scattered edit) opens
- * with a `⋯` gap instead of repeating the path. The +/- totals are
- * {@link diffTotals}'s. The file count is of DISTINCT paths, matching the TUI
+ * header opens each new file; a same-file second hunk (a scattered edit) and
+ * every further change region inside one fragment open with a `⋯` gap instead of
+ * repeating the file. Rows follow the exact patch: changed lines carry their own
+ * side's color and the shared lines around them draw once as context. The +/-
+ * totals are {@link diffTotals}'s, so a fragment past the edit bound reports its
+ * complete replacement. The file count is of DISTINCT paths, matching the TUI
  * diff card's footer, so two hunks in one file read as `1 file` on both front
  * ends.
  * @param diffs - the hunks to render.
@@ -174,29 +210,56 @@ export function buildDiffRows(
   diffs: readonly DiffHunk[],
   highlight?: DiffHighlighter,
 ): { rows: DiffRow[]; added: number; removed: number; files: number } {
-  const { rows, files } = walkHunks<DiffRow>(
-    diffs,
-    (path, hunk): DiffRow => ({ kind: 'path', text: path, hunk }),
-    (hunk): DiffRow => ({ kind: 'gap', text: '⋯', hunk }),
-    (diff): DiffRow[] => {
-      const oldRuns = diff.oldText === null ? undefined : highlight?.(diff.oldText)
-      const newRuns = highlight?.(diff.newText)
-      return [
-        ...(diff.oldText === null
-          ? []
-          : contentLines(diff.oldText).map((text, line): DiffRow => ({ kind: 'del', text, ...spansOf(oldRuns, line) }))),
-        ...contentLines(diff.newText).map((text, line): DiffRow => ({ kind: 'add', text, ...spansOf(newRuns, line) })),
-      ]
-    },
-  )
-  return { rows, ...diffTotals(diffs), files }
+  const rows: DiffRow[] = []
+  const paths = new Set<string>()
+  let prevPath: string | undefined
+  // Change regions number across the whole body, so a reader jumps between them
+  // the same way in one file or several.
+  let region = 0
+  for (const diff of diffs) {
+    paths.add(diff.path)
+    const hunks = localHunks(diff)
+    const oldRuns = diff.oldText === null ? undefined : highlight?.(diff.oldText)
+    const newRuns = highlight?.(diff.newText)
+    // The file boundary opens the entry even when its sides are identical: the
+    // footer still reports one file with no change.
+    const opens: DiffRow = diff.path !== prevPath
+      ? { kind: 'path', text: diff.path }
+      : { kind: 'gap', text: '⋯' }
+    rows.push(hunks.length === 0 ? opens : { ...opens, hunk: region })
+    prevPath = diff.path
+    // A patch interleaves both sides, so each row's runs come from the side
+    // line it holds; a context row draws the file's current content.
+    let oldLine = 0
+    let newLine = 0
+    for (const [index, hunk] of hunks.entries()) {
+      if (index > 0) rows.push({ kind: 'gap', text: '⋯', hunk: region })
+      for (const line of hunk.lines) {
+        const text = line.slice(1)
+        if (line.startsWith('-')) {
+          rows.push({ kind: 'del', text, ...spansOf(oldRuns, oldLine) })
+          oldLine += 1
+        } else if (line.startsWith('+')) {
+          rows.push({ kind: 'add', text, ...spansOf(newRuns, newLine) })
+          newLine += 1
+        } else {
+          rows.push({ kind: 'context', text, ...spansOf(newRuns, newLine) })
+          oldLine += 1
+          newLine += 1
+        }
+      }
+      region += 1
+    }
+  }
+  return { rows, ...diffTotals(diffs), files: paths.size }
 }
 
 /**
- * The diff text a reader copies: each row's `-`/`+`/path/gap prefix and its
- * content, exactly what the unified body shows. The removed and added blocks
- * are the change; the path headers keep a multi-file copy attributable. A split
- * body copies this same text, so one clipboard form serves both layouts.
+ * The diff text a reader copies: each row's `-`/`+`/context/path/gap prefix and
+ * its content, exactly what the unified body shows. The removed and added blocks
+ * are the change and the context lines keep the two spaces that mark them
+ * unchanged; the path headers keep a multi-file copy attributable. A split body
+ * copies this same text, so one clipboard form serves both layouts.
  * @param rows - the unified body rows.
  * @returns the diff as plain text.
  */
@@ -205,6 +268,7 @@ export function copyDiffText(rows: readonly DiffRow[]): string {
     switch (row.kind) {
       case 'del': return `- ${row.text}`
       case 'add': return `+ ${row.text}`
+      case 'context': return `  ${row.text}`
       case 'path': return row.text
       case 'gap': return row.text
       /* v8 ignore next -- closed-union backstop; only reached if a row kind is forged */

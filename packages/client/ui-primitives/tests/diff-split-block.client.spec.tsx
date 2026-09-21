@@ -52,7 +52,7 @@ describe('buildSplitRows', () => {
       { kind: 'pair', left: { kind: 'del', text: 'old' }, right: { kind: 'add', text: 'new' } },
       { kind: 'pair', left: { kind: 'context', text: 'z' }, right: { kind: 'context', text: 'z' } },
     ])
-    expect({ added, removed, files }).toEqual({ added: 3, removed: 3, files: 1 })
+    expect({ added, removed, files }).toEqual({ added: 1, removed: 1, files: 1 })
   })
 
   it('pads the side a one-sided change has no line for', () => {
@@ -232,7 +232,8 @@ describe('DiffSplitBlock structure', () => {
     expect(container.querySelector('[data-diff-layout="split"]')).toBeTruthy()
     expect(container.querySelectorAll('[data-split-row="path"]')).toHaveLength(1)
     expect(pairs(container)).toEqual([['a', 'a'], ['old', 'new']])
-    expect(screen.getByText('└ +2 -2 · 1 file')).toBeTruthy()
+    // The footer counts the change, not the context the two sides share.
+    expect(screen.getByText('└ +1 -1 · 1 file')).toBeTruthy()
   })
 
   it('marks the row that opens each change, so a reader can jump between them', () => {
@@ -290,7 +291,7 @@ describe('DiffSplitBlock structure', () => {
     const withFile = render(<DiffSplitBlock diffs={diffs} fileLines={['l1', 'new', 'tail']} />)
     expect(pairs(withFile.container)).toEqual([['l1', 'l1'], ['old', 'new'], ['tail', 'tail']])
     // The footer still reports the change, not the file.
-    expect(screen.getByText('└ +2 -2 · 1 file')).toBeTruthy()
+    expect(screen.getByText('└ +1 -1 · 1 file')).toBeTruthy()
     cleanup()
     const changeOnly = render(<DiffSplitBlock diffs={diffs} />)
     expect(pairs(changeOnly.container)).toEqual([['l1', 'l1'], ['old', 'new']])

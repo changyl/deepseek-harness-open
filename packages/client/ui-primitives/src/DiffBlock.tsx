@@ -43,6 +43,7 @@ const ROW_CLASS: Record<DiffRow['kind'], string | undefined> = {
   path: css.path,
   del: css.del,
   add: css.add,
+  context: css.context,
   gap: css.gap,
 }
 

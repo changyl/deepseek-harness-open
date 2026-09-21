@@ -104,12 +104,11 @@ describe('DiffBlock structure', () => {
 })
 
 describe('buildDiffRows highlighting', () => {
-  it("carries each side's own runs on every row it drew, line for line", () => {
+  it("draws the shared line once as context and gives every changed row its own side's runs", () => {
     const { rows } = buildDiffRows([{ path: 'a.ts', oldText: 'one\ntwo', newText: 'one\nTHREE' }], oneRunPerLine)
     expect(rows.slice(1)).toEqual([
-      { kind: 'del', text: 'one', spans: [{ text: 'one', style: { color: 'one' } }] },
+      { kind: 'context', text: 'one', spans: [{ text: 'one', style: { color: 'one' } }] },
       { kind: 'del', text: 'two', spans: [{ text: 'two', style: { color: 'two' } }] },
-      { kind: 'add', text: 'one', spans: [{ text: 'one', style: { color: 'one' } }] },
       { kind: 'add', text: 'THREE', spans: [{ text: 'THREE', style: { color: 'THREE' } }] },
     ])
   })
