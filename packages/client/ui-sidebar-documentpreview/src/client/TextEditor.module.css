@@ -1,7 +1,8 @@
 /* The editing surface fills whatever the body's layout gives it: the whole
    column while the tab is narrow, and the left half of the split when the tab
-   is fullscreen. */
+   is fullscreen. It is the box the grammar layer and the textarea share. */
 .editor {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
@@ -9,26 +10,43 @@
   overflow: hidden;
 }
 
-/* The textarea is the scroller. Its own border, outline, and resize handle are
-   the browser's defaults, not this product's, so all three are dropped.
-   `pre` keeps columns aligned as the file wrote them; `.wrap` adds soft
-   wrapping without changing the value the reader is editing. */
-.surface {
+/* One set of text metrics for both surfaces: the layer's runs must land on the
+   glyphs the textarea draws, so every property that moves text is declared
+   once, for the layer and the textarea together. */
+.surface,
+.highlight {
   box-sizing: border-box;
-  flex: 1 1 auto;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
   margin: 0;
   padding: 8px 12px;
-  overflow: auto;
-  color: var(--dsw-alias-label-primary);
   font-family: var(--dsw-font-mono, ui-monospace, monospace);
   font-size: var(--dsh-content-font-size-secondary, 13px);
   line-height: 1.6;
   tab-size: 2;
   white-space: pre;
+}
+
+/* The grammar's own colours, drawn under the textarea's transparent text. It is
+   clipped to the editor's box and moved by the textarea's scroll offsets, so
+   both surfaces show the same lines at every offset. The right padding keeps
+   the layer's text out of the width the surface's scrollbar takes, which the
+   surface itself reserves whether or not the bar is showing: without both, the
+   two wrap at different widths and their lines drift apart. */
+.highlight {
+  position: absolute;
+  inset: 0;
+  padding-right: calc(12px + var(--dsh-scrollbar-width, 8px));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The textarea is the scroller. Its own border, outline, and resize handle are
+   the browser's defaults, not this product's, so all three are dropped. */
+.surface {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  color: var(--dsw-alias-label-primary);
   background: transparent;
   border: 0;
   outline: none;
@@ -39,11 +57,26 @@
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }
 
+/* Under a layer, the textarea carries the caret and the selection alone: the
+   glyphs come from the layer's runs. The selected band stays translucent, so
+   those runs remain readable while the reader selects them. */
+.editor:has([data-textpreview-highlight]) .surface {
+  color: transparent;
+  caret-color: var(--dsw-alias-label-primary);
+}
+
+.editor:has([data-textpreview-highlight]) .surface::selection {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 28%, transparent);
+}
+
 .surface::-webkit-scrollbar-track {
   margin: 2px;
 }
 
-.wrap {
+/* Soft wrapping without changing the value the reader is editing; the layer
+   wraps with the same rules, so the two stay on the same lines. */
+.editor[data-textpreview-wrap] .surface,
+.editor[data-textpreview-wrap] .highlight {
   white-space: pre-wrap;
   word-break: break-word;
 }

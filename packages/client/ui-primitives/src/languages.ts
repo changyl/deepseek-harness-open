@@ -1,4 +1,11 @@
-/** File suffixes mapped to grammars already supported by the shared CodeBlock. */
+/**
+ * The client's one file-suffix-to-grammar mapping: the suffixes the code
+ * renderer claims, and the grammar hint every coloured surface derives from a
+ * path. It lives here, beside the highlighter whose grammar set it names, so the
+ * document preview and the changed-files review resolve a path the same way.
+ */
+
+/** File suffixes mapped to grammars already supported by the shared highlighter. */
 const languageExtensions: Readonly<Record<string, readonly string[]>> = {
   typescript: ['ts', 'tsx', 'mts', 'cts'],
   javascript: ['js', 'jsx', 'mjs', 'cjs'],

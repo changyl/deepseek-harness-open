@@ -165,6 +165,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:^
         version: link:../../vendor/cordis
+      '@deepseek-ai/cordis-plugin-hmr':
+        specifier: workspace:^
+        version: link:../../vendor/hmr
       '@deepseek-ai/cordis-plugin-include':
         specifier: workspace:^
         version: link:../../vendor/include
@@ -222,12 +225,6 @@ importers:
       '@deepseek-ai/dsh-cordis-client-runner':
         specifier: workspace:^
         version: link:../../packages/extensions/cordis-client-runner
-      '@deepseek-ai/dsh-experimental-agent-team-profile':
-        specifier: workspace:^
-        version: link:../../packages/experimental/agent-team-profile
-      '@deepseek-ai/dsh-experimental-agent-team-web-profile':
-        specifier: workspace:^
-        version: link:../../packages/experimental/agent-team-web-profile
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:^
         version: link:../../packages/fs/fs-local
@@ -433,15 +430,9 @@ importers:
       '@deepseek-ai/dsh-deepseek-llm-api-extensions':
         specifier: workspace:^
         version: link:../../packages/llm/deepseek-llm-api-extensions
-      '@deepseek-ai/dsh-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../../packages/experimental/agent-team
       '@deepseek-ai/dsh-experimental-ptc-runtime-python':
         specifier: workspace:^
         version: link:../../packages/experimental/ptc-runtime-python
-      '@deepseek-ai/dsh-experimental-tool-agent-team':
-        specifier: workspace:^
-        version: link:../../packages/experimental/tool-agent-team
       '@deepseek-ai/dsh-fs-observation-policy':
         specifier: workspace:^
         version: link:../../packages/fs/fs-observation-policy
@@ -1050,6 +1041,9 @@ importers:
       '@deepseek-ai/dsh-api-terminal-controller':
         specifier: workspace:^
         version: link:../terminal-controller
+      '@deepseek-ai/dsh-api-usage':
+        specifier: workspace:^
+        version: link:../usage
       '@deepseek-ai/dsh-api-workspace-controller':
         specifier: workspace:^
         version: link:../workspace-controller
@@ -1359,6 +1353,22 @@ importers:
       '@deepseek-ai/dsh-util-crypto':
         specifier: workspace:^
         version: link:../../util/crypto
+
+  packages/api/usage:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+      '@deepseek-ai/dsh-usage':
+        specifier: workspace:^
+        version: link:../../usage/usage
 
   packages/api/workspace-controller:
     dependencies:
@@ -1703,6 +1713,9 @@ importers:
 
   packages/bundle/base:
     dependencies:
+      '@deepseek-ai/cordis-plugin-hmr':
+        specifier: workspace:^
+        version: link:../../../vendor/hmr
       '@deepseek-ai/cordis-plugin-timer':
         specifier: workspace:^
         version: link:../../../vendor/timer
@@ -1817,6 +1830,12 @@ importers:
       '@deepseek-ai/dsh-plugin-package-inventory-deepseek':
         specifier: workspace:^
         version: link:../../llm/plugin-package-inventory-deepseek
+      '@deepseek-ai/dsh-project':
+        specifier: workspace:^
+        version: link:../../project/project
+      '@deepseek-ai/dsh-project-context':
+        specifier: workspace:^
+        version: link:../../project/project-context
       '@deepseek-ai/dsh-ptc-runtime-node':
         specifier: workspace:^
         version: link:../../ptc-runtime/ptc-runtime-node
@@ -1931,6 +1950,9 @@ importers:
       '@deepseek-ai/dsh-tool-present':
         specifier: workspace:^
         version: link:../../deliverables/tool-present
+      '@deepseek-ai/dsh-tool-project':
+        specifier: workspace:^
+        version: link:../../project/tool-project
       '@deepseek-ai/dsh-tool-pwsh':
         specifier: workspace:^
         version: link:../../shell/tool-pwsh
@@ -2181,6 +2203,9 @@ importers:
       '@deepseek-ai/dsh-api-terminal-controller':
         specifier: workspace:^
         version: link:../../api/terminal-controller
+      '@deepseek-ai/dsh-api-usage':
+        specifier: workspace:^
+        version: link:../../api/usage
       '@deepseek-ai/dsh-api-workspace-controller':
         specifier: workspace:^
         version: link:../../api/workspace-controller
@@ -2286,6 +2311,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-plugin-manager':
         specifier: workspace:^
         version: link:../../client/ui-plugin-manager
+      '@deepseek-ai/dsh-client-ui-project':
+        specifier: workspace:^
+        version: link:../../client/ui-project
       '@deepseek-ai/dsh-client-ui-reference':
         specifier: workspace:^
         version: link:../../client/ui-reference
@@ -2774,6 +2802,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@deepseek-ai/dsh-client-ui-workspace':
+        specifier: workspace:^
+        version: link:../ui-workspace
       '@deepseek-ai/dsh-session':
         specifier: workspace:^
         version: link:../../core/session
@@ -3326,6 +3357,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-renderer':
         specifier: workspace:^
         version: link:../ui-renderer
+      '@deepseek-ai/dsh-client-ui-sidebar-documentpreview':
+        specifier: workspace:^
+        version: link:../ui-sidebar-documentpreview
       '@deepseek-ai/dsh-client-ui-sidebar-right':
         specifier: workspace:^
         version: link:../ui-sidebar-right
@@ -6574,99 +6608,6 @@ importers:
         specifier: workspace:^
         version: link:../../core/session
 
-  packages/experimental/agent-team:
-    dependencies:
-      '@deepseek-ai/dsh-brand':
-        specifier: workspace:^
-        version: link:../../util/brand
-      '@deepseek-ai/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@deepseek-ai/dsh-agent-loop':
-        specifier: workspace:^
-        version: link:../../core/agent-loop
-      '@deepseek-ai/dsh-agent-loop-testkit':
-        specifier: workspace:^
-        version: link:../../test-support/agent-loop-testkit
-      '@deepseek-ai/dsh-invariants':
-        specifier: workspace:^
-        version: link:../../runtime-diagnostics/invariants
-      '@deepseek-ai/dsh-llm':
-        specifier: workspace:^
-        version: link:../../llm/llm
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@deepseek-ai/dsh-session-persistence':
-        specifier: workspace:^
-        version: link:../../session/session-persistence
-      '@deepseek-ai/dsh-session-persistence-jsonl':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-jsonl
-      '@deepseek-ai/dsh-session-projection':
-        specifier: workspace:^
-        version: link:../../session/session-projection
-      '@deepseek-ai/dsh-session-query':
-        specifier: workspace:^
-        version: link:../../session-query/session-query
-      '@deepseek-ai/dsh-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@deepseek-ai/dsh-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@deepseek-ai/dsh-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:^
-        version: link:../../typert/protocol
-
-  packages/experimental/agent-team-profile:
-    dependencies:
-      '@deepseek-ai/dsh-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@deepseek-ai/dsh-experimental-tool-agent-team':
-        specifier: workspace:^
-        version: link:../tool-agent-team
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/cordis-plugin-include':
-        specifier: workspace:^
-        version: link:../../../vendor/include
-      js-yaml:
-        specifier: ^4.2.0
-        version: 4.3.1
-
-  packages/experimental/agent-team-web-profile:
-    dependencies:
-      '@deepseek-ai/dsh-experimental-client-ui-agent-team':
-        specifier: workspace:^
-        version: link:../client-ui-agent-team
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/cordis-plugin-include':
-        specifier: workspace:^
-        version: link:../../../vendor/include
-      js-yaml:
-        specifier: ^4.2.0
-        version: 4.3.1
-
   packages/experimental/auto-review:
     dependencies:
       '@deepseek-ai/dsh-util-values':
@@ -6978,63 +6919,6 @@ importers:
         specifier: ^4.19.2
         version: 4.22.4
 
-  packages/experimental/client-ui-agent-team:
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-api-remotes':
-        specifier: workspace:^
-        version: link:../../api/remotes
-      '@deepseek-ai/dsh-api-session-controller':
-        specifier: workspace:^
-        version: link:../../api/session-controller
-      '@deepseek-ai/dsh-client-locale':
-        specifier: workspace:^
-        version: link:../../client/locale
-      '@deepseek-ai/dsh-client-test-runtime':
-        specifier: workspace:^
-        version: link:../../test-support/client-runtime
-      '@deepseek-ai/dsh-client-ui-conversation':
-        specifier: workspace:^
-        version: link:../../client/ui-conversation
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: workspace:^
-        version: link:../../client/ui-primitives
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: workspace:^
-        version: link:../../client/ui-renderer
-      '@deepseek-ai/dsh-client-ui-session':
-        specifier: workspace:^
-        version: link:../../client/ui-session
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: workspace:^
-        version: link:../../client/ui-slots
-      '@deepseek-ai/dsh-client-ui-workspace':
-        specifier: workspace:^
-        version: link:../../client/ui-workspace
-      '@deepseek-ai/dsh-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:^
-        version: link:../../typert/protocol
-      '@testing-library/react':
-        specifier: ^16.1.0
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
-
   packages/experimental/computer-use-cua-driver-mcp:
     dependencies:
       '@deepseek-ai/dsh-mcp-client':
@@ -7200,67 +7084,6 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: workspace:^
         version: link:../../util/values
-
-  packages/experimental/tool-agent-team:
-    dependencies:
-      '@deepseek-ai/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@deepseek-ai/dsh-agent-loop':
-        specifier: workspace:^
-        version: link:../../core/agent-loop
-      '@deepseek-ai/dsh-agent-loop-testkit':
-        specifier: workspace:^
-        version: link:../../test-support/agent-loop-testkit
-      '@deepseek-ai/dsh-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@deepseek-ai/dsh-llm':
-        specifier: workspace:^
-        version: link:../../llm/llm
-      '@deepseek-ai/dsh-llm-deepseek':
-        specifier: workspace:^
-        version: link:../../llm/llm-deepseek
-      '@deepseek-ai/dsh-scope':
-        specifier: workspace:^
-        version: link:../../core/scope
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@deepseek-ai/dsh-session-persistence-jsonl':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-jsonl
-      '@deepseek-ai/dsh-session-projection':
-        specifier: workspace:^
-        version: link:../../session/session-projection
-      '@deepseek-ai/dsh-session-query':
-        specifier: workspace:^
-        version: link:../../session-query/session-query
-      '@deepseek-ai/dsh-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@deepseek-ai/dsh-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@deepseek-ai/dsh-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
-      '@deepseek-ai/dsh-system-prompt':
-        specifier: workspace:^
-        version: link:../../core/system-prompt
-      '@deepseek-ai/dsh-tool-subagent-control':
-        specifier: workspace:^
-        version: link:../../subagent/tool-subagent-control
-      '@deepseek-ai/dsh-tools':
-        specifier: workspace:^
-        version: link:../../core/tools
 
   packages/experimental/webworker-packer:
     dependencies:
@@ -9303,6 +9126,117 @@ importers:
       '@deepseek-ai/dsh-system-prompt':
         specifier: workspace:^
         version: link:../../core/system-prompt
+
+  packages/project/command-project:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@deepseek-ai/dsh-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@deepseek-ai/dsh-commands':
+        specifier: workspace:^
+        version: link:../../interaction/commands
+      '@deepseek-ai/dsh-project':
+        specifier: workspace:^
+        version: link:../project
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@deepseek-ai/dsh-storage-domain':
+        specifier: workspace:^
+        version: link:../../storage/storage-domain
+      '@deepseek-ai/dsh-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+
+  packages/project/project:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@deepseek-ai/dsh-storage-domain':
+        specifier: workspace:^
+        version: link:../../storage/storage-domain
+      '@deepseek-ai/dsh-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+
+  packages/project/project-context:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@deepseek-ai/dsh-project':
+        specifier: workspace:^
+        version: link:../project
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@deepseek-ai/dsh-storage-domain':
+        specifier: workspace:^
+        version: link:../../storage/storage-domain
+      '@deepseek-ai/dsh-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+
+  packages/project/tool-project:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-project':
+        specifier: workspace:^
+        version: link:../project
+      '@deepseek-ai/dsh-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@deepseek-ai/dsh-storage-domain':
+        specifier: workspace:^
+        version: link:../../storage/storage-domain
+      '@deepseek-ai/dsh-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@deepseek-ai/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
 
   packages/ptc-runtime/ptc-runtime:
     devDependencies:
@@ -11827,6 +11761,12 @@ importers:
       '@deepseek-ai/dsh-agent-team':
         specifier: workspace:^
         version: link:../agent-team
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@deepseek-ai/dsh-llm-deepseek':
+        specifier: workspace:^
+        version: link:../../llm/llm-deepseek
       '@deepseek-ai/dsh-scope':
         specifier: workspace:^
         version: link:../../core/scope
@@ -14168,10 +14108,10 @@ packages:
     hasBin: true
 
   '@browserbasehq/sdk@2.20.0':
-    resolution: {integrity: sha512-zDDsgrwF6/iF+Ob0LIqe6EPBa4n7m+5YfKn0g0+kZR5jIncTXBPmJSW6tAsu9go3wA9tQQP+zm6qUOPVi1Gutw==}
+    resolution: {integrity: sha512-zDDsgrwF6/iF+Ob0LIqe6EPBa4n7m+5YfKn0g0+kZR5jIncTXBPmJSW6tAsu9go3wA9tQQP+zm6qUOPVi1Gutw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@browserbasehq/sdk/-/sdk-2.20.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40browserbasehq%2Fsdk%2F-%2Fsdk-2.20.0.tgz}
 
   '@browserbasehq/stagehand@4.1.0':
-    resolution: {integrity: sha512-PJikMBVoaCRh6TFD7GcmeISmsMq4IwUu1BD5FOsGUVDUxrVqZomWa6W6dF+a/zu4xRZu2Z2xX1nXVMDaCuZWsw==}
+    resolution: {integrity: sha512-PJikMBVoaCRh6TFD7GcmeISmsMq4IwUu1BD5FOsGUVDUxrVqZomWa6W6dF+a/zu4xRZu2Z2xX1nXVMDaCuZWsw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@browserbasehq/stagehand/-/stagehand-4.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40browserbasehq%2Fstagehand%2F-%2Fstagehand-4.1.0.tgz}
     engines: {node: '>=22.18.0'}
 
   '@chevrotain/types@11.1.2':
@@ -14214,36 +14154,30 @@ packages:
     engines: {node: '>=20.19.0'}
 
   '@deepseek-ai/libreoffice-kit-darwin-arm64@0.0.1':
-    resolution: {integrity: sha512-3vrYUIZihcb+F9qjjHdWNSxW83fLihrBV63qaw5kxW1Q7hbZPPMDsjlRJ2rX6VUi06By4nJH9YLKZ73iGN5iEQ==}
+    resolution: {integrity: sha512-3vrYUIZihcb+F9qjjHdWNSxW83fLihrBV63qaw5kxW1Q7hbZPPMDsjlRJ2rX6VUi06By4nJH9YLKZ73iGN5iEQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@deepseek-ai/libreoffice-kit-darwin-arm64/-/libreoffice-kit-darwin-arm64-0.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40deepseek-ai%2Flibreoffice-kit-darwin-arm64%2F-%2Flibreoffice-kit-darwin-arm64-0.0.1.tgz}
     engines: {node: '>=22.19.0'}
     cpu: [arm64]
     os: [darwin]
 
   '@deepseek-ai/libreoffice-kit-darwin-x64@0.0.1':
-    resolution: {integrity: sha512-xMMXJkjggd9c1g85oLNHiJl1xgowe0EG60ib8up3Pz0qFD9HORMu0/eP1eB19E8jLRwqF9Sb0TTrcqp68aVcyw==}
+    resolution: {integrity: sha512-xMMXJkjggd9c1g85oLNHiJl1xgowe0EG60ib8up3Pz0qFD9HORMu0/eP1eB19E8jLRwqF9Sb0TTrcqp68aVcyw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@deepseek-ai/libreoffice-kit-darwin-x64/-/libreoffice-kit-darwin-x64-0.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40deepseek-ai%2Flibreoffice-kit-darwin-x64%2F-%2Flibreoffice-kit-darwin-x64-0.0.1.tgz}
     engines: {node: '>=22.19.0'}
     cpu: [x64]
     os: [darwin]
 
   '@deepseek-ai/libreoffice-kit-wasm@0.0.1':
-    resolution: {integrity: sha512-VHGr+MvRQMCXxVvdYZ8qJnVXOMjUivntvNHCDBog+cCjgEfWjUl+/0rfvF2auPjnWUzqvjKMEdqbemhc1zuqFg==}
+    resolution: {integrity: sha512-VHGr+MvRQMCXxVvdYZ8qJnVXOMjUivntvNHCDBog+cCjgEfWjUl+/0rfvF2auPjnWUzqvjKMEdqbemhc1zuqFg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@deepseek-ai/libreoffice-kit-wasm/-/libreoffice-kit-wasm-0.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40deepseek-ai%2Flibreoffice-kit-wasm%2F-%2Flibreoffice-kit-wasm-0.0.1.tgz}
     engines: {node: '>=22.19.0'}
     os: [linux]
 
-  '@deepseek-ai/libreoffice-kit-win32-arm64@0.0.1':
-    resolution: {integrity: sha512-9G7YxXHEFaVn5iFM6IaHusWuXAd3cEprwTYSA1OsYMUREliHzdcmJEqcEyePDpX1y39KNKWQgowYeSpFbfrbgg==}
-    engines: {node: '>=22.19.0'}
-    cpu: [arm64]
-    os: [win32]
-
   '@deepseek-ai/libreoffice-kit-win32-x64@0.0.1':
-    resolution: {integrity: sha512-+DPPT5V6rfwWfMf7scfgzxwNBQiuePdY4dmVvWb4QAINgquOXUAyWVNZaThWNCO8baRn1l4fb3L5sdbLWib3zQ==}
+    resolution: {integrity: sha512-+DPPT5V6rfwWfMf7scfgzxwNBQiuePdY4dmVvWb4QAINgquOXUAyWVNZaThWNCO8baRn1l4fb3L5sdbLWib3zQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@deepseek-ai/libreoffice-kit-win32-x64/-/libreoffice-kit-win32-x64-0.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40deepseek-ai%2Flibreoffice-kit-win32-x64%2F-%2Flibreoffice-kit-win32-x64-0.0.1.tgz}
     engines: {node: '>=22.19.0'}
     cpu: [x64]
     os: [win32]
 
   '@deepseek-ai/libreoffice-kit@0.0.1':
-    resolution: {integrity: sha512-e4JZqohz5TEVfI3sfUK/dHRLjqlQep96CmqNM93Rm7LY9PuECiJakIX2BdHi5OkmbK9Mo47SiW44HNTTiwW1yw==}
+    resolution: {integrity: sha512-e4JZqohz5TEVfI3sfUK/dHRLjqlQep96CmqNM93Rm7LY9PuECiJakIX2BdHi5OkmbK9Mo47SiW44HNTTiwW1yw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@deepseek-ai/libreoffice-kit/-/libreoffice-kit-0.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40deepseek-ai%2Flibreoffice-kit%2F-%2Flibreoffice-kit-0.0.1.tgz}
     engines: {node: '>=22.19.0'}
 
   '@docsearch/css@3.8.2':
@@ -15254,15 +15188,15 @@ packages:
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@mixmark-io/domino/-/domino-2.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40mixmark-io%2Fdomino%2F-%2Fdomino-2.2.0.tgz}
 
   '@modelcontextprotocol/client@2.0.0':
-    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
+    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@modelcontextprotocol/client/-/client-2.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40modelcontextprotocol%2Fclient%2F-%2Fclient-2.0.0.tgz}
     engines: {node: '>=20'}
 
   '@modelcontextprotocol/core@2.0.0':
-    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@modelcontextprotocol/core/-/core-2.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40modelcontextprotocol%2Fcore%2F-%2Fcore-2.0.0.tgz}
     engines: {node: '>=20'}
 
   '@modelcontextprotocol/node@2.0.0':
-    resolution: {integrity: sha512-Y4hAC2XdGDUdDOCbLDOCA4+aL3NUldjsOWlDL/YwpAxrPhRm1xHd7lZ+mLacvZ9t3PaH28wgNoaLQGrIk1P2pg==}
+    resolution: {integrity: sha512-Y4hAC2XdGDUdDOCbLDOCA4+aL3NUldjsOWlDL/YwpAxrPhRm1xHd7lZ+mLacvZ9t3PaH28wgNoaLQGrIk1P2pg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@modelcontextprotocol/node/-/node-2.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40modelcontextprotocol%2Fnode%2F-%2Fnode-2.0.0.tgz}
     engines: {node: '>=20'}
     peerDependencies:
       '@modelcontextprotocol/server': ^2.0.0
@@ -15290,7 +15224,7 @@ packages:
     hasBin: true
 
   '@modelcontextprotocol/server@2.0.0':
-    resolution: {integrity: sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw==}
+    resolution: {integrity: sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@modelcontextprotocol/server/-/server-2.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40modelcontextprotocol%2Fserver%2F-%2Fserver-2.0.0.tgz}
     engines: {node: '>=20'}
 
   '@napi-rs/canvas-android-arm64@1.0.8':
@@ -15781,7 +15715,7 @@ packages:
     os: [win32]
 
   '@panzoom/panzoom@4.6.2':
-    resolution: {integrity: sha512-Zn3B5/hwa6eYIPRSKX0xf2clv8nviTX8AnAU5kU/EugiTDhG41ya2wlBqYrZJYCWQROr/5XkWObZhIkepi89qw==}
+    resolution: {integrity: sha512-Zn3B5/hwa6eYIPRSKX0xf2clv8nviTX8AnAU5kU/EugiTDhG41ya2wlBqYrZJYCWQROr/5XkWObZhIkepi89qw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@panzoom/panzoom/-/panzoom-4.6.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40panzoom%2Fpanzoom%2F-%2Fpanzoom-4.6.2.tgz}
 
   '@peculiar/asn1-schema@2.9.4':
     resolution: {integrity: sha512-GjzePcT9Iw8NzeOPf73iNS9xM+TBhd/FilAfP+RQGkTMQJTVWtytN3JHJACCjf/ABNau5S7mS3g+DcuxmRgYEg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@peculiar/asn1-schema/-/asn1-schema-2.9.4.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40peculiar%2Fasn1-schema%2F-%2Fasn1-schema-2.9.4.tgz}
@@ -15803,7 +15737,7 @@ packages:
     engines: {node: '>=14'}
 
   '@playwright/mcp@0.0.80':
-    resolution: {integrity: sha512-FOPXHm2SvFhAQylm10jMZ35B/SR2TaMLVkavAlwoG4N2qCb5RqbvhQYcu3zmXNyxR2DW0Ooxe+9XPVt5UjKRCQ==}
+    resolution: {integrity: sha512-FOPXHm2SvFhAQylm10jMZ35B/SR2TaMLVkavAlwoG4N2qCb5RqbvhQYcu3zmXNyxR2DW0Ooxe+9XPVt5UjKRCQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@playwright/mcp/-/mcp-0.0.80.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40playwright%2Fmcp%2F-%2Fmcp-0.0.80.tgz}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -15842,7 +15776,7 @@ packages:
     engines: {node: '>=18'}
 
   '@puppeteer/browsers@3.2.2':
-    resolution: {integrity: sha512-q2BU4YfO9h/Wt7IcWPcggpOOqLk2Tbs1hDwolvKZrweRjy751OJBKMN9zO5bfD0pzU7X/tvKw/exQds4pM/LOg==}
+    resolution: {integrity: sha512-q2BU4YfO9h/Wt7IcWPcggpOOqLk2Tbs1hDwolvKZrweRjy751OJBKMN9zO5bfD0pzU7X/tvKw/exQds4pM/LOg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@puppeteer/browsers/-/browsers-3.2.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40puppeteer%2Fbrowsers%2F-%2Fbrowsers-3.2.2.tgz}
     engines: {node: '>=22.12.0'}
     hasBin: true
     peerDependencies:
@@ -16311,7 +16245,7 @@ packages:
       eslint: ^9.0.0 || ^10.0.0
 
   '@swc/helpers@0.5.23':
-    resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
+    resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@swc/helpers/-/helpers-0.5.23.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40swc%2Fhelpers%2F-%2Fhelpers-0.5.23.tgz}
 
   '@szmarczak/http-timer@4.0.6':
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@szmarczak/http-timer/-/http-timer-4.0.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40szmarczak%2Fhttp-timer%2F-%2Fhttp-timer-4.0.6.tgz}
@@ -16346,39 +16280,39 @@ packages:
         optional: true
 
   '@trycua/cua-driver-darwin-arm64@0.28.0':
-    resolution: {integrity: sha512-T6xvOlCph5uropetrH6tNTvg5ipN9FUzV1n28gNJ1LYoNT3fsqnQUpCRMavlAui/zYkyMqCMaBUqBcfZLA+SnA==}
+    resolution: {integrity: sha512-T6xvOlCph5uropetrH6tNTvg5ipN9FUzV1n28gNJ1LYoNT3fsqnQUpCRMavlAui/zYkyMqCMaBUqBcfZLA+SnA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver-darwin-arm64/-/cua-driver-darwin-arm64-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver-darwin-arm64%2F-%2Fcua-driver-darwin-arm64-0.28.0.tgz}
     cpu: [arm64]
     os: [darwin]
 
   '@trycua/cua-driver-darwin-x64@0.28.0':
-    resolution: {integrity: sha512-8lBtyiTfMOGmEklNY4GHu5SedfxYbg43FjLpPUmKLSVF98+opyQ1bsyI7A7VlfUBW4hdwEBDLtzZnpZqepN9ZA==}
+    resolution: {integrity: sha512-8lBtyiTfMOGmEklNY4GHu5SedfxYbg43FjLpPUmKLSVF98+opyQ1bsyI7A7VlfUBW4hdwEBDLtzZnpZqepN9ZA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver-darwin-x64/-/cua-driver-darwin-x64-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver-darwin-x64%2F-%2Fcua-driver-darwin-x64-0.28.0.tgz}
     cpu: [x64]
     os: [darwin]
 
   '@trycua/cua-driver-linux-arm64-gnu@0.28.0':
-    resolution: {integrity: sha512-/sDRM2vUQUA5FY3y3VAOxe0I5U1UHfhDUY3EfvGhASrHteefMVh+Wo8teebcto5TgVjiw4P41YdoTFBFWR3w4g==}
+    resolution: {integrity: sha512-/sDRM2vUQUA5FY3y3VAOxe0I5U1UHfhDUY3EfvGhASrHteefMVh+Wo8teebcto5TgVjiw4P41YdoTFBFWR3w4g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver-linux-arm64-gnu/-/cua-driver-linux-arm64-gnu-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver-linux-arm64-gnu%2F-%2Fcua-driver-linux-arm64-gnu-0.28.0.tgz}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
   '@trycua/cua-driver-linux-x64-gnu@0.28.0':
-    resolution: {integrity: sha512-2rEldOcNy+CT7re2pnIEfMW1c4wCoaLqhv8hoqBRK5gHn3UJTJPaxvo35tKSuIJAAQ/GMawCHCl9WvjY+W2ysw==}
+    resolution: {integrity: sha512-2rEldOcNy+CT7re2pnIEfMW1c4wCoaLqhv8hoqBRK5gHn3UJTJPaxvo35tKSuIJAAQ/GMawCHCl9WvjY+W2ysw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver-linux-x64-gnu/-/cua-driver-linux-x64-gnu-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver-linux-x64-gnu%2F-%2Fcua-driver-linux-x64-gnu-0.28.0.tgz}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
   '@trycua/cua-driver-win32-arm64-msvc@0.28.0':
-    resolution: {integrity: sha512-7cbX5v7xyCdGK3KuwPbMKlIuIUjKkKFuGgdPsCl7qZHLv+PQC5f7FrDFl8hFG3YNKvjoyan5ufus0AoTCcmp5w==}
+    resolution: {integrity: sha512-7cbX5v7xyCdGK3KuwPbMKlIuIUjKkKFuGgdPsCl7qZHLv+PQC5f7FrDFl8hFG3YNKvjoyan5ufus0AoTCcmp5w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver-win32-arm64-msvc/-/cua-driver-win32-arm64-msvc-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver-win32-arm64-msvc%2F-%2Fcua-driver-win32-arm64-msvc-0.28.0.tgz}
     cpu: [arm64]
     os: [win32]
 
   '@trycua/cua-driver-win32-x64-msvc@0.28.0':
-    resolution: {integrity: sha512-tTWcGIGUCZ/k+mbcdh/4VmehsELp12M/tUj59XQSW97lFwrMSSIUypZ84LAEO+CEBdK9NQBRKO2pMBTH6aakEQ==}
+    resolution: {integrity: sha512-tTWcGIGUCZ/k+mbcdh/4VmehsELp12M/tUj59XQSW97lFwrMSSIUypZ84LAEO+CEBdK9NQBRKO2pMBTH6aakEQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver-win32-x64-msvc/-/cua-driver-win32-x64-msvc-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver-win32-x64-msvc%2F-%2Fcua-driver-win32-x64-msvc-0.28.0.tgz}
     cpu: [x64]
     os: [win32]
 
   '@trycua/cua-driver@0.28.0':
-    resolution: {integrity: sha512-n3ArFsQ9RzNQIiYpHJEjTGLIPPpnqXDJRp0sevRcrRThAG3H2Fh/gWooEb9k4ba3rNSAohUoPiG/EbdKLF1WRw==}
+    resolution: {integrity: sha512-n3ArFsQ9RzNQIiYpHJEjTGLIPPpnqXDJRp0sevRcrRThAG3H2Fh/gWooEb9k4ba3rNSAohUoPiG/EbdKLF1WRw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@trycua/cua-driver/-/cua-driver-0.28.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40trycua%2Fcua-driver%2F-%2Fcua-driver-0.28.0.tgz}
 
   '@tybys/wasm-util@0.10.2':
     resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@tybys/wasm-util/-/wasm-util-0.10.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40tybys%2Fwasm-util%2F-%2Fwasm-util-0.10.2.tgz}
@@ -16582,10 +16516,10 @@ packages:
     resolution: {integrity: sha512-MPOlB48mfWhoUlynY0ga7CFsXIPcH6vGPkjzXMn2p+4PH1QUyn2KPtw0hrLLmO6SaX4zse3X6h2x/083vveAlA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@types/negotiator/-/negotiator-0.6.5.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fnegotiator%2F-%2Fnegotiator-0.6.5.tgz}
 
   '@types/node-fetch@2.6.13':
-    resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
+    resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@types/node-fetch/-/node-fetch-2.6.13.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fnode-fetch%2F-%2Fnode-fetch-2.6.13.tgz}
 
   '@types/node@18.19.130':
-    resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
+    resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@types/node/-/node-18.19.130.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fnode%2F-%2Fnode-18.19.130.tgz}
 
   '@types/node@22.20.0':
     resolution: {integrity: sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@types/node/-/node-22.20.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40types%2Fnode%2F-%2Fnode-22.20.0.tgz}
@@ -16675,54 +16609,54 @@ packages:
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@ubjs/core@0.31.0-3':
-    resolution: {integrity: sha512-39XrJgUZ2VVb561sSnkXPhczNoeBsNiSRArecsV0JE7CJq69ajFkcn9/tBAUS2NpgHkLIDU+z6Ks2+1wXnboxg==}
+    resolution: {integrity: sha512-39XrJgUZ2VVb561sSnkXPhczNoeBsNiSRArecsV0JE7CJq69ajFkcn9/tBAUS2NpgHkLIDU+z6Ks2+1wXnboxg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/core/-/core-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fcore%2F-%2Fcore-0.31.0-3.tgz}
 
   '@ubjs/node-darwin-arm64@0.31.0-3':
-    resolution: {integrity: sha512-GGQVPLkVo4Gc8qVLW4IGvS8bjl8eHXyeP4a97ntGmsAdXwE5gsS29o8xUEFROjhwHKD+9sgVeblCSWVG3CpHsw==}
+    resolution: {integrity: sha512-GGQVPLkVo4Gc8qVLW4IGvS8bjl8eHXyeP4a97ntGmsAdXwE5gsS29o8xUEFROjhwHKD+9sgVeblCSWVG3CpHsw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-darwin-arm64/-/node-darwin-arm64-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-darwin-arm64%2F-%2Fnode-darwin-arm64-0.31.0-3.tgz}
     cpu: [arm64]
     os: [darwin]
 
   '@ubjs/node-darwin-x64@0.31.0-3':
-    resolution: {integrity: sha512-2sc47u4XFYOsbmP5EW+Gx8m/yGrYnfFDFQm6+kz7goSWTNg84eEiz3COs9HKJDVuNJ5Khv5XipTO8CFadMLXCw==}
+    resolution: {integrity: sha512-2sc47u4XFYOsbmP5EW+Gx8m/yGrYnfFDFQm6+kz7goSWTNg84eEiz3COs9HKJDVuNJ5Khv5XipTO8CFadMLXCw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-darwin-x64/-/node-darwin-x64-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-darwin-x64%2F-%2Fnode-darwin-x64-0.31.0-3.tgz}
     cpu: [x64]
     os: [darwin]
 
   '@ubjs/node-linux-arm64-gnu@0.31.0-3':
-    resolution: {integrity: sha512-YStVXhYz/5jvlWf/p4fhiVT72unYAbGugifFC9QmO/+hnroQDAQ5t8SARbsc15G4olMcamdIB+GETiUB7gmaYg==}
+    resolution: {integrity: sha512-YStVXhYz/5jvlWf/p4fhiVT72unYAbGugifFC9QmO/+hnroQDAQ5t8SARbsc15G4olMcamdIB+GETiUB7gmaYg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-linux-arm64-gnu/-/node-linux-arm64-gnu-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-linux-arm64-gnu%2F-%2Fnode-linux-arm64-gnu-0.31.0-3.tgz}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
   '@ubjs/node-linux-arm64-musl@0.31.0-3':
-    resolution: {integrity: sha512-Izp4nvfy/LmibzFowAztkoDOksCR2fb2zl6fh1ojR1HEsg0rAGruxtI8d3fn8DI0lBXwqmn6SF///oD4mFNJPQ==}
+    resolution: {integrity: sha512-Izp4nvfy/LmibzFowAztkoDOksCR2fb2zl6fh1ojR1HEsg0rAGruxtI8d3fn8DI0lBXwqmn6SF///oD4mFNJPQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-linux-arm64-musl/-/node-linux-arm64-musl-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-linux-arm64-musl%2F-%2Fnode-linux-arm64-musl-0.31.0-3.tgz}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
   '@ubjs/node-linux-x64-gnu@0.31.0-3':
-    resolution: {integrity: sha512-Xdm21blyg5U/kW6s7OMvgrr8coGTkUlt26DVR9x8gKISif+E3YwdEskbFScWqystAiJnfjw7xHEc8UMu0Qlz7Q==}
+    resolution: {integrity: sha512-Xdm21blyg5U/kW6s7OMvgrr8coGTkUlt26DVR9x8gKISif+E3YwdEskbFScWqystAiJnfjw7xHEc8UMu0Qlz7Q==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-linux-x64-gnu/-/node-linux-x64-gnu-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-linux-x64-gnu%2F-%2Fnode-linux-x64-gnu-0.31.0-3.tgz}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
   '@ubjs/node-linux-x64-musl@0.31.0-3':
-    resolution: {integrity: sha512-fFQ9BWS6i2LUH9SJgD9oEiKXXo/say59vHy7usFe1t7C2xvwvP34f5SuxXmWP9R8fHyA0aC4kIZ+TTwyHSv1Kw==}
+    resolution: {integrity: sha512-fFQ9BWS6i2LUH9SJgD9oEiKXXo/say59vHy7usFe1t7C2xvwvP34f5SuxXmWP9R8fHyA0aC4kIZ+TTwyHSv1Kw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-linux-x64-musl/-/node-linux-x64-musl-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-linux-x64-musl%2F-%2Fnode-linux-x64-musl-0.31.0-3.tgz}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
   '@ubjs/node-win32-arm64-msvc@0.31.0-3':
-    resolution: {integrity: sha512-ID6rSz1NmPsWTNBBNAw4OnJ5Dj8pcbtNJtdPB3OxcGigLBd/e0x7buhSI7os6Mo5iYtEdCynBRQHFJwub5XSPg==}
+    resolution: {integrity: sha512-ID6rSz1NmPsWTNBBNAw4OnJ5Dj8pcbtNJtdPB3OxcGigLBd/e0x7buhSI7os6Mo5iYtEdCynBRQHFJwub5XSPg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-win32-arm64-msvc/-/node-win32-arm64-msvc-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-win32-arm64-msvc%2F-%2Fnode-win32-arm64-msvc-0.31.0-3.tgz}
     cpu: [arm64]
     os: [win32]
 
   '@ubjs/node-win32-x64-msvc@0.31.0-3':
-    resolution: {integrity: sha512-wevs+Y+szwcCUT8IJFbB4/1nfxyRv/51l8oG7FGUPWD1xLPyuHfJBG27C+PDeC7KRzes/2n6aLo4DGZbr/LYTw==}
+    resolution: {integrity: sha512-wevs+Y+szwcCUT8IJFbB4/1nfxyRv/51l8oG7FGUPWD1xLPyuHfJBG27C+PDeC7KRzes/2n6aLo4DGZbr/LYTw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node-win32-x64-msvc/-/node-win32-x64-msvc-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode-win32-x64-msvc%2F-%2Fnode-win32-x64-msvc-0.31.0-3.tgz}
     cpu: [x64]
     os: [win32]
 
   '@ubjs/node@0.31.0-3':
-    resolution: {integrity: sha512-qNMpi2LICNwxGXZyRF8fSDBSpbezyZbEsydrbiMPJOmtOWr4tmZIEl7jkWGHVGShoBvHfFo4eHp5B4UVP928Cg==}
+    resolution: {integrity: sha512-qNMpi2LICNwxGXZyRF8fSDBSpbezyZbEsydrbiMPJOmtOWr4tmZIEl7jkWGHVGShoBvHfFo4eHp5B4UVP928Cg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ubjs/node/-/node-0.31.0-3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ubjs%2Fnode%2F-%2Fnode-0.31.0-3.tgz}
 
   '@ungap/structured-clone@1.3.3':
     resolution: {integrity: sha512-60YRaenCQcVjYEKOcG824+DRGGIQ3VKErcBoAEDJZz5bKIs2ZG+X/H9Nk+Q6EVkwJk5QNApxbrc5QtBSwtrXAg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@ungap/structured-clone/-/structured-clone-1.3.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40ungap%2Fstructured-clone%2F-%2Fstructured-clone-1.3.3.tgz}
@@ -16937,16 +16871,16 @@ packages:
     engines: {node: '>=10.0.0'}
 
   '@xterm/addon-fit@0.11.0':
-    resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
+    resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@xterm/addon-fit/-/addon-fit-0.11.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40xterm%2Faddon-fit%2F-%2Faddon-fit-0.11.0.tgz}
 
   '@xterm/addon-serialize@0.14.0':
-    resolution: {integrity: sha512-uteyTU1EkrQa2Ux6P/uFl2fzmXI46jy5uoQMKEOM0fKTyiW7cSn0WrFenHm5vO5uEXX/GpwW/FgILvv3r0WbkA==}
+    resolution: {integrity: sha512-uteyTU1EkrQa2Ux6P/uFl2fzmXI46jy5uoQMKEOM0fKTyiW7cSn0WrFenHm5vO5uEXX/GpwW/FgILvv3r0WbkA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@xterm/addon-serialize/-/addon-serialize-0.14.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40xterm%2Faddon-serialize%2F-%2Faddon-serialize-0.14.0.tgz}
 
   '@xterm/headless@6.0.0':
     resolution: {integrity: sha512-5Yj1QINYCyzrZtf8OFIHi47iQtI+0qYFPHmouEfG8dHNxbZ9Tb9YGSuLcsEwj9Z+OL75GJqPyJbyoFer80a2Hw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@xterm/headless/-/headless-6.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40xterm%2Fheadless%2F-%2Fheadless-6.0.0.tgz}
 
   '@xterm/xterm@6.0.0':
-    resolution: {integrity: sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==}
+    resolution: {integrity: sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@xterm/xterm/-/xterm-6.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40xterm%2Fxterm%2F-%2Fxterm-6.0.0.tgz}
 
   '@yao-pkg/pkg-fetch@3.6.4':
     resolution: {integrity: sha512-2JXvS9HbMudLlzEjSaJ7bLNnF/WlTv7iaTAJp2Tk8pBsgwCyL9p4rIN8cztHlyZF7qVzr1EaBjd7DQooFk0azQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/@yao-pkg/pkg-fetch/-/pkg-fetch-3.6.4.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2F%40yao-pkg%2Fpkg-fetch%2F-%2Fpkg-fetch-3.6.4.tgz}
@@ -16993,7 +16927,7 @@ packages:
     engines: {node: '>= 14'}
 
   agentkeepalive@4.6.0:
-    resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
+    resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/agentkeepalive/-/agentkeepalive-4.6.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fagentkeepalive%2F-%2Fagentkeepalive-4.6.0.tgz}
     engines: {node: '>= 8.0.0'}
 
   ajv-formats@3.0.1:
@@ -17058,14 +16992,14 @@ packages:
     resolution: {integrity: sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/aria-query/-/aria-query-5.3.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Faria-query%2F-%2Faria-query-5.3.0.tgz}
 
   asn1@0.2.6:
-    resolution: {integrity: sha512-ix/FxPn0MDjeyJ7i/yoHGFt/EX6LyNbxSEhPPXODPL+KB0VPk86UYfL0lMdy+KCnv+fmvIzySwaK5COwqVbWTQ==}
+    resolution: {integrity: sha512-ix/FxPn0MDjeyJ7i/yoHGFt/EX6LyNbxSEhPPXODPL+KB0VPk86UYfL0lMdy+KCnv+fmvIzySwaK5COwqVbWTQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/asn1/-/asn1-0.2.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fasn1%2F-%2Fasn1-0.2.6.tgz}
 
   asn1js@3.0.10:
     resolution: {integrity: sha512-S2s3aOytiKdFRdulw2qPE51MzjzVOisppcVv7jVFR+Kw0kxwvFrDcYA0h7Ndqbmj0HkMIXYWaoj7fli8kgx1eg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/asn1js/-/asn1js-3.0.10.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fasn1js%2F-%2Fasn1js-3.0.10.tgz}
     engines: {node: '>=12.0.0'}
 
   assert-plus@1.0.0:
-    resolution: {integrity: sha512-NfJ4UzBCcQGLDlQq7nHxH+tv3kyZ0hHQqF5BO6J7tNJeP5do1llPr8dZ8zHonfhAu0PHAdMkSo+8o0wxg9lZWw==}
+    resolution: {integrity: sha512-NfJ4UzBCcQGLDlQq7nHxH+tv3kyZ0hHQqF5BO6J7tNJeP5do1llPr8dZ8zHonfhAu0PHAdMkSo+8o0wxg9lZWw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/assert-plus/-/assert-plus-1.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fassert-plus%2F-%2Fassert-plus-1.0.0.tgz}
     engines: {node: '>=0.8'}
 
   assertion-error@2.0.1:
@@ -17094,7 +17028,7 @@ packages:
     engines: {node: '>= 4.0.0'}
 
   aws-sign2@0.7.0:
-    resolution: {integrity: sha512-08kcGqnYf/YmjoRhfxyu+CLxBjUtHLXLXX/vUfx9l2LYzG3c1m61nrpyFUZI6zeS+Li/wWMMidD9KgrqtGq3mA==}
+    resolution: {integrity: sha512-08kcGqnYf/YmjoRhfxyu+CLxBjUtHLXLXX/vUfx9l2LYzG3c1m61nrpyFUZI6zeS+Li/wWMMidD9KgrqtGq3mA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/aws-sign2/-/aws-sign2-0.7.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Faws-sign2%2F-%2Faws-sign2-0.7.0.tgz}
 
   aws4@1.13.2:
     resolution: {integrity: sha512-lHe62zvbTB5eEABUVi/AwVh0ZKY9rMMDhmm+eeyuuUQbQ3+J+fONVQOZyj+DdrvD4BY33uYniyRJ4UJIaSKAfw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/aws4/-/aws4-1.13.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Faws4%2F-%2Faws4-1.13.2.tgz}
@@ -17164,7 +17098,7 @@ packages:
     engines: {node: '>= 0.8'}
 
   bcrypt-pbkdf@1.0.2:
-    resolution: {integrity: sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w==}
+    resolution: {integrity: sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/bcrypt-pbkdf/-/bcrypt-pbkdf-1.0.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fbcrypt-pbkdf%2F-%2Fbcrypt-pbkdf-1.0.2.tgz}
 
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/bidi-js/-/bidi-js-1.0.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fbidi-js%2F-%2Fbidi-js-1.0.3.tgz}
@@ -17206,7 +17140,7 @@ packages:
     engines: {node: 18 || 20 || >=22}
 
   brotli@1.3.3:
-    resolution: {integrity: sha512-oTKjJdShmDuGW94SyyaoQvAjf30dZaHnjJ8uAF+u2/vGJkJbJPJAT1gDiOJP5v1Zb6f9KEyW/1HpuaWIXtGHPg==}
+    resolution: {integrity: sha512-oTKjJdShmDuGW94SyyaoQvAjf30dZaHnjJ8uAF+u2/vGJkJbJPJAT1gDiOJP5v1Zb6f9KEyW/1HpuaWIXtGHPg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/brotli/-/brotli-1.3.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fbrotli%2F-%2Fbrotli-1.3.3.tgz}
 
   browserslist@4.28.6:
     resolution: {integrity: sha512-FQBYNK15VMslhLHpA7+n+n1GOlF1kId2xcCg7/j95f24AOF6VDYMNH4mFxF7KuaTdv627faazpOAjFzMrfJOUw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/browserslist/-/browserslist-4.28.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fbrowserslist%2F-%2Fbrowserslist-4.28.6.tgz}
@@ -17277,7 +17211,7 @@ packages:
     resolution: {integrity: sha512-72Cuvd95zbSYPKq6Fhg8eDJRlzgWDf7/mtoZv6Qe/DYNCEBdNxoA3+rZAU2ZhGCpZlns3EssFavaZomckT5Uuw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/caniuse-lite/-/caniuse-lite-1.0.30001806.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcaniuse-lite%2F-%2Fcaniuse-lite-1.0.30001806.tgz}
 
   caseless@0.12.0:
-    resolution: {integrity: sha512-4tYFyifaFfGacoiObjJegolkwSU4xQNGbVgUiNYVUxbQ2x2lUsFvY4hVgVzGiIe6WLOPqycWXA40l+PWsxthUw==}
+    resolution: {integrity: sha512-4tYFyifaFfGacoiObjJegolkwSU4xQNGbVgUiNYVUxbQ2x2lUsFvY4hVgVzGiIe6WLOPqycWXA40l+PWsxthUw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/caseless/-/caseless-0.12.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcaseless%2F-%2Fcaseless-0.12.0.tgz}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/ccount/-/ccount-2.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fccount%2F-%2Fccount-2.0.1.tgz}
@@ -17315,7 +17249,7 @@ packages:
     engines: {node: '>=18'}
 
   chrome-devtools-mcp@1.9.0:
-    resolution: {integrity: sha512-RnzXoJiUQ44hpOihWk90uOhLD/CnwDkDy0ldHMZONJ2nYQ+dWN1fq1luHHqyd+7FuYnyIlCY6uTThbN5ut9kSQ==}
+    resolution: {integrity: sha512-RnzXoJiUQ44hpOihWk90uOhLD/CnwDkDy0ldHMZONJ2nYQ+dWN1fq1luHHqyd+7FuYnyIlCY6uTThbN5ut9kSQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/chrome-devtools-mcp/-/chrome-devtools-mcp-1.9.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fchrome-devtools-mcp%2F-%2Fchrome-devtools-mcp-1.9.0.tgz}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
     hasBin: true
     peerDependencies:
@@ -17346,14 +17280,14 @@ packages:
     engines: {node: '>=12'}
 
   cliui@9.0.1:
-    resolution: {integrity: sha512-k7ndgKhwoQveBL+/1tqGJYNz097I7WOvwbmmU2AR5+magtbjPWQTS1C5vzGkBC8Ym8UWRzfKUzUUqFLypY4Q+w==}
+    resolution: {integrity: sha512-k7ndgKhwoQveBL+/1tqGJYNz097I7WOvwbmmU2AR5+magtbjPWQTS1C5vzGkBC8Ym8UWRzfKUzUUqFLypY4Q+w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/cliui/-/cliui-9.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcliui%2F-%2Fcliui-9.0.1.tgz}
     engines: {node: '>=20'}
 
   clone-response@1.0.3:
     resolution: {integrity: sha512-ROoL94jJH2dUVML2Y/5PEDNaSHgeOdSDicUyS7izcF63G6sTc/FTjLub4b8Il9S8S0beOfYt0TaA5qvFK+w0wA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/clone-response/-/clone-response-1.0.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fclone-response%2F-%2Fclone-response-1.0.3.tgz}
 
   clone@2.1.2:
-    resolution: {integrity: sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w==}
+    resolution: {integrity: sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/clone/-/clone-2.1.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fclone%2F-%2Fclone-2.1.2.tgz}
     engines: {node: '>=0.8'}
 
   clsx@2.1.1:
@@ -17437,7 +17371,7 @@ packages:
     engines: {node: '>=18'}
 
   core-util-is@1.0.2:
-    resolution: {integrity: sha512-3lqz5YjWTYnW6dlDa5TLaTCcShfar1e40rmcJVwCBJC6mWlFuj0eCHIElmG1g5kyuJ/GD+8Wn4FFCcz4gJPfaQ==}
+    resolution: {integrity: sha512-3lqz5YjWTYnW6dlDa5TLaTCcShfar1e40rmcJVwCBJC6mWlFuj0eCHIElmG1g5kyuJ/GD+8Wn4FFCcz4gJPfaQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/core-util-is/-/core-util-is-1.0.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcore-util-is%2F-%2Fcore-util-is-1.0.2.tgz}
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/core-util-is/-/core-util-is-1.0.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcore-util-is%2F-%2Fcore-util-is-1.0.3.tgz}
@@ -17451,16 +17385,16 @@ packages:
     engines: {node: '>= 0.4.0'}
 
   cos-fast-xml-parser@1.0.0:
-    resolution: {integrity: sha512-kOPJb1cuj+gc5E8jN5ekZn4rgQHaxYTLcQT+jmbHtlTNcNjv7wnOBEYH2uRA0pG3h8giot4z9h4WFLDuXATZwg==}
+    resolution: {integrity: sha512-kOPJb1cuj+gc5E8jN5ekZn4rgQHaxYTLcQT+jmbHtlTNcNjv7wnOBEYH2uRA0pG3h8giot4z9h4WFLDuXATZwg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/cos-fast-xml-parser/-/cos-fast-xml-parser-1.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcos-fast-xml-parser%2F-%2Fcos-fast-xml-parser-1.0.0.tgz}
     engines: {node: '>= 9'}
     hasBin: true
 
   cos-nodejs-sdk-v5@3.0.0:
-    resolution: {integrity: sha512-xUqiDdUxfEjfaWoyBA3qsSnlQVHPz13DRFErL+NliadBVUeeZhAPHGVa2inGpUvPTOs52ALIKkMbzL+inSqvXg==}
+    resolution: {integrity: sha512-xUqiDdUxfEjfaWoyBA3qsSnlQVHPz13DRFErL+NliadBVUeeZhAPHGVa2inGpUvPTOs52ALIKkMbzL+inSqvXg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/cos-nodejs-sdk-v5/-/cos-nodejs-sdk-v5-3.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcos-nodejs-sdk-v5%2F-%2Fcos-nodejs-sdk-v5-3.0.0.tgz}
     engines: {node: '>= 9'}
 
   cos-request@1.3.3:
-    resolution: {integrity: sha512-zD7fKMAIMfJNHssx8VZE5mUQ67hs3QDi7S2BX7JuD8MzT1XYqEOAN42PJ0BtRhgutnn+8HiUF+Fup+j5zORasQ==}
+    resolution: {integrity: sha512-zD7fKMAIMfJNHssx8VZE5mUQ67hs3QDi7S2BX7JuD8MzT1XYqEOAN42PJ0BtRhgutnn+8HiUF+Fup+j5zORasQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/cos-request/-/cos-request-1.3.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fcos-request%2F-%2Fcos-request-1.3.3.tgz}
     engines: {node: '>= 8'}
 
   cose-base@1.0.3:
@@ -17640,7 +17574,7 @@ packages:
     resolution: {integrity: sha512-P4rFMVq9ESWqmOgK+dlXvOtLwYg0i7u0HBGJER0LZDJT2VHIPAMZ/riPxqJceWMStH5+E61QxFra9kIS3AqdMg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/dagre-d3-es/-/dagre-d3-es-7.0.14.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fdagre-d3-es%2F-%2Fdagre-d3-es-7.0.14.tgz}
 
   dashdash@1.14.1:
-    resolution: {integrity: sha512-jRFi8UDGo6j+odZiEpjazZaWqEal3w/basFjQHQEwVtZJGDpxbH1MeYluwCS8Xq5wmLJooDlMgvVarmWfGM44g==}
+    resolution: {integrity: sha512-jRFi8UDGo6j+odZiEpjazZaWqEal3w/basFjQHQEwVtZJGDpxbH1MeYluwCS8Xq5wmLJooDlMgvVarmWfGM44g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/dashdash/-/dashdash-1.14.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fdashdash%2F-%2Fdashdash-1.14.1.tgz}
     engines: {node: '>=0.10'}
 
   data-uri-to-buffer@4.0.1:
@@ -17741,7 +17675,7 @@ packages:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/devlop/-/devlop-1.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fdevlop%2F-%2Fdevlop-1.1.0.tgz}
 
   dfa@1.2.0:
-    resolution: {integrity: sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==}
+    resolution: {integrity: sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/dfa/-/dfa-1.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fdfa%2F-%2Fdfa-1.2.0.tgz}
 
   diff@8.0.4:
     resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/diff/-/diff-8.0.4.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fdiff%2F-%2Fdiff-8.0.4.tgz}
@@ -17791,7 +17725,7 @@ packages:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/eastasianwidth/-/eastasianwidth-0.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Feastasianwidth%2F-%2Feastasianwidth-0.2.0.tgz}
 
   ecc-jsbn@0.1.2:
-    resolution: {integrity: sha512-eh9O+hwRHNbG4BLTjEl3nw044CkGm5X6LoaCf7LPp7UU8Qrt47JYNi6nPX8xjW97TKGKm1ouctg0QSpZe9qrnw==}
+    resolution: {integrity: sha512-eh9O+hwRHNbG4BLTjEl3nw044CkGm5X6LoaCf7LPp7UU8Qrt47JYNi6nPX8xjW97TKGKm1ouctg0QSpZe9qrnw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/ecc-jsbn/-/ecc-jsbn-0.1.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fecc-jsbn%2F-%2Fecc-jsbn-0.1.2.tgz}
 
   ecdsa-sig-formatter@1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/ecdsa-sig-formatter/-/ecdsa-sig-formatter-1.0.11.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fecdsa-sig-formatter%2F-%2Fecdsa-sig-formatter-1.0.11.tgz}
@@ -17834,7 +17768,7 @@ packages:
     resolution: {integrity: sha512-LRlerrMYoIDrT6jgpeZ2YYl/L8EulRTt5hQcYjy5AInh7HWXKimpqx68aknBFpGL2+/IcogTcaydJEgaTmOpDg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/emoji-regex-xs/-/emoji-regex-xs-1.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Femoji-regex-xs%2F-%2Femoji-regex-xs-1.0.0.tgz}
 
   emoji-regex@10.6.0:
-    resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
+    resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/emoji-regex/-/emoji-regex-10.6.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Femoji-regex%2F-%2Femoji-regex-10.6.0.tgz}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/emoji-regex/-/emoji-regex-8.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Femoji-regex%2F-%2Femoji-regex-8.0.0.tgz}
@@ -18048,7 +17982,7 @@ packages:
     hasBin: true
 
   extsprintf@1.3.0:
-    resolution: {integrity: sha512-11Ndz7Nv+mvAC1j0ktTa7fAb0vLyGGX+rMHNBYQviQDGU0Hw7lhctJANqbPhu9nV9/izT/IntTgZ7Im/9LJs9g==}
+    resolution: {integrity: sha512-11Ndz7Nv+mvAC1j0ktTa7fAb0vLyGGX+rMHNBYQviQDGU0Hw7lhctJANqbPhu9nV9/izT/IntTgZ7Im/9LJs9g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/extsprintf/-/extsprintf-1.3.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fextsprintf%2F-%2Fextsprintf-1.3.0.tgz}
     engines: {'0': node >=0.6.0}
 
   fast-check@4.8.0:
@@ -18094,7 +18028,7 @@ packages:
     engines: {node: ^12.20 || >= 14.13}
 
   fflate@0.8.2:
-    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/fflate/-/fflate-0.8.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ffflate%2F-%2Ffflate-0.8.2.tgz}
 
   fflate@0.8.3:
     resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/fflate/-/fflate-0.8.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ffflate%2F-%2Ffflate-0.8.3.tgz}
@@ -18138,20 +18072,20 @@ packages:
         optional: true
 
   fontkit@2.0.4:
-    resolution: {integrity: sha512-syetQadaUEDNdxdugga9CpEYVaQIxOwk7GlwZWWZ19//qW4zE5bknOKeMBDYAASwnpaSHKJITRLMF9m1fp3s6g==}
+    resolution: {integrity: sha512-syetQadaUEDNdxdugga9CpEYVaQIxOwk7GlwZWWZ19//qW4zE5bknOKeMBDYAASwnpaSHKJITRLMF9m1fp3s6g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/fontkit/-/fontkit-2.0.4.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ffontkit%2F-%2Ffontkit-2.0.4.tgz}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/foreground-child/-/foreground-child-3.3.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fforeground-child%2F-%2Fforeground-child-3.3.1.tgz}
     engines: {node: '>=14'}
 
   forever-agent@0.6.1:
-    resolution: {integrity: sha512-j0KLYPhm6zeac4lz3oJ3o65qvgQCcPubiyotZrXqEaG4hNagNYO8qdlUrX5vwqv9ohqeT/Z3j6+yW067yWWdUw==}
+    resolution: {integrity: sha512-j0KLYPhm6zeac4lz3oJ3o65qvgQCcPubiyotZrXqEaG4hNagNYO8qdlUrX5vwqv9ohqeT/Z3j6+yW067yWWdUw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/forever-agent/-/forever-agent-0.6.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fforever-agent%2F-%2Fforever-agent-0.6.1.tgz}
 
   form-data-encoder@1.7.2:
-    resolution: {integrity: sha512-qfqtYan3rxrnCk1VYaA4H+Ms9xdpPqvLZa6xmMgFvhO32x7/3J/ExcTd6qpxM0vH2GdMI+poehyBZvqfMTto8A==}
+    resolution: {integrity: sha512-qfqtYan3rxrnCk1VYaA4H+Ms9xdpPqvLZa6xmMgFvhO32x7/3J/ExcTd6qpxM0vH2GdMI+poehyBZvqfMTto8A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/form-data-encoder/-/form-data-encoder-1.7.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fform-data-encoder%2F-%2Fform-data-encoder-1.7.2.tgz}
 
   form-data@2.5.6:
-    resolution: {integrity: sha512-Ogz/E85h9tlfJzpI6TuFpGcHZFhLrb9Gw8wq9v40CxSCPnv7ahKr6Xgtkn0KYCDQJ8DNn5VoMO8EXr9V5PadyA==}
+    resolution: {integrity: sha512-Ogz/E85h9tlfJzpI6TuFpGcHZFhLrb9Gw8wq9v40CxSCPnv7ahKr6Xgtkn0KYCDQJ8DNn5VoMO8EXr9V5PadyA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/form-data/-/form-data-2.5.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fform-data%2F-%2Fform-data-2.5.6.tgz}
     engines: {node: '>= 0.12'}
 
   form-data@4.0.6:
@@ -18159,7 +18093,7 @@ packages:
     engines: {node: '>= 6'}
 
   formdata-node@4.4.1:
-    resolution: {integrity: sha512-0iirZp3uVDjVGt9p49aTaqjk84TrglENEDuqfdlZQ1roC9CWlPk6Avf8EEnZNcAqPonwkG35x4n3ww/1THYAeQ==}
+    resolution: {integrity: sha512-0iirZp3uVDjVGt9p49aTaqjk84TrglENEDuqfdlZQ1roC9CWlPk6Avf8EEnZNcAqPonwkG35x4n3ww/1THYAeQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/formdata-node/-/formdata-node-4.4.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fformdata-node%2F-%2Fformdata-node-4.4.1.tgz}
     engines: {node: '>= 12.20'}
 
   formdata-polyfill@4.0.10:
@@ -18237,7 +18171,7 @@ packages:
     engines: {node: 6.* || 8.* || >= 10.*}
 
   get-east-asian-width@1.6.0:
-    resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
+    resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/get-east-asian-width/-/get-east-asian-width-1.6.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fget-east-asian-width%2F-%2Fget-east-asian-width-1.6.0.tgz}
     engines: {node: '>=18'}
 
   get-intrinsic@1.3.0:
@@ -18261,7 +18195,7 @@ packages:
     engines: {node: '>=20.20.0'}
 
   getpass@0.1.7:
-    resolution: {integrity: sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==}
+    resolution: {integrity: sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/getpass/-/getpass-0.1.7.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fgetpass%2F-%2Fgetpass-0.1.7.tgz}
 
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/github-from-package/-/github-from-package-0.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fgithub-from-package%2F-%2Fgithub-from-package-0.0.0.tgz}
@@ -18398,7 +18332,7 @@ packages:
     hasBin: true
 
   http-signature@1.2.0:
-    resolution: {integrity: sha512-CAbnr6Rz4CYQkLYUtSNXxQPUH2gK8f3iWexVlsnMeD+GjlsQ0Xsy1cOX+mN3dtxYomRy21CiOzU8Uhw6OwncEQ==}
+    resolution: {integrity: sha512-CAbnr6Rz4CYQkLYUtSNXxQPUH2gK8f3iWexVlsnMeD+GjlsQ0Xsy1cOX+mN3dtxYomRy21CiOzU8Uhw6OwncEQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/http-signature/-/http-signature-1.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fhttp-signature%2F-%2Fhttp-signature-1.2.0.tgz}
     engines: {node: '>=0.8', npm: '>=1.3.7'}
 
   http2-wrapper@1.0.3:
@@ -18414,7 +18348,7 @@ packages:
     engines: {node: '>=18.18.0'}
 
   humanize-ms@1.2.1:
-    resolution: {integrity: sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==}
+    resolution: {integrity: sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/humanize-ms/-/humanize-ms-1.2.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fhumanize-ms%2F-%2Fhumanize-ms-1.2.1.tgz}
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/iconv-lite/-/iconv-lite-0.6.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ficonv-lite%2F-%2Ficonv-lite-0.6.3.tgz}
@@ -18526,7 +18460,7 @@ packages:
     engines: {node: '>=18'}
 
   is-typedarray@1.0.0:
-    resolution: {integrity: sha512-cyA56iCMHAh5CdzjJIa4aohJyeO1YbwLi3Jc35MmRU6poroFjIGZzUzupGiRPOjgHg9TLu43xbpwXk523fMxKA==}
+    resolution: {integrity: sha512-cyA56iCMHAh5CdzjJIa4aohJyeO1YbwLi3Jc35MmRU6poroFjIGZzUzupGiRPOjgHg9TLu43xbpwXk523fMxKA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/is-typedarray/-/is-typedarray-1.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fis-typedarray%2F-%2Fis-typedarray-1.0.0.tgz}
 
   is-unicode-supported@2.1.0:
     resolution: {integrity: sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/is-unicode-supported/-/is-unicode-supported-2.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fis-unicode-supported%2F-%2Fis-unicode-supported-2.1.0.tgz}
@@ -18563,7 +18497,7 @@ packages:
     engines: {node: '>=20'}
 
   isstream@0.1.2:
-    resolution: {integrity: sha512-Yljz7ffyPbrLpLngrMtZ7NduUgVvi6wG9RJ9IUcyCd59YQ911PBJphODUcbOVbqYfxe1wuYf/LJ8PauMRwsM/g==}
+    resolution: {integrity: sha512-Yljz7ffyPbrLpLngrMtZ7NduUgVvi6wG9RJ9IUcyCd59YQ911PBJphODUcbOVbqYfxe1wuYf/LJ8PauMRwsM/g==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/isstream/-/isstream-0.1.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fisstream%2F-%2Fisstream-0.1.2.tgz}
 
   istanbul-lib-coverage@3.2.2:
     resolution: {integrity: sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/istanbul-lib-coverage/-/istanbul-lib-coverage-3.2.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fistanbul-lib-coverage%2F-%2Fistanbul-lib-coverage-3.2.2.tgz}
@@ -18607,7 +18541,7 @@ packages:
     hasBin: true
 
   jsbn@0.1.1:
-    resolution: {integrity: sha512-UVU9dibq2JcFWxQPA6KCqj5O42VOmAY3zQUfEKxU0KpTGXwNoCjkX1e13eHNvw/xPynt6pU0rZ1htjWTNTSXsg==}
+    resolution: {integrity: sha512-UVU9dibq2JcFWxQPA6KCqj5O42VOmAY3zQUfEKxU0KpTGXwNoCjkX1e13eHNvw/xPynt6pU0rZ1htjWTNTSXsg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/jsbn/-/jsbn-0.1.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjsbn%2F-%2Fjsbn-0.1.1.tgz}
 
   jscpd-darwin-arm64@5.0.12:
     resolution: {integrity: sha512-CQCDYhQY9yOGGeauzkRGYW/QtXurPCjfDkEhUoM/M5UdmpzxfG3i9mnNsaheJ0RdFRf73mL7JaLVRP8U2l5/kA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/jscpd-darwin-arm64/-/jscpd-darwin-arm64-5.0.12.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjscpd-darwin-arm64%2F-%2Fjscpd-darwin-arm64-5.0.12.tgz}
@@ -18681,7 +18615,7 @@ packages:
     resolution: {integrity: sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/json-schema-typed/-/json-schema-typed-8.0.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjson-schema-typed%2F-%2Fjson-schema-typed-8.0.2.tgz}
 
   json-schema@0.4.0:
-    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
+    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/json-schema/-/json-schema-0.4.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjson-schema%2F-%2Fjson-schema-0.4.0.tgz}
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/json-stable-stringify-without-jsonify/-/json-stable-stringify-without-jsonify-1.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjson-stable-stringify-without-jsonify%2F-%2Fjson-stable-stringify-without-jsonify-1.0.1.tgz}
@@ -18701,7 +18635,7 @@ packages:
     resolution: {integrity: sha512-zwOTdL3rFQ/lRdBnntKVOX6k5cKJwEc1HdilT71BWEu7J41gXIB2MRp+vxduPSwZJPWBxEzv4yH1wYLJGUHX4Q==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/jsonfile/-/jsonfile-6.2.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjsonfile%2F-%2Fjsonfile-6.2.1.tgz}
 
   jsprim@1.4.2:
-    resolution: {integrity: sha512-P2bSOMAc/ciLz6DzgjVlGJP9+BrJWu5UDGK70C2iweC5QBIeFf0ZXRvGjEj2uYgrY2MkAAhsSWHDWlFtEroZWw==}
+    resolution: {integrity: sha512-P2bSOMAc/ciLz6DzgjVlGJP9+BrJWu5UDGK70C2iweC5QBIeFf0ZXRvGjEj2uYgrY2MkAAhsSWHDWlFtEroZWw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/jsprim/-/jsprim-1.4.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fjsprim%2F-%2Fjsprim-1.4.2.tgz}
     engines: {node: '>=0.6.0'}
 
   jsx-ast-utils-x@0.1.0:
@@ -19177,7 +19111,7 @@ packages:
     hasBin: true
 
   modern-tar@0.8.5:
-    resolution: {integrity: sha512-snEhs+6G5Tjd4I7tLCDOaoln2RgE0bD19RzEKgvgK2hZ5VKy3MpLhLTZ2fWpXSTg4K2cyPwp+VHATFJhxfnOeA==}
+    resolution: {integrity: sha512-snEhs+6G5Tjd4I7tLCDOaoln2RgE0bD19RzEKgvgK2hZ5VKy3MpLhLTZ2fWpXSTg4K2cyPwp+VHATFJhxfnOeA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/modern-tar/-/modern-tar-0.8.5.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fmodern-tar%2F-%2Fmodern-tar-0.8.5.tgz}
     engines: {node: '>=18.0.0'}
 
   mri@1.2.0:
@@ -19224,55 +19158,55 @@ packages:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-api/-/node-addon-api-7.1.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-api%2F-%2Fnode-addon-api-7.1.1.tgz}
 
   node-addon-native-custom-loader@0.1.6:
-    resolution: {integrity: sha512-QaW7d8lTcGCXrpNVyFDtID3vrpa7vFdpcY9pql2/9FGFSe7tcSnhQOKZX+1aOWq+pB1d2ZwNnKAdQI5nD9wAXA==}
+    resolution: {integrity: sha512-QaW7d8lTcGCXrpNVyFDtID3vrpa7vFdpcY9pql2/9FGFSe7tcSnhQOKZX+1aOWq+pB1d2ZwNnKAdQI5nD9wAXA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-native-custom-loader/-/node-addon-native-custom-loader-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-native-custom-loader%2F-%2Fnode-addon-native-custom-loader-0.1.6.tgz}
     engines: {node: '>=20'}
 
   node-addon-require-builtin-darwin-arm64@0.1.6:
-    resolution: {integrity: sha512-KpaAh0mDcIScoJs7gD/mjXREcENJ023/DgWW3GrlLXFVzCE6bK6wFrTFpNfnkxZZP8yWsEWOg1o5T+uQ7olgTQ==}
+    resolution: {integrity: sha512-KpaAh0mDcIScoJs7gD/mjXREcENJ023/DgWW3GrlLXFVzCE6bK6wFrTFpNfnkxZZP8yWsEWOg1o5T+uQ7olgTQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-darwin-arm64/-/node-addon-require-builtin-darwin-arm64-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-darwin-arm64%2F-%2Fnode-addon-require-builtin-darwin-arm64-0.1.6.tgz}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [darwin]
 
   node-addon-require-builtin-darwin-x64@0.1.6:
-    resolution: {integrity: sha512-lh9o5rCvmkH8MZgBBmhyKzJRc1M1hJzgXLTFzB6iomRXNH9P1DKjN2nAJLmvGrdTij47Wcch1JVnlV5AG0cRCQ==}
+    resolution: {integrity: sha512-lh9o5rCvmkH8MZgBBmhyKzJRc1M1hJzgXLTFzB6iomRXNH9P1DKjN2nAJLmvGrdTij47Wcch1JVnlV5AG0cRCQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-darwin-x64/-/node-addon-require-builtin-darwin-x64-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-darwin-x64%2F-%2Fnode-addon-require-builtin-darwin-x64-0.1.6.tgz}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [darwin]
 
   node-addon-require-builtin-linux-arm64-gnu@0.1.6:
-    resolution: {integrity: sha512-DrQA3aS1LBn4NgrewbZkzSAWdSSRPD/fYO5AkQfvriQ/TQD3E2adB012sZ5eac6p9TAcTjUIYhk395AYVxo4Zw==}
+    resolution: {integrity: sha512-DrQA3aS1LBn4NgrewbZkzSAWdSSRPD/fYO5AkQfvriQ/TQD3E2adB012sZ5eac6p9TAcTjUIYhk395AYVxo4Zw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-linux-arm64-gnu/-/node-addon-require-builtin-linux-arm64-gnu-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-linux-arm64-gnu%2F-%2Fnode-addon-require-builtin-linux-arm64-gnu-0.1.6.tgz}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
   node-addon-require-builtin-linux-x64-gnu@0.1.6:
-    resolution: {integrity: sha512-8wCxrFlB2Ld5DhxIm2P+nNFnQ0wjzDE5sXF68EUhLH0X+z313B07TUQFMBKCOkyhZIIBh590dBmhHCuA43No2A==}
+    resolution: {integrity: sha512-8wCxrFlB2Ld5DhxIm2P+nNFnQ0wjzDE5sXF68EUhLH0X+z313B07TUQFMBKCOkyhZIIBh590dBmhHCuA43No2A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-linux-x64-gnu/-/node-addon-require-builtin-linux-x64-gnu-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-linux-x64-gnu%2F-%2Fnode-addon-require-builtin-linux-x64-gnu-0.1.6.tgz}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
   node-addon-require-builtin-win32-arm64-msvc@0.1.6:
-    resolution: {integrity: sha512-NET6DiLnKrK2DHuO4NNN+zJz0CFas+RwpJlGY0d3A3A3tc5dJQqZXgw8DzLOn4cSTAQCaDq6+LbPyYX7jE2F3Q==}
+    resolution: {integrity: sha512-NET6DiLnKrK2DHuO4NNN+zJz0CFas+RwpJlGY0d3A3A3tc5dJQqZXgw8DzLOn4cSTAQCaDq6+LbPyYX7jE2F3Q==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-win32-arm64-msvc/-/node-addon-require-builtin-win32-arm64-msvc-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-win32-arm64-msvc%2F-%2Fnode-addon-require-builtin-win32-arm64-msvc-0.1.6.tgz}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [win32]
 
   node-addon-require-builtin-win32-ia32-msvc@0.1.6:
-    resolution: {integrity: sha512-oj4G51r81kJ3E2t5KknKhBNb8TmTWzc/t9x7jkBF9JeRd+1a0kr99mVJVYwJNxq9d3jpt7dgBdI8mxaomuXOEQ==}
+    resolution: {integrity: sha512-oj4G51r81kJ3E2t5KknKhBNb8TmTWzc/t9x7jkBF9JeRd+1a0kr99mVJVYwJNxq9d3jpt7dgBdI8mxaomuXOEQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-win32-ia32-msvc/-/node-addon-require-builtin-win32-ia32-msvc-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-win32-ia32-msvc%2F-%2Fnode-addon-require-builtin-win32-ia32-msvc-0.1.6.tgz}
     engines: {node: '>=20 <23'}
     cpu: [ia32]
     os: [win32]
 
   node-addon-require-builtin-win32-x64-msvc@0.1.6:
-    resolution: {integrity: sha512-ZQ+6thVzQBOFamW7s3t2YqHsw99EEPBNH1uAjvCx4QfnjFJTsu6I/H3prpN8i6cSt6gjnQtArfWc2LXN2ufcJQ==}
+    resolution: {integrity: sha512-ZQ+6thVzQBOFamW7s3t2YqHsw99EEPBNH1uAjvCx4QfnjFJTsu6I/H3prpN8i6cSt6gjnQtArfWc2LXN2ufcJQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin-win32-x64-msvc/-/node-addon-require-builtin-win32-x64-msvc-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin-win32-x64-msvc%2F-%2Fnode-addon-require-builtin-win32-x64-msvc-0.1.6.tgz}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [win32]
 
   node-addon-require-builtin@0.1.6:
-    resolution: {integrity: sha512-P9ZGMDkloktirLJSggfpxsJ9jog5FItE1Omxpj50UBn3LhD6TS6/yx0jEBXsCGK3P9EtW1EpQVA1QL5gb11GaQ==}
+    resolution: {integrity: sha512-P9ZGMDkloktirLJSggfpxsJ9jog5FItE1Omxpj50UBn3LhD6TS6/yx0jEBXsCGK3P9EtW1EpQVA1QL5gb11GaQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-addon-require-builtin/-/node-addon-require-builtin-0.1.6.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-addon-require-builtin%2F-%2Fnode-addon-require-builtin-0.1.6.tgz}
     engines: {node: '>=20'}
 
   node-api-version@0.2.1:
@@ -19284,7 +19218,7 @@ packages:
     deprecated: Use your platform's native DOMException instead
 
   node-fetch@2.7.0:
-    resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
+    resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/node-fetch/-/node-fetch-2.7.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fnode-fetch%2F-%2Fnode-fetch-2.7.0.tgz}
     engines: {node: 4.x || >=6.0.0}
     peerDependencies:
       encoding: ^0.1.0
@@ -19328,7 +19262,7 @@ packages:
     engines: {node: '>=18'}
 
   oauth-sign@0.9.0:
-    resolution: {integrity: sha512-fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==}
+    resolution: {integrity: sha512-fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/oauth-sign/-/oauth-sign-0.9.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Foauth-sign%2F-%2Foauth-sign-0.9.0.tgz}
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/object-assign/-/object-assign-4.1.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fobject-assign%2F-%2Fobject-assign-4.1.1.tgz}
@@ -19432,7 +19366,7 @@ packages:
     resolution: {integrity: sha512-61A5ThoTiDG/C8s8UMZwSorAGwMJ0ERVGj2OjoW5pAalsNOg15+iQiPzrLJ4jhZ1HJzmC2PIHT2oEiH3R5fzNA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/package-manager-detector/-/package-manager-detector-1.6.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fpackage-manager-detector%2F-%2Fpackage-manager-detector-1.6.0.tgz}
 
   pako@0.2.9:
-    resolution: {integrity: sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==}
+    resolution: {integrity: sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/pako/-/pako-0.2.9.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fpako%2F-%2Fpako-0.2.9.tgz}
 
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/pako/-/pako-1.0.11.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fpako%2F-%2Fpako-1.0.11.tgz}
@@ -19502,7 +19436,7 @@ packages:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/perfect-debounce/-/perfect-debounce-1.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fperfect-debounce%2F-%2Fperfect-debounce-1.0.0.tgz}
 
   performance-now@2.1.0:
-    resolution: {integrity: sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==}
+    resolution: {integrity: sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/performance-now/-/performance-now-2.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fperformance-now%2F-%2Fperformance-now-2.1.0.tgz}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/picocolors/-/picocolors-1.1.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fpicocolors%2F-%2Fpicocolors-1.1.1.tgz}
@@ -19525,7 +19459,7 @@ packages:
     hasBin: true
 
   playwright-core@1.63.0-alpha-2026-08-31:
-    resolution: {integrity: sha512-1ek0Lyr12h6jcs/WTcNoVtzZkQp7D/90PsMuBW/Rm6h3AsWAbzpqj0geMv8+8Tzzr9CSUYvg9kznrVZINQMXXw==}
+    resolution: {integrity: sha512-1ek0Lyr12h6jcs/WTcNoVtzZkQp7D/90PsMuBW/Rm6h3AsWAbzpqj0geMv8+8Tzzr9CSUYvg9kznrVZINQMXXw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/playwright-core/-/playwright-core-1.63.0-alpha-2026-08-31.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fplaywright-core%2F-%2Fplaywright-core-1.63.0-alpha-2026-08-31.tgz}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -19535,7 +19469,7 @@ packages:
     hasBin: true
 
   playwright@1.63.0-alpha-2026-08-31:
-    resolution: {integrity: sha512-3XAsuznfu8jBVJ4QxdGvBkt0+b8ZFwuwJYyOfiIw5ZjUOrNLNRhKxzLzLuydou3gJ9c6eMwVqgzdiOwhy54Kzw==}
+    resolution: {integrity: sha512-3XAsuznfu8jBVJ4QxdGvBkt0+b8ZFwuwJYyOfiIw5ZjUOrNLNRhKxzLzLuydou3gJ9c6eMwVqgzdiOwhy54Kzw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/playwright/-/playwright-1.63.0-alpha-2026-08-31.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fplaywright%2F-%2Fplaywright-1.63.0-alpha-2026-08-31.tgz}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -19631,7 +19565,7 @@ packages:
     engines: {node: '>= 0.10'}
 
   psl@1.15.0:
-    resolution: {integrity: sha512-JZd3gMVBAVQkSs6HdNZo9Sdo0LNcQeMNP3CozBJb3JYC/QUYZTnKxP+f8oWRX4rHP5EurWxqAHTSwUCjlNKa1w==}
+    resolution: {integrity: sha512-JZd3gMVBAVQkSs6HdNZo9Sdo0LNcQeMNP3CozBJb3JYC/QUYZTnKxP+f8oWRX4rHP5EurWxqAHTSwUCjlNKa1w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/psl/-/psl-1.15.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fpsl%2F-%2Fpsl-1.15.0.tgz}
 
   publint@0.3.21:
     resolution: {integrity: sha512-OqejcnMV6E9zel2oCrUOJEiiFkGiAAni0A6ibfQNh1k9Gu5z4F+Yso8lllam7AzmV6Do0vp7u3UpZNRBwuXaHQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/publint/-/publint-0.3.21.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fpublint%2F-%2Fpublint-0.3.21.tgz}
@@ -19663,7 +19597,7 @@ packages:
     resolution: {integrity: sha512-5xZacEEufv3HSTPQuchrvV6soaiACMFnq1H8wkVioctoH3TRha9Sz66lOxRwPK/qZj7HPiSveih9yAyh98gvqA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/quansync/-/quansync-1.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fquansync%2F-%2Fquansync-1.0.0.tgz}
 
   querystringify@2.2.0:
-    resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
+    resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/querystringify/-/querystringify-2.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fquerystringify%2F-%2Fquerystringify-2.2.0.tgz}
 
   quick-lru@5.1.1:
     resolution: {integrity: sha512-WuyALRjWPDGtt/wzJiadO5AXY+8hZ80hVpe6MyivgraREW751X3SbhRvG3eLKOYN+8VEvqLcf3wdnt44Z4S4SA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/quick-lru/-/quick-lru-5.1.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fquick-lru%2F-%2Fquick-lru-5.1.1.tgz}
@@ -19771,7 +19705,7 @@ packages:
     resolution: {integrity: sha512-4gl03wn3hj1HP3yzgdI7d3lCkF95F21Pz4BPGvKHinyQzALR5CapwC8yIi0Rh58DEMQ/SguC03wFj2k0M/mHhw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/responselike/-/responselike-2.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fresponselike%2F-%2Fresponselike-2.0.1.tgz}
 
   restructure@3.0.2:
-    resolution: {integrity: sha512-gSfoiOEA0VPE6Tukkrr7I0RBdE0s7H1eFCDBk05l1KIQT1UIKNc5JZy6jdyW6eYH3aR3g5b3PuL77rq0hvwtAw==}
+    resolution: {integrity: sha512-gSfoiOEA0VPE6Tukkrr7I0RBdE0s7H1eFCDBk05l1KIQT1UIKNc5JZy6jdyW6eYH3aR3g5b3PuL77rq0hvwtAw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/restructure/-/restructure-3.0.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Frestructure%2F-%2Frestructure-3.0.2.tgz}
 
   retry@0.12.0:
     resolution: {integrity: sha512-9LkiTwjUh6rT555DtE9rTX+BKByPfrMzEAtnlEtdEwr3Nkffwiihqe2bWADg+OQRjt9gl6ICdmB/ZFDCGAtSow==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/retry/-/retry-0.12.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fretry%2F-%2Fretry-0.12.0.tgz}
@@ -19982,7 +19916,7 @@ packages:
     resolution: {integrity: sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/simple-get/-/simple-get-4.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fsimple-get%2F-%2Fsimple-get-4.0.1.tgz}
 
   simple-icons@16.31.0:
-    resolution: {integrity: sha512-dDEqvQrmxL7ZnqQtGHGjCNW6CfiwzAif+83Hol9JXAnAB6wh2zsZD7Sc1kWT0O/RRAKt7xfG8W6UZhYBPD+GAA==}
+    resolution: {integrity: sha512-dDEqvQrmxL7ZnqQtGHGjCNW6CfiwzAif+83Hol9JXAnAB6wh2zsZD7Sc1kWT0O/RRAKt7xfG8W6UZhYBPD+GAA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/simple-icons/-/simple-icons-16.31.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fsimple-icons%2F-%2Fsimple-icons-16.31.0.tgz}
     engines: {node: '>=0.12.18'}
 
   simple-update-notifier@2.0.0:
@@ -20024,7 +19958,7 @@ packages:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/sprintf-js/-/sprintf-js-1.1.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fsprintf-js%2F-%2Fsprintf-js-1.1.3.tgz}
 
   sshpk@1.18.0:
-    resolution: {integrity: sha512-2p2KJZTSqQ/I3+HX42EpYOa2l3f8Erv8MWKsy2I9uf4wA7yFIkXRffYdsx86y6z4vHtV8u7g+pPlr8/4ouAxsQ==}
+    resolution: {integrity: sha512-2p2KJZTSqQ/I3+HX42EpYOa2l3f8Erv8MWKsy2I9uf4wA7yFIkXRffYdsx86y6z4vHtV8u7g+pPlr8/4ouAxsQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/sshpk/-/sshpk-1.18.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fsshpk%2F-%2Fsshpk-1.18.0.tgz}
     engines: {node: '>=0.10.0'}
     hasBin: true
 
@@ -20060,11 +19994,11 @@ packages:
     engines: {node: '>=12'}
 
   string-width@7.2.0:
-    resolution: {integrity: sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ==}
+    resolution: {integrity: sha512-tsaTIkKW9b4N+AEj+SVA+WhJzV7/zMhcSu78mLKWSk7cXMOSHsBKFWUs0fWwq8QyK3MgJBQRX6Gbi4kYbdvGkQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/string-width/-/string-width-7.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fstring-width%2F-%2Fstring-width-7.2.0.tgz}
     engines: {node: '>=18'}
 
   string-width@8.2.2:
-    resolution: {integrity: sha512-GaPUh5gfdrYzqeVNZvUfT23vYYxXzKYidUcnMtJg/3rxRV63EFZy3k6xfKlmfeJD0176lnUV/Usr3XcwSvFzpg==}
+    resolution: {integrity: sha512-GaPUh5gfdrYzqeVNZvUfT23vYYxXzKYidUcnMtJg/3rxRV63EFZy3k6xfKlmfeJD0176lnUV/Usr3XcwSvFzpg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/string-width/-/string-width-8.2.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fstring-width%2F-%2Fstring-width-8.2.2.tgz}
     engines: {node: '>=20'}
 
   string_decoder@1.1.1:
@@ -20093,7 +20027,7 @@ packages:
     engines: {node: '>=0.10.0'}
 
   strnum@1.1.2:
-    resolution: {integrity: sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==}
+    resolution: {integrity: sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/strnum/-/strnum-1.1.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fstrnum%2F-%2Fstrnum-1.1.2.tgz}
 
   strnum@2.4.0:
     resolution: {integrity: sha512-sHrVyWWdq28RbhjuJdZsA1SnGRJV6NiXbk6AXBxDOsgAcA+lmpUZCYjOdLBxkXMwis6RRe7dlZt4VlIWFVzkmg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/strnum/-/strnum-2.4.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fstrnum%2F-%2Fstrnum-2.4.0.tgz}
@@ -20161,7 +20095,7 @@ packages:
     resolution: {integrity: sha512-01EAw5EDrcVrdgyCLgoSPvqznC0sVxDSVeiOz09FUpjh71G79VCqneOr+xvt7T1r76CF6ZZfPjHorN2+d+3mqA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tiny-async-pool/-/tiny-async-pool-1.3.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftiny-async-pool%2F-%2Ftiny-async-pool-1.3.0.tgz}
 
   tiny-inflate@1.0.3:
-    resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==}
+    resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tiny-inflate/-/tiny-inflate-1.0.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftiny-inflate%2F-%2Ftiny-inflate-1.0.3.tgz}
 
   tiny-typed-emitter@2.1.0:
     resolution: {integrity: sha512-qVtvMxeXbVej0cQWKqVSSAHmKZEHAvxdF8HEUBFWts8h+xEo5m/lEiPakuyZ3BnCBjOD8i24kzNOiOLLgsSxhA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tiny-typed-emitter/-/tiny-typed-emitter-2.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftiny-typed-emitter%2F-%2Ftiny-typed-emitter-2.1.0.tgz}
@@ -20200,7 +20134,7 @@ packages:
     engines: {node: '>=0.6'}
 
   tough-cookie@4.1.4:
-    resolution: {integrity: sha512-Loo5UUvLD9ScZ6jh8beX1T6sO1w2/MpCRpEP7V280GKMVUQ0Jzar2U3UJPsrdbziLEMMhu3Ujnq//rhiFuIeag==}
+    resolution: {integrity: sha512-Loo5UUvLD9ScZ6jh8beX1T6sO1w2/MpCRpEP7V280GKMVUQ0Jzar2U3UJPsrdbziLEMMhu3Ujnq//rhiFuIeag==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tough-cookie/-/tough-cookie-4.1.4.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftough-cookie%2F-%2Ftough-cookie-4.1.4.tgz}
     engines: {node: '>=6'}
 
   tough-cookie@6.0.1:
@@ -20208,7 +20142,7 @@ packages:
     engines: {node: '>=16'}
 
   tr46@0.0.3:
-    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
+    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tr46/-/tr46-0.0.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftr46%2F-%2Ftr46-0.0.3.tgz}
 
   tr46@6.0.0:
     resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tr46/-/tr46-6.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftr46%2F-%2Ftr46-6.0.0.tgz}
@@ -20298,7 +20232,7 @@ packages:
     engines: {node: '>=18', npm: '>=9'}
 
   tweetnacl@0.14.5:
-    resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
+    resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/tweetnacl/-/tweetnacl-0.14.5.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftweetnacl%2F-%2Ftweetnacl-0.14.5.tgz}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/type-check/-/type-check-0.4.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Ftype-check%2F-%2Ftype-check-0.4.0.tgz}
@@ -20329,7 +20263,7 @@ packages:
     resolution: {integrity: sha512-Su3FauozOGP44ZmKdHy2oE6LPjk51M/TRRjHv2HNCWiDvfvCoxC2lno6jevMA91MYAdCdwP05QnWdWpSbncX/w==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/unconfig-core/-/unconfig-core-7.5.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Funconfig-core%2F-%2Funconfig-core-7.5.0.tgz}
 
   undici-types@5.26.5:
-    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/undici-types/-/undici-types-5.26.5.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fundici-types%2F-%2Fundici-types-5.26.5.tgz}
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/undici-types/-/undici-types-6.21.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fundici-types%2F-%2Fundici-types-6.21.0.tgz}
@@ -20356,10 +20290,10 @@ packages:
     engines: {node: '>=22.19.0'}
 
   unicode-properties@1.4.1:
-    resolution: {integrity: sha512-CLjCCLQ6UuMxWnbIylkisbRj31qxHPAurvena/0iwSVbQ2G1VY5/HjV0IRabOEbDHlzZlRdCrD4NhB0JtU40Pg==}
+    resolution: {integrity: sha512-CLjCCLQ6UuMxWnbIylkisbRj31qxHPAurvena/0iwSVbQ2G1VY5/HjV0IRabOEbDHlzZlRdCrD4NhB0JtU40Pg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/unicode-properties/-/unicode-properties-1.4.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Funicode-properties%2F-%2Funicode-properties-1.4.1.tgz}
 
   unicode-trie@2.0.0:
-    resolution: {integrity: sha512-x7bc76x0bm4prf1VLg79uhAzKw8DVboClSN5VxJuQ+LKDOVEW9CdH+VY7SP+vX7xCYQqzzgQpFqz15zeLvAtZQ==}
+    resolution: {integrity: sha512-x7bc76x0bm4prf1VLg79uhAzKw8DVboClSN5VxJuQ+LKDOVEW9CdH+VY7SP+vX7xCYQqzzgQpFqz15zeLvAtZQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/unicode-trie/-/unicode-trie-2.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Funicode-trie%2F-%2Funicode-trie-2.0.0.tgz}
 
   unicorn-magic@0.3.0:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/unicorn-magic/-/unicorn-magic-0.3.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Funicorn-magic%2F-%2Funicorn-magic-0.3.0.tgz}
@@ -20392,7 +20326,7 @@ packages:
     engines: {node: '>= 4.0.0'}
 
   universalify@0.2.0:
-    resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==}
+    resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/universalify/-/universalify-0.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Funiversalify%2F-%2Funiversalify-0.2.0.tgz}
     engines: {node: '>= 4.0.0'}
 
   universalify@2.0.1:
@@ -20419,7 +20353,7 @@ packages:
     resolution: {integrity: sha512-jk1+QP6ZJqyOiuEI9AEWQfju/nB2Pw466kbA0LEZljHwKeMgd9WrAEgEGxjPDD2+TNbbb37rTyhEfrCXfuKXnA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/url-join/-/url-join-4.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Furl-join%2F-%2Furl-join-4.0.1.tgz}
 
   url-parse@1.5.10:
-    resolution: {integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==}
+    resolution: {integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/url-parse/-/url-parse-1.5.10.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Furl-parse%2F-%2Furl-parse-1.5.10.tgz}
 
   use-sync-external-store@1.2.0:
     resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fuse-sync-external-store%2F-%2Fuse-sync-external-store-1.2.0.tgz}
@@ -20441,7 +20375,7 @@ packages:
     engines: {node: '>= 0.8'}
 
   verror@1.10.0:
-    resolution: {integrity: sha512-ZZKSmDAEFOijERBLkmYfJ+vmk3w+7hOLYDNkRCuRuMJGEmqYNCNLyBBFwWKVMhfwaEF3WOd0Zlw86U/WC/+nYw==}
+    resolution: {integrity: sha512-ZZKSmDAEFOijERBLkmYfJ+vmk3w+7hOLYDNkRCuRuMJGEmqYNCNLyBBFwWKVMhfwaEF3WOd0Zlw86U/WC/+nYw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/verror/-/verror-1.10.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fverror%2F-%2Fverror-1.10.0.tgz}
     engines: {'0': node >=0.6.0}
 
   vfile-message@4.0.3:
@@ -20659,14 +20593,14 @@ packages:
     engines: {node: '>= 8'}
 
   web-streams-polyfill@4.0.0-beta.3:
-    resolution: {integrity: sha512-QW95TCTaHmsYfHDybGMwO5IJIM93I/6vTRk+daHTWFPhwh+C8Cg7j7XyKrwrj8Ib6vYXe0ocYNrmzY4xAAN6ug==}
+    resolution: {integrity: sha512-QW95TCTaHmsYfHDybGMwO5IJIM93I/6vTRk+daHTWFPhwh+C8Cg7j7XyKrwrj8Ib6vYXe0ocYNrmzY4xAAN6ug==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/web-streams-polyfill/-/web-streams-polyfill-4.0.0-beta.3.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fweb-streams-polyfill%2F-%2Fweb-streams-polyfill-4.0.0-beta.3.tgz}
     engines: {node: '>= 14'}
 
   webcrypto-core@1.9.2:
     resolution: {integrity: sha512-gsXecm82UQNlTBURJGuqOWy1Ww08S3kZUcr3aOJS02Pk0xLtkfeUAVC0u0xhgdonFme80edSJUIJyuvL/7250Q==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/webcrypto-core/-/webcrypto-core-1.9.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fwebcrypto-core%2F-%2Fwebcrypto-core-1.9.2.tgz}
 
   webidl-conversions@3.0.1:
-    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
+    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/webidl-conversions/-/webidl-conversions-3.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fwebidl-conversions%2F-%2Fwebidl-conversions-3.0.1.tgz}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/webidl-conversions/-/webidl-conversions-8.0.1.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fwebidl-conversions%2F-%2Fwebidl-conversions-8.0.1.tgz}
@@ -20690,7 +20624,7 @@ packages:
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
   whatwg-url@5.0.0:
-    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
+    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/whatwg-url/-/whatwg-url-5.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fwhatwg-url%2F-%2Fwhatwg-url-5.0.0.tgz}
 
   which-command@0.1.0:
     resolution: {integrity: sha512-XZyoF5/5hZtXitIwzrU4NKK+Wtbb9aB9CezUEw2Q0wlYK8NUYQxC1rRXgNueYLtBAJwXIb+/tFVk4dozciNJMA==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/which-command/-/which-command-0.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fwhich-command%2F-%2Fwhich-command-0.1.0.tgz}
@@ -20730,7 +20664,7 @@ packages:
     engines: {node: '>=12'}
 
   wrap-ansi@9.0.2:
-    resolution: {integrity: sha512-42AtmgqjV+X1VpdOfyTGOYRi0/zsoLqtXQckTmqTeybT+BDIbM/Guxo7x3pE2vtpr1ok6xRqM9OpBe+Jyoqyww==}
+    resolution: {integrity: sha512-42AtmgqjV+X1VpdOfyTGOYRi0/zsoLqtXQckTmqTeybT+BDIbM/Guxo7x3pE2vtpr1ok6xRqM9OpBe+Jyoqyww==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/wrap-ansi/-/wrap-ansi-9.0.2.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fwrap-ansi%2F-%2Fwrap-ansi-9.0.2.tgz}
     engines: {node: '>=18'}
 
   wrappy@1.0.2:
@@ -20795,7 +20729,7 @@ packages:
     engines: {node: '>=12'}
 
   yargs-parser@22.0.0:
-    resolution: {integrity: sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw==}
+    resolution: {integrity: sha512-rwu/ClNdSMpkSrUb+d6BRsSkLUq1fmfsY6TOpYzTwvwkg1/NRG85KBy3kq++A8LKQwX6lsu+aWad+2khvuXrqw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/yargs-parser/-/yargs-parser-22.0.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fyargs-parser%2F-%2Fyargs-parser-22.0.0.tgz}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
 
   yargs@16.2.2:
@@ -20807,11 +20741,11 @@ packages:
     engines: {node: '>=12'}
 
   yargs@18.1.0:
-    resolution: {integrity: sha512-2rAgRKu54VsHkqI0/tYkmluGXHD4KW7yZoycuqDQ15QOTnc2VVfy0nN/1eMhnQLO00A+dwtK20xuCnc1YGeUyg==}
+    resolution: {integrity: sha512-2rAgRKu54VsHkqI0/tYkmluGXHD4KW7yZoycuqDQ15QOTnc2VVfy0nN/1eMhnQLO00A+dwtK20xuCnc1YGeUyg==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/yargs/-/yargs-18.1.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fyargs%2F-%2Fyargs-18.1.0.tgz}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
 
   yauzl@3.4.0:
-    resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
+    resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==, tarball: http://artifactory.intra.xiaojukeji.com/artifactory/api/npm/npm/yauzl/-/yauzl-3.4.0.tgz?dl=https%3A%2F%2Fregistry.npmmirror.com%2Fyauzl%2F-%2Fyauzl-3.4.0.tgz}
     engines: {node: '>=12'}
 
   yocto-queue@0.1.0:
@@ -21469,9 +21403,6 @@ snapshots:
   '@deepseek-ai/libreoffice-kit-wasm@0.0.1':
     optional: true
 
-  '@deepseek-ai/libreoffice-kit-win32-arm64@0.0.1':
-    optional: true
-
   '@deepseek-ai/libreoffice-kit-win32-x64@0.0.1':
     optional: true
 
@@ -21484,7 +21415,6 @@ snapshots:
       '@deepseek-ai/libreoffice-kit-darwin-arm64': 0.0.1
       '@deepseek-ai/libreoffice-kit-darwin-x64': 0.0.1
       '@deepseek-ai/libreoffice-kit-wasm': 0.0.1
-      '@deepseek-ai/libreoffice-kit-win32-arm64': 0.0.1
       '@deepseek-ai/libreoffice-kit-win32-x64': 0.0.1
 
   '@docsearch/css@3.8.2': {}

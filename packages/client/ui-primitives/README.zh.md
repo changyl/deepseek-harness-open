@@ -54,6 +54,7 @@ kind: "package-library"
 | `Toast` | 顶部居中的瞬时横幅，保持时长由所有者的 `holdMs` 决定。 |
 | `JsonTree`、`JsonBlock` | 只读 JSON 查看。 |
 | `MarkdownText`、`MarkdownDelegateProvider`、`CodeBlock` | 不可信 GFM 与 TeX 数学、owner 委托的 HTTP(S) 导航，以及高亮代码。`CodeBlock` 可通过 `lineNumbers` 开启行号；复制的源码不含行号栏，`contentRef` 则向需要把稳定源码包装节点用作滚动区的 owner 提供该节点。调用方提供自己的语言与复制工具栏时，设置 `showHeader={false}`。 |
+| `useHighlightedCode`、`DiffLineText`、`languageForPath`、`CODE_EXTENSIONS` | 供自行绘制代码布局的功能表面（diff 的一侧、可编辑草稿）使用的逐行 run，而不必套用 `CodeBlock` 渲染出的代码块。`useHighlightedCode` 在每一轮事件循环里只 tokenize 有限行数，长文件着色时不会冻结界面，并且只在某一块自己的那一趟跑完后才报告该块的 runs；`DiffLineText` 绘制单行的 run。`languageForPath` 把路径映射为 grammar 提示（`CODE_EXTENSIONS` 列出代码渲染器认领的后缀）；后缀未知、语言未知或 grammar 尚未加载时保持纯文本绘制。 |
 | `TerminalBlock`、`ReadBlock`、`DiffBlock`、`DiffSplitBlock`、`SearchBlock`、`WebBlock` | 与各类工具结果意图对应的 agent 输出卡片；两个 diff 表面把同一批 hunk 画成一栏或两栏，调用方给出语言时按被改文件自身的语法着色。 |
 | `icons/*`、`FishLogo`、`BrandWordmark`、`ReferenceIcon`、`LinkIcon` | 字形与品牌标识。`LinkIcon` 用于 14px 的可点击链接分类及已知站点标记。 |
 | `FileTypeIcon`、`classifyFileType`、`fileExtension` | 按类别着色的 28px 文件或文件夹图形，以及它背后共享的不区分大小写文件名映射。代码与配置文件使用细分的全彩技术图形；链接前置图形使用 `LinkIcon`，图片内容使用图片预览。 |

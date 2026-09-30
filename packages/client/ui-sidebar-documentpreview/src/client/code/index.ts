@@ -1,8 +1,8 @@
 /** Code preview metadata and body registered through the public document extension points. */
 import type { Context } from '@deepseek-ai/cordis'
+import { CODE_EXTENSIONS } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '../index.ts'
 import { CodeBody } from './CodeBody.tsx'
-import { CODE_EXTENSIONS } from './languages.ts'
 import { en, zh } from './locales.ts'
 
 const ID = '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/code'

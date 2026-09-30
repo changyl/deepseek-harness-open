@@ -161,6 +161,9 @@ describe.skipIf(MODE === 'record')('web e2e: document preview through Files', ()
       writeFile(join(cwd, 'selection.pdf'), selectionPdfFixture()),
       ...['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].map(extension => writeFile(join(cwd, `unavailable.${extension}`), Buffer.from('PK\u0003\u0004OFFICE_BINARY_PREVIEW'))),
       writeFile(join(cwd, 'clip.mp4'), Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70])),
+      // Past the editor's single-turn tokenization, so the editor's colouring
+      // pass has to yield between turns to draw it.
+      writeFile(join(cwd, 'long.ts'), Array.from({ length: 260 }, (_value, index) => `const value${index}: number = ${index}`).join('\n')),
     ])
 
     const column = page.locator('[data-rightbar-col]')
@@ -615,6 +618,21 @@ describe.skipIf(MODE === 'record')('web e2e: document preview through Files', ()
     // from one would have already lost the trailing newline.
     const seeded = await editor.inputValue()
     const seedFaithful = seeded === markdownText
+    // The surface draws the file's own grammar behind the reader's text: the
+    // layer holds the same draft, in the grammar's runs rather than plain text.
+    const layer = preview.locator('[data-textpreview-highlight]')
+    await expect.poll(() => layer.count(), { timeout: 15_000 }).toBe(1)
+    expect(await layer.textContent()).toBe(seeded)
+    expect(await layer.locator('span[style]').count()).toBeGreaterThan(0)
+    // Fullscreen is the layout with room for both halves, and a scroll of either
+    // one is a scroll of both.
+    await column.locator('[data-sidebar-right-mode="fullscreen"]').click()
+    await expect.poll(() => preview.locator('[data-textpreview-split]').count()).toBe(1)
+    const previewBody = preview.locator('[data-textpreview-body]')
+    await previewBody.evaluate((node) => { node.scrollTop = 200 })
+    await expect.poll(() => editor.evaluate(node => node.scrollTop)).toBe(200)
+    await editor.evaluate((node) => { node.scrollTop = 420 })
+    await expect.poll(() => previewBody.evaluate(node => node.scrollTop)).toBe(420)
     const firstEdit = `${markdownText}\nFirst reader edit.\n`
     await editor.fill(firstEdit)
     await expect.poll(() => preview.locator('[data-textpreview-dirty]').count()).toBe(1)
@@ -639,6 +657,14 @@ describe.skipIf(MODE === 'record')('web e2e: document preview through Files', ()
       `- External write refused, file intact: ${String(refusedIntact)}`,
       `- Forced overwrite wins: ${String(await readFile(join(cwd, 'smoke.md'), 'utf8') === secondEdit)}`,
     ].join('\n'))
+    // A draft past a single tokenization turn still colours: the pass fills the
+    // layer in bounded turns of the event loop while the reader is stopped.
+    await openFile('long.ts')
+    await expect.poll(() => preview.locator('[data-textpreview-tool="edit"]').count()).toBe(1)
+    await preview.locator('[data-textpreview-tool="edit"]').click()
+    const longLayer = preview.locator('[data-textpreview-highlight]')
+    await expect.poll(() => longLayer.count(), { timeout: 30_000 }).toBe(1)
+    expect(await longLayer.locator('span[style]').count()).toBeGreaterThan(100)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
     await compareOrRefreshGolden(EXPECTED, sections.join('\n\n'), MODE)

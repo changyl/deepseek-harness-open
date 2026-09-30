@@ -29,6 +29,13 @@ describe('failureLine', () => {
     expect(failureLine(t, failure('workspace-file/too-large', { limit: 3 * 1024 * 1024 }))).toBe('error.tooLarge(limit=3 MB)')
   })
 
+  it('names each write-only code, which is the refusal the reader either resolves or retries', () => {
+    expect(failureLine(t, failure('workspace-file/read-only'))).toBe('error.readOnly')
+    expect(failureLine(t, failure('workspace-file/session-not-live'))).toBe('error.sessionNotLive')
+    expect(failureLine(t, failure('workspace-file/stale-version'))).toBe('error.staleVersion')
+    expect(failureLine(t, failure('workspace-file/write-failed', {}, 'disk full'))).toBe('error.writeFailed(message=disk full)')
+  })
+
   it('passes any other failure through in its own words', () => {
     expect(failureLine(t, failure('gateway/internal', {}, 'socket closed'))).toBe('error.unavailable(message=socket closed)')
   })

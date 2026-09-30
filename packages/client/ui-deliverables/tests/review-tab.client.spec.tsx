@@ -25,6 +25,7 @@ import { en, zh } from '../src/client/locales.ts'
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -52,6 +53,15 @@ const text: ChangesDiff = {
     { oldStart: 20, oldLines: 1, newStart: 22, newLines: 0, lines: ['-z'] },
   ],
 }
+
+/** One comparison of a file whose suffix names no grammar. */
+const plainText: ChangesDiff = {
+  kind: 'text', path: 'notes.txt', display: 'notes.txt', before: true, after: true, coarse: false,
+  hunks: [{ oldStart: 1, oldLines: 1, newStart: 1, newLines: 1, lines: ['-x', '+y'] }],
+}
+
+/** The shared colouring pass's own pause, mirrored so a spec can drive it. */
+const PAUSE_MS = 120
 
 /** Test-local selector hook over a framework-neutral store instance. */
 function hookOf<T>(inst: { subscribe: (fn: () => void) => () => void; getSnapshot: () => T }) {
@@ -115,6 +125,26 @@ describe('hunk rows', () => {
     expect(splitRows({ oldStart: 1, oldLines: 2, newStart: 1, newLines: 0, lines: ['-p', '-q'] })).toEqual([
       { left: { no: 1, text: 'p', kind: 'del' } }, { left: { no: 2, text: 'q', kind: 'del' } },
     ])
+  })
+
+  it('takes every row runs from its own side of the hunk', () => {
+    const hunk = text.hunks[0]!
+    const run = (colour: string) => [{ text: colour, style: { color: colour } }]
+    const runs = {
+      // The old side is `a,b,d` and the new side `a,B,c,d`, in file order.
+      old: [run('old-a'), run('old-b'), run('old-d')],
+      new: [run('new-a'), run('new-B'), run('new-c'), run('new-d')],
+    }
+    // Unified: a shared line draws the file's current content, so it takes the
+    // new side's runs; a deletion takes the old side's.
+    expect(hunkRows(hunk, runs).map(row => row.spans?.[0]?.text))
+      .toEqual(['new-a', 'old-b', 'new-B', 'new-c', 'new-d'])
+    // Split: each column carries its own side's runs for the same band.
+    expect(splitRows(hunk, runs).map(row => [row.left?.spans?.[0]?.text, row.right?.spans?.[0]?.text]))
+      .toEqual([['old-a', 'new-a'], ['old-b', 'new-B'], [undefined, 'new-c'], ['old-d', 'new-d']])
+    // A side the highlighter left short of the rows leaves the rest plain.
+    expect(hunkRows(hunk, { new: [run('only')] }).map(row => row.spans?.[0]?.text))
+      .toEqual(['only', undefined, undefined, undefined, undefined])
   })
 
   it('cuts the drawn hunks at the rendered-line cap', () => {
@@ -233,19 +263,18 @@ describe('ReviewTab', () => {
     const body = view.container.querySelector('[data-review-view]')
     expect(body?.getAttribute('data-review-view')).toBe('split')
     expect(body?.hasAttribute('data-review-wrap')).toBe(false)
-    // Without wrapping each side is its own column, so a long line scrolls within its side.
+    // Without wrapping each side is its own grid column, sharing the body's
+    // scroll position; the line's own kind is what the side draws.
     const side = (name: string) => [...view.container.querySelectorAll(`[data-diff-side="${name}"] [data-diff-line]`)]
     expect(side('left').map(line => line.getAttribute('data-diff-line'))).toEqual(['context', 'del', 'add', 'context', 'del', 'del'])
     expect(side('left').map(line => line.textContent)).toEqual(['1a', '2b', '', '3d', '10x', '20z'])
     expect(side('right').map(line => line.textContent)).toEqual(['1a', '2B', '3c', '4d', '11y', ''])
-    // The two sides scroll sideways together, whichever side the reader drags.
-    const [left, right] = ['left', 'right'].map(name => view.container.querySelector(`[data-diff-side="${name}"]`) as HTMLDivElement)
-    fireEvent.scroll(left!, { target: { scrollLeft: 40 } })
-    expect(right!.scrollLeft).toBe(40)
-    fireEvent.scroll(right!, { target: { scrollLeft: 15 } })
-    expect(left!.scrollLeft).toBe(15)
-    fireEvent.scroll(right!, { target: { scrollLeft: 15 } })
-    expect(left!.scrollLeft).toBe(15)
+    // Both sides live in one grid inside the body, which owns both scroll axes:
+    // neither side has a scroller of its own, so the two cannot move apart.
+    const left = view.container.querySelector('[data-diff-side="left"]')
+    const right = view.container.querySelector('[data-diff-side="right"]')
+    expect(left?.parentElement).toBe(right?.parentElement)
+    expect(left?.parentElement?.parentElement).toBe(body)
     expect(view.getByRole('button', { name: en['review.splitAria'] }).getAttribute('aria-pressed')).toBe('true')
     // Wrapped lines vary in height, so both sides share one row per pair.
     fireEvent.click(view.getByRole('button', { name: en['review.wrapAria'] }))
@@ -257,6 +286,34 @@ describe('ReviewTab', () => {
     expect(rows[2]?.textContent).toBe('3c')
     expect(rows[5]?.textContent).toBe('20z')
     expect(store.getSnapshot().byTab[TAB]).toMatchObject({ split: true, wrap: true })
+  })
+
+  it('draws the comparison in the changed file grammar, and an unknown one plain', () => {
+    vi.useFakeTimers()
+    const summaries = new ChangesSummaryStore()
+    summaries.state.set({ [SUMMARY_URL]: summary })
+    const diffs = new ChangesDiffStore()
+    diffs.state.set({ [changesDiffUrl(SESSION, 5, 0)]: text, [changesDiffUrl(SESSION, 5, 2)]: plainText })
+    const { view } = mount({ summaries, diffs })
+    const body = view.container.querySelector('[data-review-view]')
+    const drawn = () => [...view.container.querySelectorAll('[data-diff-line]')].map(line => line.textContent)
+    // Nothing is coloured until the shared pass has run.
+    expect(body?.hasAttribute('data-review-highlight')).toBe(false)
+    const plainLines = drawn()
+    act(() => { vi.advanceTimersByTime(PAUSE_MS); vi.runAllTimers() })
+    expect(body?.hasAttribute('data-review-highlight')).toBe(true)
+    expect(body?.querySelectorAll('[data-diff-line] span[style]').length).toBeGreaterThan(0)
+    // Colour is added to a line, not in place of it: numbers, signs, and text stay.
+    expect(drawn()).toEqual(plainLines)
+    expect(plainLines[0]).toBe('11 a')
+    cleanup()
+    // A suffix the shared mapping does not know keeps the plain comparison.
+    const unknown = mount({ summaries, diffs, params: { index: 2 } })
+    act(() => { vi.advanceTimersByTime(PAUSE_MS); vi.runAllTimers() })
+    const plainBody = unknown.view.container.querySelector('[data-review-view]')
+    expect(plainBody?.getAttribute('data-review-view')).toBe('unified')
+    expect(plainBody?.hasAttribute('data-review-highlight')).toBe(false)
+    expect(plainBody?.querySelectorAll('span[style]').length).toBe(0)
   })
 
   it('opens the whole file in the sidebar and the native open only with a desktop', () => {

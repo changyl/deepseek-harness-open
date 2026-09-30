@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { supportsHighlighting } from '../../ui-primitives/src/markdown/highlight.ts'
-import { CODE_EXTENSIONS, languageForPath } from '../src/client/code/languages.ts'
+import { supportsHighlighting } from '../src/markdown/highlight.ts'
+import { CODE_EXTENSIONS, languageForPath } from '../src/languages.ts'
 
 describe('code preview languages', () => {
   it.each([

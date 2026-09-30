@@ -1,14 +1,14 @@
 /**
- * Deliverables plugin, browser half: registers the changed-files card, the
- * keep-or-revert row, and the delivery cards into the chat view's turn-tail
- * list, the `changes-review` right-Sidebar tab type that reviews one turn's
- * changed files one comparison at a time, and provides the `chatFileMentions`
- * service that links inline-code mentions of produced or delivered files in the
- * closing prose plus the `sessionFileChanges` index a file preview reads a
- * change through. All policy lives here — the supported mutation calls, mention
- * matching, chip cap, and copy — so composing this plugin out of cordis.yml
- * removes every surface; the owning view renders an empty list, inert prose,
- * and whole files at zero cost.
+ * Deliverables plugin, browser half: registers the changed-files card, the turn
+ * decision row, and the delivery cards into the chat view's turn-tail list, the
+ * `changes-review` right-Sidebar tab type that reviews one turn's changed files
+ * one comparison at a time, and provides the `chatFileMentions` service that
+ * links inline-code mentions of produced or delivered files in the closing prose
+ * plus the `sessionFileChanges` index a file preview reads a change through. The
+ * card is the turn's only file list; the decision row names no file. All policy
+ * lives here — the supported mutation calls, mention matching, decision scope,
+ * and copy — so composing this plugin out of cordis.yml removes every surface;
+ * the owning view renders an empty list, inert prose, and whole files at zero cost.
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
@@ -35,14 +35,10 @@ import {
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** Changed-files card, keep-or-revert row, review tab, delivery card, and file-mention copy. */
+    /** Changed-files card, decision row, review tab, delivery card, and file-mention copy. */
     'deliverables': DeliverablesKey
   }
 }
-
-export { ProducedFiles, type ProducedFilesProps } from './ProducedFiles.tsx'
-export { producedForClosing } from './turn-deliverables.ts'
-export type { ProducedChange } from './turn-deliverables.ts'
 
 /** Required services for the tail-slot and tab-type registrations and their dictionaries. */
 export const inject = ['slots', 'locale', 'uiConversation', 'remote', 'remote.session', 'sidebarRightTabs', 'sidebarRight']

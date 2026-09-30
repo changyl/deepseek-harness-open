@@ -1,4 +1,4 @@
-/** The changed-files card and the keep-or-revert row for a closing turn, plus explicitly declared files. */
+/** The changed-files card and the turn decision row for a closing turn, plus explicitly declared files. */
 import { useEffect, useMemo, useState } from 'react'
 import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-chat/client'
 import { Button, IconChevronDownOutline14, IconChevronUpOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -10,7 +10,7 @@ import { fileAddressFor } from '@deepseek-ai/dsh-util-workspace-path'
 import type { PresentedOpenController } from './present-open.ts'
 import type { ChangesSummaryStore } from './changes-summary.ts'
 import { ChangedFiles } from './ChangedFiles.tsx'
-import { ProducedFiles } from './ProducedFiles.tsx'
+import { TurnDecision } from './TurnDecision.tsx'
 import {
   changesForClosing, presentedForClosing, selectProducedChanges, selectProducedFiles, selectProducedReviews,
   type ChangesTurnData, type PresentedPath, type ProducedChange, type ProducedReview,
@@ -24,9 +24,9 @@ import css from './Deliverables.module.css'
 interface DeliverablesMatch {
   /** The Turn these changes belong to; stepping crosses files only inside it. */
   turn: number
-  /** Every path the Turn produced, whether or not its change reported hunks. */
+  /** Every path the Turn produced, hunk or not; it claims the tail and feeds the prose mentions, never a list. */
   produced: readonly string[]
-  /** The changes that same source applied, for the keep-or-revert row. */
+  /** The changes that same source applied, for the decision row's coordinates. */
   producedChanges: readonly ProducedChange[]
   presented: readonly PresentedPath[]
   /** The decisions this Turn already recorded, oldest first; absent = none recorded. */
@@ -81,7 +81,7 @@ export function selectDeliverables(owner: TurnTailOwnerProps): DeliverablesMatch
 }
 
 /**
- * Contribute the changed-files card, the keep-or-revert row, and file deliveries alongside other completed-Turn artifacts.
+ * Contribute the changed-files card, the decision row, and file deliveries alongside other completed-Turn artifacts.
  * @param props - closing Turn, file actions, and localized copy.
  * @returns file rows, or null when the Turn declares none.
  */
@@ -92,8 +92,9 @@ export function DeliverablesTail(props: PropsRuntime<'conversation.chat.turnTail
 
 /**
  * Render the changed-files card once the Host has served the announced summary,
- * the keep-or-revert row for the changes the Turn applied, and default-application
- * buttons for declared files.
+ * the decision row over the changes the Turn applied, and default-application
+ * buttons for declared files. The card is the Turn's only file list; the
+ * decision row names no file.
  * @param props - matched files and announcement, workspace opener, and localized copy.
  * @returns the closing turn's file rows.
  */
@@ -180,12 +181,10 @@ export function Deliverables({
   return <>
     {changedFiles !== null && <ChangedFiles changes={changedFiles} cwd={cwd} t={t}
       openReview={(index) => { openChangesReview({ sessionId, seq: changedFiles.seq, turn: changedFiles.turn }, index) }} />}
-    {matched.produced.length > 0 && <ProducedFiles matched={matched.produced} changes={matched.producedChanges} openFile={openFile} t={t}
-      {...reviewControls === undefined ? {} : { review: reviewControls }} />}
+    {reviewControls !== undefined && <TurnDecision {...reviewControls} t={t} />}
     {matched.presented.length > 0 && <div
       className={css.root}
       data-after-changes={changedFiles !== null || undefined}
-      data-after-produced-files={matched.produced.length > 0 || undefined}
     >
       {host === 'error' && <div className={css.hostStatus}>
         <span>{t('presented.hostError')}</span>

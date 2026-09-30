@@ -113,6 +113,11 @@ describe('web e2e: a git workspace turn ends with its changed files', () => {
     // The header and every row open the turn's review in the Sidebar, with or without a Host desktop.
     expect(await card.getByRole('button', { name: '在侧边栏查看本轮改动' }).count()).toBe(1)
     expect(await card.getByRole('button', { name: '查看 notes.txt 的改动' }).count()).toBe(1)
+    // The card is the turn's only file list; the mutation-call row is gone and
+    // the decision row names no file.
+    expect(await page.locator('[data-produced-files-row]').count()).toBe(0)
+    expect(await page.getByText('本轮文件改动').count()).toBe(0)
+    expect(await page.locator('[data-turn-decision="idle"]').count()).toBe(1)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   })
@@ -144,6 +149,11 @@ describe('web e2e: a git workspace turn ends with its changed files', () => {
     await review.locator('[data-review-view="split"]').waitFor({ state: 'visible' })
     await expect.poll(() => drawn(review.locator('[data-diff-side="left"]'))).toEqual(['del:1# 示例项目', 'context:2', 'context:3一个用于演示的仓库。'])
     expect(await drawn(review.locator('[data-diff-side="right"]'))).toEqual(['del:1# 项目说明', 'context:2', 'context:3一个用于演示的仓库。'])
+    // The comparison draws the changed file's own grammar behind its lines, and
+    // the two sides share one scroller: neither column is a viewport of its own.
+    await expect.poll(() => review.locator('[data-review-view] [data-diff-line] span[style]').count(), { timeout: 15_000 })
+      .toBeGreaterThan(0)
+    expect(await review.locator('[data-diff-side="left"]').evaluate(node => node.scrollHeight > node.clientHeight + 1)).toBe(false)
     await review.getByRole('button', { name: '自动换行' }).click()
     await review.locator('[data-review-view][data-review-wrap]').waitFor({ state: 'visible' })
     await expect.poll(() => drawn(review)).toEqual(['del:1# 示例项目1# 项目说明', 'context:22', 'context:3一个用于演示的仓库。3一个用于演示的仓库。'])
@@ -155,7 +165,9 @@ describe('web e2e: a git workspace turn ends with its changed files', () => {
   })
 
   it.skipIf(MODE === 'record')('replays the workspace and the Chinese conversation', async () => {
-    await assertFinalWorkspaceSnapshot(DIR, cwd, { ignoredRootEntries: ['.git'] })
+    // `.dsh` holds the harness-owned task report this turn's edit produces; its
+    // body carries a wall-clock timestamp, so it can never match a golden.
+    await assertFinalWorkspaceSnapshot(DIR, cwd, { ignoredRootEntries: ['.git', '.dsh'] })
     const aria = await captureExpandedTurnProcessAria(page, '[data-chat-flow]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(join(DIR, 'ui.expected.md'), aria, MODE)
   })

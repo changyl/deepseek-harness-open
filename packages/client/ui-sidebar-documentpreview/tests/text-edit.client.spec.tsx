@@ -12,7 +12,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { TextPreview } from '../src/client/TextPreview.tsx'
-import { ADDRESS, FILE, PATH, harness, page, settle, wholeFailure, wholeText, writeRefused, written } from './fixtures.client.ts'
+import { ADDRESS, FILE, PATH, harness, page, settle, wholeDocumentText, wholeFailure, writeRefused, written } from './fixtures.client.ts'
 
 afterEach(() => { cleanup() })
 
@@ -51,7 +51,7 @@ async function editing(text: string, pane: { fullscreen?: boolean } = {}): Promi
   area: HTMLTextAreaElement
 }> {
   const h = harness({ 1: page(1, text.split('\n').filter(Boolean), true) })
-  h.bytes.mockResolvedValue(wholeText(text, 'v1'))
+  h.bytes.mockResolvedValue(wholeDocumentText(text, 'v1'))
   const view = render(<TextPreview {...h.props({ revision: 1 }, pane)} />)
   await settle()
   fireEvent.click(need(view.container, EDIT))
@@ -63,7 +63,7 @@ describe('TextPreview — entering the editor', () => {
   it('seeds the draft from the whole file, keeping the newline the pages dropped', async () => {
     const h = harness({ 1: page(1, ['one'], true) })
     // The paged view is lossy; the draft must not be built from it.
-    h.bytes.mockResolvedValue(wholeText('one\n', 'v1'))
+    h.bytes.mockResolvedValue(wholeDocumentText('one\n', 'v1'))
     const view = render(<TextPreview {...h.props()} />)
     await settle()
     expect(view.container.querySelector(EDITOR)).toBeNull()
@@ -176,7 +176,7 @@ describe('TextPreview — resolving a conflict', () => {
     fireEvent.change(area, { target: { value: 'mine\n' } })
     fireEvent.click(need(view.container, SAVE))
     await settle()
-    h.bytes.mockResolvedValueOnce(wholeText('theirs\n', 'v9'))
+    h.bytes.mockResolvedValueOnce(wholeDocumentText('theirs\n', 'v9'))
     fireEvent.click(need(view.container, '[data-textpreview-reopen]'))
     await settle()
     expect(needArea(view.container, `${EDITOR} textarea`).value).toBe('theirs\n')
@@ -213,6 +213,36 @@ describe('TextPreview — the pane the editor draws in', () => {
     // Hidden by the stylesheet rather than unmounted; jsdom has no stylesheet,
     // so the assertion is that the element the scroller lives on is still here.
     expect(view.container.querySelector('[data-textpreview-body]')).toBe(body)
+  })
+
+  it('moves both halves of a fullscreen split with whichever half the reader scrolls', async () => {
+    const { view } = await editing('one\ntwo\nthree\n', { fullscreen: true })
+    const body = need(view.container, '[data-textpreview-body]')
+    const area = needArea(view.container, `${EDITOR} textarea`)
+
+    // The preview is where the reader was reading, so the draft opens with it.
+    body.scrollTop = 40
+    body.scrollLeft = 6
+    fireEvent.scroll(body)
+    expect(area.scrollTop).toBe(40)
+    expect(area.scrollLeft).toBe(6)
+
+    // The write's own scroll event is its echo: it moves nothing further.
+    fireEvent.scroll(area)
+    expect(area.scrollTop).toBe(40)
+
+    // A scroll of the draft is the reader's, and takes the preview with it.
+    area.scrollTop = 90
+    fireEvent.scroll(area)
+    expect(body.scrollTop).toBe(90)
+
+    // So is the echo of that write: the next preview scroll is still to come.
+    body.scrollTop = 5
+    fireEvent.scroll(body)
+    expect(area.scrollTop).toBe(90)
+    body.scrollTop = 120
+    fireEvent.scroll(body)
+    expect(area.scrollTop).toBe(120)
   })
 })
 

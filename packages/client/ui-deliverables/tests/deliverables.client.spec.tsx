@@ -27,7 +27,7 @@ import type { ReviewInjected } from '../src/client/ReviewTab.tsx'
 import { ChangesSummaryStore } from '../src/client/changes-summary.ts'
 import { changesSummaryUrl, type ChangesSummary } from '../src/changes.ts'
 import { PresentedOpenController } from '../src/client/present-open.ts'
-import { ProducedFiles } from '../src/client/ProducedFiles.tsx'
+import { TurnDecision } from '../src/client/TurnDecision.tsx'
 import {
   basename, changesForClosing, deliverablesDefinition, presentedForClosing, producedChangesForClosing,
   producedFileMentions, producedForClosing, selectProducedChanges, selectProducedFiles, selectProducedReviews,
@@ -519,82 +519,39 @@ describe('produced-file Turn data', () => {
   })
 })
 
-describe('ProducedFiles row', () => {
+describe('TurnDecision row', () => {
   const t = makeTranslate(zh)
 
   it('labels a failure the host explained and one it did not', () => {
     const decide = vi.fn()
-    const explained = render(<ProducedFiles matched={['a.ts']} changes={[]} openFile={() => {}} t={makeTranslate(en)}
-      review={{ phase: 'failed', reason: 'a.ts changed.', decide }} />)
+    const explained = render(<TurnDecision phase="failed" reason="a.ts changed." decide={decide} t={makeTranslate(en)} />)
     expect(explained.getByText('a.ts changed.')).toBeTruthy()
     cleanup()
-    const silent = render(<ProducedFiles matched={['a.ts']} changes={[]} openFile={() => {}} t={makeTranslate(en)}
-      review={{ phase: 'failed', decide }} />)
+    const silent = render(<TurnDecision phase="failed" decide={decide} t={makeTranslate(en)} />)
     expect(silent.getByText('Review failed')).toBeTruthy()
   })
 
-  it('renders the bounded chips and opens the file it was clicked for', () => {
-    const paths = ['deep/a.html', 'b.css', 'c.ts', 'd.ts', 'e.ts', 'f.ts', 'g.ts', 'h.ts']
-    const openFile = vi.fn<(path: string) => void>()
-
-    const view = render(<ProducedFiles matched={paths} changes={[]} openFile={openFile} t={t} />)
-    expect(view.getByText('本轮文件改动')).toBeTruthy()
-    const row = view.container.querySelector('[data-produced-files-row]')
-    if (!(row instanceof HTMLElement)) throw new Error('produced row missing')
-    expect(within(row).getAllByRole('button')).toHaveLength(6)
-    expect(within(row).getByText('+ 2 个文件')).toBeTruthy()
-    const chip = view.getByRole('button', { name: '打开 deep/a.html' })
-    expect(chip.textContent).toBe('a.html')
-    expect(chip.getAttribute('title')).toBe('deep/a.html')
-    expect(view.queryByRole('button', { name: '打开 g.ts' })).toBeNull()
-    fireEvent.click(chip)
-    // The row hands over the path it was given; where it opens is the
-    // Sidebar's decision, not this row's.
-    expect(openFile).toHaveBeenCalledWith('deep/a.html')
+  it('names the scope it decides and posts the decision its control was clicked for', () => {
+    const decide = vi.fn()
+    const view = render(<TurnDecision phase="idle" decide={decide} t={t} />)
+    expect(view.getByText('文件工具应用的改动')).toBeTruthy()
+    const row = view.container.querySelector('[data-turn-decision]')
+    if (!(row instanceof HTMLElement)) throw new Error('decision row missing')
+    expect(row.getAttribute('data-turn-decision')).toBe('idle')
+    fireEvent.click(within(row).getByRole('button', { name: '接受本轮改动' }))
+    expect(decide).toHaveBeenLastCalledWith('accepted')
+    fireEvent.click(within(row).getByRole('button', { name: '回滚本轮改动' }))
+    expect(decide).toHaveBeenLastCalledWith('reverted')
   })
 
-  it('opens a changed file on its change and a hunk-less one as the file itself', () => {
-    const openFile = vi.fn<(path: string, options?: { changeSeq?: number }) => void>()
-    const changes = [{ path: 'src/app.ts', seq: 5, diffs: [{ path: 'src/app.ts', oldText: 'a', newText: 'b' }] }]
-    const view = render(
-      <ProducedFiles matched={['src/app.ts', 'out/new.txt']} changes={changes} openFile={openFile} t={t} />,
-    )
-    fireEvent.click(view.getByRole('button', { name: '打开 src/app.ts' }))
-    expect(openFile).toHaveBeenLastCalledWith('src/app.ts', { changeSeq: 5 })
-    fireEvent.click(view.getByRole('button', { name: '打开 out/new.txt' }))
-    expect(openFile).toHaveBeenLastCalledWith('out/new.txt')
-  })
-
-  it('renders a remainder counter after every chip but the last when every file fits', () => {
-    const view = render(<ProducedFiles matched={['a.md', 'b.md', 'c.md']} changes={[]} openFile={() => {}} t={t} />)
-    const row = view.container.querySelector('[data-produced-files-row]')
-    if (!(row instanceof HTMLElement)) throw new Error('produced row missing')
-    expect(within(row).getAllByRole('button')).toHaveLength(3)
-    // One counter per chip that could be the last visible one; the final chip hides nothing.
-    expect([...row.querySelectorAll('[data-shown]')].map(node => node.getAttribute('data-shown'))).toEqual(['1', '2'])
-  })
-
-  it('offers no folder action, because a directory has no preview to open', () => {
-    const openFile = vi.fn<(path: string) => void>()
-    const overflowing = ['a.md', 'b.md', 'c.md', 'd.md', 'e.md', 'f.md', 'g.md']
-    const view = render(<ProducedFiles matched={overflowing} changes={[]} openFile={openFile} t={t} />)
-    expect(view.queryByRole('button', { name: '在文件夹中显示' })).toBeNull()
-    // Nothing in the row reaches the local machine any more.
-    expect(openFile).not.toHaveBeenCalled()
-  })
-
-  it('uses singular English copy when exactly one file is hidden', () => {
-    const view = render(
-      <ProducedFiles
-        matched={['a.md', 'b.md', 'c.md', 'd.md', 'e.md', 'f.md', 'g.md']}
-        changes={[]}
-        openFile={() => {}}
-        t={makeTranslate(en)}
-      />,
-    )
-    const row = view.container.querySelector('[data-produced-files-row]')
-    if (!(row instanceof HTMLElement)) throw new Error('produced row missing')
-    expect(within(row).getByText('+ 1 file')).toBeTruthy()
+  it('disables both controls while the decision is pending and reports its progress', () => {
+    const view = render(<TurnDecision phase="pending" decide={() => {}} t={t} />)
+    const row = view.container.querySelector('[data-turn-decision="pending"]')
+    if (!(row instanceof HTMLElement)) throw new Error('decision row missing')
+    const buttons = within(row).getAllByRole('button')
+    expect(buttons).toHaveLength(2)
+    for (const button of buttons) expect((button as HTMLButtonElement).disabled).toBe(true)
+    expect(view.getByText('处理中…')).toBeTruthy()
   })
 })
 
@@ -1075,7 +1032,7 @@ it.each([null, [], 'invalid'])('declines non-object delivery data: %j', (data) =
 it.each([{}, { turn: '1', callId: 'bad', files: [] },
   { turn: 1.5, callId: 'bad', files: [] }, { turn: 0, callId: 'bad', files: [] },
   { turn: 1, files: [] }, { turn: 1, callId: '', files: [] }, { turn: 1, callId: 'bad', files: null },
-])('ignores malformed delivery data and keeps the existing produced row: %j', (data) => {
+])('ignores malformed delivery data and keeps the existing decision row: %j', (data) => {
   const value = assembler([
     at(1, 'turn/start', { turn: 1 }),
     call(2, 'write-a', 'write', { file_path: 'a.txt', content: 'a' }),
@@ -1085,7 +1042,7 @@ it.each([{}, { turn: '1', callId: 'bad', files: [] },
   const owner = tailOwner(deliverablesOf(value), 5)
   const matched = selectDeliverables(owner)!
   const view = render(<Deliverables {...openProps()} matched={matched} openFile={owner.openFile} sessionId={SessionId('session')} t={makeTranslate(en)} />)
-  expect(view.getByText('Files changed')).toBeTruthy()
+  expect(view.container.querySelector('[data-turn-decision="idle"]')).toBeTruthy()
   expect(view.queryByText('Deliverables')).toBeNull()
 })
 
@@ -1120,13 +1077,24 @@ it('shows descriptions and falls back to file metadata without hiding extensionl
   expect(view.getByText('report.txt')).toBeTruthy()
 })
 
-it('marks delivery cards that directly follow the produced-files row', () => {
+it('renders deliveries beside the turn artifacts without a mutation-call file row', () => {
   const shared = { ...openProps(), openFile: () => {}, sessionId: SessionId('session'), t: makeTranslate(en) }
   const presented = [{ path: 'report.txt', seq: 2, index: 0 }]
+  // A produced path whose result recorded no hunk has nothing to decide, so the
+  // turn contributes delivery cards alone and no file list of its own.
   const view = render(<Deliverables {...shared} matched={{ turn: 1, produced: ['source.ts'], producedChanges: [], presented, announced: null }} />)
-  expect(view.getByText('Files changed')).toBeTruthy()
-  expect(view.container.querySelector('[data-presented-files-row]')?.parentElement
-    ?.getAttribute('data-after-produced-files')).toBe('true')
+  expect(view.container.querySelector('[data-turn-decision]')).toBeNull()
+  expect(view.container.querySelector('[data-presented-files-row]')).toBeTruthy()
+  expect(view.queryByText('Files changed')).toBeNull()
+})
+
+it('offers the decision row only where a recorded change carries the hunks a revert needs', () => {
+  const shared = { ...openProps(), openFile: () => {}, sessionId: SessionId('session'), t: makeTranslate(en) }
+  const changes = [{ path: 'src/app.ts', seq: 5, diffs: [{ path: 'src/app.ts', oldText: 'a', newText: 'b' }] }]
+  const view = render(<Deliverables {...shared} matched={{ turn: 1, produced: ['src/app.ts'], producedChanges: changes, presented: [], announced: null }} />)
+  expect(view.container.querySelector('[data-turn-decision="idle"]')).toBeTruthy()
+  view.rerender(<Deliverables {...shared} matched={{ turn: 1, produced: ['out/new.txt'], producedChanges: [], presented: [], announced: null }} />)
+  expect(view.container.querySelector('[data-turn-decision]')).toBeNull()
 })
 
 it('distinguishes PDF, Word, Markdown, and code files with compact decorative card icons', () => {

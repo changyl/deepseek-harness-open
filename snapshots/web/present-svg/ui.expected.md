@@ -53,6 +53,9 @@
 - list:
   - listitem:
     - button "查看 von-neumann.svg 的改动": von-neumann.svg +83 -0
+- text: 文件工具应用的改动
+- button "接受本轮改动"
+- button "回滚本轮改动"
 - text: 此主机没有可用的桌面，无法使用外部程序打开文件或文件夹；文件仍可在侧边栏预览
 - button "在侧边栏预览 von-neumann.svg"
 - text: von-neumann.svg 冯诺依曼架构示意图 SVG

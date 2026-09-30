@@ -236,6 +236,18 @@ describe('DiffSplitBlock structure', () => {
     expect(screen.getByText('└ +1 -1 · 1 file')).toBeTruthy()
   })
 
+  it('keeps both sides in one scrolling body, so a wide line moves them together', () => {
+    const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: 'a removed line long enough to scroll', newText: 'an added line long enough to scroll' }]
+    const { container } = render(<DiffSplitBlock diffs={diffs} />)
+    // One body owns both columns: no side has a scroller of its own, so the two
+    // cannot be scrolled apart, and a long line widens the pair as one surface.
+    const body = container.querySelector('[data-diff] > div')
+    expect(body).not.toBeNull()
+    const sides = [...container.querySelectorAll('[data-diff] [data-split-side]')]
+    expect(sides).toHaveLength(2)
+    expect(sides.every(side => side.parentElement?.parentElement === body)).toBe(true)
+  })
+
   it('marks the row that opens each change, so a reader can jump between them', () => {
     const { container } = render(<DiffSplitBlock diffs={[
       { path: 'a.ts', oldText: 'one', newText: 'ONE', newStart: 1 },

@@ -433,6 +433,17 @@ describe('textFace — editing', () => {
     expect(b.tab()?.failure).toMatchObject({ code: 'workspace-file/too-large' })
   })
 
+  it.each([new Error('draft read broke'), 'draft read broke'])('reports a draft read refused on the wire: %s', async (thrown) => {
+    const b = bench()
+    // A transport-level rejection, not a declared failure: the read itself broke.
+    b.bytes.mockRejectedValueOnce(thrown)
+    b.face.openDraft(TAB_1, FILE, b.controller.signal)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined })
+    expect(b.tab()?.failure).toMatchObject({ code: 'gateway/internal', message: 'draft read broke' })
+  })
+
   it('retires a draft read that settles after the reader left, so it cannot reopen the session', async () => {
     const b = bench()
     b.face.openDraft(TAB_1, FILE, b.controller.signal)
@@ -440,6 +451,27 @@ describe('textFace — editing', () => {
     expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined })
     await b.settleAllWire(wholeText('late\n'))
     expect(b.tab()?.edit).toBeUndefined()
+  })
+
+  it('retires a draft read that fails on the wire after the reader left, so it reports nothing', async () => {
+    const b = bench()
+    b.bytes.mockRejectedValueOnce(new Error('draft read broke'))
+    b.face.openDraft(TAB_1, FILE, b.controller.signal)
+    b.face.closeDraft(TAB_1)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined, failure: undefined })
+  })
+
+  it('reads and writes nothing for a tab whose session already ended', () => {
+    const b = bench()
+    const signal = b.controller.signal
+    b.controller.abort()
+    b.face.openDraft(TAB_1, FILE, signal)
+    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', signal)
+    expect(b.bytes).not.toHaveBeenCalled()
+    expect(b.write).not.toHaveBeenCalled()
+    expect(b.instance.getSnapshot().byTab[TAB_1]).toBeUndefined()
   })
 
   it('sends the draft with the version it was read from, then makes that write the clean baseline', async () => {
@@ -525,7 +557,7 @@ it.each([new Error('invalid bytes'), 'invalid bytes'])('reports an active comple
   const controller = new AbortController()
   const read = vi.fn<ReadDocumentBytes>().mockRejectedValue(failure)
   try {
-    textFace(vi.fn(), read)(SESSION, instance.actions).loadAll(TAB_1, FILE, controller.signal)
+    textFace(vi.fn(), read, vi.fn<WriteWorkspaceFile>())(SESSION, instance.actions).loadAll(TAB_1, FILE, controller.signal)
     await Promise.resolve()
     expect(instance.getSnapshot().byTab[TAB_1]?.failure).toMatchObject({ code: 'gateway/internal', message: 'invalid bytes' })
   } finally { controller.abort() }
@@ -535,7 +567,7 @@ it('ignores a complete-read rejection after renderer-owned loading takes over', 
   const instance = createTextStore().create()
   const controller = new AbortController()
   const pending = Promise.withResolvers<Awaited<ReturnType<ReadDocumentBytes>>>()
-  const face = textFace(vi.fn(), () => pending.promise)(SESSION, instance.actions)
+  const face = textFace(vi.fn(), () => pending.promise, vi.fn<WriteWorkspaceFile>())(SESSION, instance.actions)
   try {
     face.loadAll(TAB_1, FILE, controller.signal)
     face.prepareRenderer(TAB_1, controller.signal, 'office')

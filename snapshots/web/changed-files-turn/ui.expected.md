@@ -102,6 +102,9 @@
   - code:
     - button "在侧边栏打开 notes.txt": notes.txt
   - text: 的追加则完全走 bash。
+- img
+- text: 任务报告 1 个文件 · +3 / -3
+- button "打开报告"
 - button "在侧边栏查看本轮改动": 已编辑 4 个文件 +6 -1
 - list:
   - listitem:
@@ -113,6 +116,9 @@
 - button "展开全部 4 个改动文件":
   - text: 全部 4 个文件
   - img
+- text: 文件工具应用的改动
+- button "接受本轮改动"
+- button "回滚本轮改动"
 - text: 此主机没有可用的桌面，无法使用外部程序打开文件或文件夹；文件仍可在侧边栏预览
 - button "在侧边栏预览 intro.md"
 - text: intro.md 标题已改为「项目说明」

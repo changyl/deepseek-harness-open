@@ -1,4 +1,4 @@
-/** Source checks for the changed-files and explicit-delivery layout. */
+/** Source checks for the changed-files, decision-row, and explicit-delivery layout. */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -20,5 +20,11 @@ describe('deliverables layout', () => {
     expect(deliveries).toMatch(/\.description\s*\{[^}]*font-size:\s*10px;[^}]*line-height:\s*16px/s)
     expect(deliveries).toMatch(/\.open\s*\{[^}]*padding:\s*4px 8px;[^}]*font-size:\s*12px;[^}]*line-height:\s*18px/s)
     expect(deliveries).toMatch(/\.presented\s*\{[^}]*gap:\s*10px/s)
+  })
+
+  it('sets the decision row directly under the card', () => {
+    const decision = read('TurnDecision.module.css')
+    expect(decision).toMatch(/\.root\s*\{[^}]*margin-top:\s*8px/s)
+    expect(decision).toMatch(/\.action\s*\{[^}]*border-radius:\s*6px/s)
   })
 })

@@ -26,7 +26,7 @@ import type { SessionFileChange } from '@deepseek-ai/dsh-client-ui-sidebar-docum
 import type { TextPreviewProps } from '../src/client/TextPreview.tsx'
 import { textFace } from '../src/client/face.ts'
 import type { TextInjected } from '../src/client/face.ts'
-import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile, WriteWorkspaceFile } from '../src/client/rpc.ts'
+import type { DocumentFileBytes, ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile, WriteWorkspaceFile } from '../src/client/rpc.ts'
 import { createTextStore } from '../src/client/store.ts'
 import type { TextStore } from '../src/client/store.ts'
 import type { DocumentPreviewProps } from '../src/client/document/contract.ts'
@@ -73,6 +73,21 @@ export function wholeText(text: string, version = 'v1'): RemoteResult<WorkspaceF
     value: {
       absolutePath: ABSOLUTE_PATH, version, offset: 0, eof: true, bytes: data.byteLength,
       data: btoa(String.fromCharCode(...data)),
+    },
+  }
+}
+
+/**
+ * One whole-file read as the whole-read contract now yields it: decoded bytes
+ * the face hands to renderers and the draft. The editor's draft reads the
+ * already-decoded bytes, so a spec that scripts the byte reader yields them too.
+ */
+export function wholeDocumentText(text: string, version = 'v1'): RemoteResult<DocumentFileBytes> {
+  const data = new TextEncoder().encode(text)
+  return {
+    ok: true,
+    value: {
+      absolutePath: ABSOLUTE_PATH, version, offset: 0, eof: true, bytes: data.byteLength, data,
     },
   }
 }

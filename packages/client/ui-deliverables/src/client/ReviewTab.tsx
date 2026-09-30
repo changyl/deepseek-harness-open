@@ -3,11 +3,13 @@
  * selected file's turn-start and turn-end comparison drawn unified or side by
  * side, wrapped or scrolling, and controls to open the file itself.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode, UIEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import {
-  Button, IconChevronDownOutline14, IconCodeOutline16, IconPanelLeftOutline16, IconRightUpOutline16, IconWrapLinesOutline16, Menu, Tooltip,
+  Button, DiffLineText, IconChevronDownOutline14, IconCodeOutline16, IconPanelLeftOutline16, IconRightUpOutline16,
+  IconWrapLinesOutline16, Menu, Tooltip, languageForPath, useHighlightedCode,
 } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { HighlightSpan, HighlightedBlock } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import { fileAddressFor } from '@deepseek-ai/dsh-util-workspace-path'
@@ -50,29 +52,87 @@ export interface DiffRow {
   old: number | undefined
   new: number | undefined
   text: string
+  /** The grammar's runs for {@link text}, absent when the row draws its text plain. */
+  spans?: readonly HighlightSpan[] | undefined
+}
+
+/** One side of a side-by-side row: its line number, text, and grammar runs. */
+export interface SplitCell {
+  no: number
+  text: string
+  kind: 'add' | 'del' | 'context'
+  /** The grammar's runs for {@link text}, absent when the cell draws its text plain. */
+  spans?: readonly HighlightSpan[] | undefined
 }
 
 /** One side-by-side row: the old side, the new side, or both. */
 export interface SplitRow {
-  left?: { no: number; text: string; kind: 'del' | 'context' }
-  right?: { no: number; text: string; kind: 'add' | 'context' }
+  left?: SplitCell
+  right?: SplitCell
+}
+
+/**
+ * One hunk's tokenized sides: the runs its removed/context lines take from the
+ * old side and its added/context lines from the new one, one entry per source
+ * line of that side. A side with no runs draws plain.
+ */
+export interface HunkRuns {
+  readonly old?: readonly (readonly HighlightSpan[])[] | undefined
+  readonly new?: readonly (readonly HighlightSpan[])[] | undefined
+}
+
+/** The runs a side holds for the line at `index`, or an empty spread when it draws plain. */
+function spansOf(runs: readonly (readonly HighlightSpan[])[] | undefined, index: number): { spans?: readonly HighlightSpan[] | undefined } {
+  const spans = runs?.[index]
+  return spans === undefined ? {} : { spans }
+}
+
+/**
+ * One hunk's old-side text: its removed and context lines, in file order. This
+ * is what the shared highlighter tokenizes for that side, so a change inside a
+ * block comment or a template literal keeps the context that colourises it.
+ * @param hunk - a served hunk.
+ * @returns the old side's lines joined by newlines.
+ */
+export function oldSideOf(hunk: WorkspaceDiffHunk): string {
+  return hunk.lines.filter(line => !line.startsWith('+')).map(line => line.slice(1)).join('\n')
+}
+
+/**
+ * One hunk's new-side text: its added and context lines, in file order.
+ * @param hunk - a served hunk.
+ * @returns the new side's lines joined by newlines.
+ */
+export function newSideOf(hunk: WorkspaceDiffHunk): string {
+  return hunk.lines.filter(line => !line.startsWith('-')).map(line => line.slice(1)).join('\n')
 }
 
 /**
  * Number a hunk's lines: context lines count on both sides, deletions on the
- * old side, additions on the new side.
+ * old side, additions on the new side. Each row also takes the runs its own side
+ * holds for that line, so the change reads in the file's grammar.
  * @param hunk - a served hunk.
+ * @param runs - the hunk's tokenized sides; absent draws every row plain.
  * @returns the rows in order.
  */
-export function hunkRows(hunk: WorkspaceDiffHunk): DiffRow[] {
+export function hunkRows(hunk: WorkspaceDiffHunk, runs?: HunkRuns): DiffRow[] {
   let oldNo = hunk.oldStart
   let newNo = hunk.newStart
-  return hunk.lines.map((line) => {
+  let oldAt = 0
+  let newAt = 0
+  return hunk.lines.map((line): DiffRow => {
     const text = line.slice(1)
     switch (line[0]) {
-      case '+': return { kind: 'add', old: undefined, new: newNo++, text }
-      case '-': return { kind: 'del', old: oldNo++, new: undefined, text }
-      default: return { kind: 'context', old: oldNo++, new: newNo++, text }
+      case '+': return { kind: 'add', old: undefined, new: newNo++, text, ...spansOf(runs?.new, newAt++) }
+      case '-': return { kind: 'del', old: oldNo++, new: undefined, text, ...spansOf(runs?.old, oldAt++) }
+      // A shared line draws the current file's content, so its runs are the new
+      // side's, exactly as the diff cards take them.
+      default: {
+        const row: DiffRow = { kind: 'context', old: oldNo++, new: newNo++, text, ...spansOf(runs?.new, newAt) }
+        oldAt += 1
+        newAt += 1
+        return row
+      }
     }
   })
 }
@@ -80,14 +140,16 @@ export function hunkRows(hunk: WorkspaceDiffHunk): DiffRow[] {
 /**
  * Pair a hunk's lines for the side-by-side view: each run of deletions is
  * aligned with the run of additions that follows it, row by row, and context
- * lines sit on both sides.
+ * lines sit on both sides. Each side carries the runs its own text was
+ * tokenized into, so the two columns read in the file's grammar.
  * @param hunk - a served hunk.
+ * @param runs - the hunk's tokenized sides; absent draws every cell plain.
  * @returns the rows in order.
  */
-export function splitRows(hunk: WorkspaceDiffHunk): SplitRow[] {
+export function splitRows(hunk: WorkspaceDiffHunk, runs?: HunkRuns): SplitRow[] {
   const rows: SplitRow[] = []
-  let dels: NonNullable<SplitRow['left']>[] = []
-  let adds: NonNullable<SplitRow['right']>[] = []
+  let dels: SplitCell[] = []
+  let adds: SplitCell[] = []
   const flush = (): void => {
     for (let at = 0; at < Math.max(dels.length, adds.length); at += 1) {
       const left = dels[at]
@@ -97,12 +159,19 @@ export function splitRows(hunk: WorkspaceDiffHunk): SplitRow[] {
     dels = []
     adds = []
   }
+  // A side's run index is its line's own distance from the hunk's start, which
+  // is exactly the position that line holds in that side's tokenized text.
   for (const row of hunkRows(hunk)) {
-    if (row.kind === 'del') dels.push({ no: row.old as number, text: row.text, kind: 'del' })
-    else if (row.kind === 'add') adds.push({ no: row.new as number, text: row.text, kind: 'add' })
-    else {
+    if (row.kind === 'del') {
+      dels.push({ no: row.old as number, text: row.text, kind: 'del', ...spansOf(runs?.old, (row.old as number) - hunk.oldStart) })
+    } else if (row.kind === 'add') {
+      adds.push({ no: row.new as number, text: row.text, kind: 'add', ...spansOf(runs?.new, (row.new as number) - hunk.newStart) })
+    } else {
       flush()
-      rows.push({ left: { no: row.old as number, text: row.text, kind: 'context' }, right: { no: row.new as number, text: row.text, kind: 'context' } })
+      rows.push({
+        left: { no: row.old as number, text: row.text, kind: 'context', ...spansOf(runs?.old, (row.old as number) - hunk.oldStart) },
+        right: { no: row.new as number, text: row.text, kind: 'context', ...spansOf(runs?.new, (row.new as number) - hunk.newStart) },
+      })
     }
   }
   flush()
@@ -271,24 +340,26 @@ function hunkHeader(hunk: WorkspaceDiffHunk): string {
 }
 
 /**
- * The side-by-side view without wrapping: two columns that clip their long
- * lines and scroll sideways together, so a long line on one side never runs
- * under the other and both sides show the same columns of text. Every line is
- * one fixed-height row, which keeps the sides aligned.
+ * The side-by-side view without wrapping: one grid of two columns whose long
+ * lines widen the whole surface, so the sides share one horizontal and vertical
+ * scroll position and can never move apart. Every line is one fixed-height row,
+ * which keeps the sides aligned.
  */
-function SplitColumns({ hunks }: { hunks: readonly WorkspaceDiffHunk[] }): ReactNode {
-  const paired = useMemo(() => hunks.map(hunk => ({ header: hunkHeader(hunk), rows: splitRows(hunk) })), [hunks])
-  const columns = useRef<Record<'left' | 'right', HTMLDivElement | null>>({ left: null, right: null })
-  // Mirror one side's horizontal offset onto the other; the mirrored side's own scroll event then finds nothing to change.
-  const follow = (side: 'left' | 'right') => (event: UIEvent<HTMLDivElement>): void => {
-    const other = columns.current[side === 'left' ? 'right' : 'left']
-    if (other !== null && other.scrollLeft !== event.currentTarget.scrollLeft) other.scrollLeft = event.currentTarget.scrollLeft
-  }
+function SplitColumns({ hunks, runs }: {
+  hunks: readonly WorkspaceDiffHunk[]
+  runs: readonly HighlightedBlock[]
+}): ReactNode {
+  const paired = useMemo(
+    () => hunks.map((hunk, position) => ({
+      header: hunkHeader(hunk),
+      rows: splitRows(hunk, { old: runs[2 * position], new: runs[2 * position + 1] }),
+    })),
+    [hunks, runs],
+  )
   return (
     <div className={css.columns}>
       {(['left', 'right'] as const).map(side => (
-        <div key={side} className={css.column} data-diff-side={side}
-          ref={(element) => { columns.current[side] = element }} onScroll={follow(side)}>
+        <div key={side} className={css.column} data-diff-side={side}>
           {paired.map((hunk, position) => (
             <section key={position} className={css.hunk}>
               <div className={css.hunkHeader}>{hunk.header}</div>
@@ -297,7 +368,7 @@ function SplitColumns({ hunks }: { hunks: readonly WorkspaceDiffHunk[] }): React
                 return (
                   <div key={at} className={`${css.sideLine} ${cell === undefined ? css.empty : css[cell.kind]}`} data-diff-line={splitRowKind(row)}>
                     <span className={css.number}>{cell?.no ?? ''}</span>
-                    <span className={css.text}>{cell?.text ?? ''}</span>
+                    <span className={css.text}><DiffLineText text={cell?.text ?? ''} spans={cell?.spans} /></span>
                   </div>
                 )
               })}
@@ -309,39 +380,52 @@ function SplitColumns({ hunks }: { hunks: readonly WorkspaceDiffHunk[] }): React
   )
 }
 
+/** One split cell: its line number and its text in the file's own grammar. */
+function SplitCellText({ cell }: { cell: SplitRow['left'] }): ReactNode {
+  return (
+    <span className={`${css.cell} ${cell === undefined ? css.empty : css[cell.kind]}`}>
+      <span className={css.number}>{cell?.no ?? ''}</span>
+      <span className={css.text}><DiffLineText text={cell?.text ?? ''} spans={cell?.spans} /></span>
+    </span>
+  )
+}
+
 /** The hunks of a text comparison with their line numbers, unified or side by side. */
 function TextDiff({ diff, split, wrap, t }: { diff: Extract<ChangesDiff, { kind: 'text' }>; split: boolean; wrap: boolean } & PropsLocale<typeof NS>): ReactNode {
   const note = noteOf(diff)
   const { hunks, truncated } = useMemo(() => renderedHunks(diff.hunks), [diff.hunks])
+  // The comparison draws the changed file's own grammar. Each hunk's two sides
+  // are tokenized as blocks of their own, so a hunk seam never carries one
+  // hunk's open comment or string into the next.
+  const blocks = useMemo(() => hunks.flatMap(hunk => [oldSideOf(hunk), newSideOf(hunk)]), [hunks])
+  const runs = useHighlightedCode(blocks, languageForPath(diff.path))
   return (
-    <div className={css.body} data-review-view={split ? 'split' : 'unified'} data-review-wrap={wrap || undefined}>
+    <div className={css.body} data-review-view={split ? 'split' : 'unified'} data-review-wrap={wrap || undefined}
+      data-review-highlight={runs.some(block => block !== undefined) ? '' : undefined}>
       {note !== undefined && <p className={css.note}>{t(note)}</p>}
       {diff.coarse && <p className={css.note} data-diff-coarse>{t('diff.coarse')}</p>}
       {truncated && <p className={css.note} data-diff-truncated>{t('diff.truncated', { count: String(MAX_RENDERED_LINES) })}</p>}
-      {split && !wrap ? <SplitColumns hunks={hunks} /> : hunks.map((hunk, position) => (
-        <section key={position} className={css.hunk}>
-          <div className={css.hunkHeader}>{hunkHeader(hunk)}</div>
-          {split ? splitRows(hunk).map((row, at) => (
-            <div key={at} className={css.splitLine} data-diff-line={splitRowKind(row)}>
-              <span className={`${css.cell} ${row.left === undefined ? css.empty : css[row.left.kind]}`}>
-                <span className={css.number}>{row.left?.no ?? ''}</span>
-                <span className={css.text}>{row.left?.text ?? ''}</span>
-              </span>
-              <span className={`${css.cell} ${row.right === undefined ? css.empty : css[row.right.kind]}`}>
-                <span className={css.number}>{row.right?.no ?? ''}</span>
-                <span className={css.text}>{row.right?.text ?? ''}</span>
-              </span>
-            </div>
-          )) : hunkRows(hunk).map((row, at) => (
-            <div key={at} className={`${css.line} ${css[row.kind]}`} data-diff-line={row.kind}>
-              <span className={css.number}>{row.old ?? ''}</span>
-              <span className={css.number}>{row.new ?? ''}</span>
-              <span className={css.sign}>{row.kind === 'add' ? '+' : row.kind === 'del' ? '-' : ' '}</span>
-              <span className={css.text}>{row.text}</span>
-            </div>
-          ))}
-        </section>
-      ))}
+      {split && !wrap ? <SplitColumns hunks={hunks} runs={runs} /> : hunks.map((hunk, position) => {
+        const pair = { old: runs[2 * position], new: runs[2 * position + 1] }
+        return (
+          <section key={position} className={css.hunk}>
+            <div className={css.hunkHeader}>{hunkHeader(hunk)}</div>
+            {split ? splitRows(hunk, pair).map((row, at) => (
+              <div key={at} className={css.splitLine} data-diff-line={splitRowKind(row)}>
+                <SplitCellText cell={row.left} />
+                <SplitCellText cell={row.right} />
+              </div>
+            )) : hunkRows(hunk, pair).map((row, at) => (
+              <div key={at} className={`${css.line} ${css[row.kind]}`} data-diff-line={row.kind}>
+                <span className={css.number}>{row.old ?? ''}</span>
+                <span className={css.number}>{row.new ?? ''}</span>
+                <span className={css.sign}>{row.kind === 'add' ? '+' : row.kind === 'del' ? '-' : ' '}</span>
+                <span className={css.text}><DiffLineText text={row.text} spans={row.spans} /></span>
+              </div>
+            ))}
+          </section>
+        )
+      })}
     </div>
   )
 }

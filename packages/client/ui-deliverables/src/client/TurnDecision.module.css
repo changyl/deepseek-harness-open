@@ -1,0 +1,36 @@
+/* The turn-level accept-or-revert decision controls under the changed-files card. */
+
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* The row names the scope it decides: the card above lists more files than a
+   revert can restore. */
+.scope {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.action {
+  padding: 2px 8px;
+  color: var(--dsw-alias-label-secondary);
+  background-color: transparent;
+  border: 0.5px solid var(--dsw-alias-border-l1);
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.action:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.status {
+  color: var(--dsw-alias-label-tertiary);
+}

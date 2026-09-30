@@ -79,7 +79,7 @@ kind: "package-group"
 | [`ui-usage/`](ui-usage/README.zh.md) | 以设置页形式呈现已记录的 token 用量、逐路由总量与读取时费用 | — |
 | [`ui-project/`](ui-project/README.zh.md) | 以设置页形式呈现持久项目看板 | — |
 | [`ui-effectiveness/`](ui-effectiveness/README.zh.md) | 以设置页形式呈现跨会话结果信号 | — |
-| [`ui-deliverables/`](ui-deliverables/README.zh.md) | 生成产出文件轮次尾部：改动文件卡片及其对比 tab、交付文件卡片与可点击的最终响应文件引用 | — |
+| [`ui-deliverables/`](ui-deliverables/README.zh.md) | 在回合尾部渲染改动文件卡片及其对比 tab、覆盖文件工具所应用改动的决策行、交付文件卡片与可点击的最终响应文件引用 | — |
 | [`ui-task-report/`](ui-task-report/README.zh.md) | 在回合尾部渲染任务结束生成的报告卡片 | — |
 | [`ui-message-feedback/`](ui-message-feedback/README.zh.md) | 反馈界面：助手消息操作条中的逐消息赞踩，以及点赞、点踩与 `/feedback` 背后的反馈弹窗 | — |
 | [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.zh.md) | 面向工作区目录流程的应用内目录浏览界面 | — |

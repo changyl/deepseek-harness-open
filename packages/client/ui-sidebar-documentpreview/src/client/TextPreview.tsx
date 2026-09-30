@@ -25,14 +25,13 @@ import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import {
   DiffBlock, DiffSplitBlock, FileTypeIcon, IconRefreshOutline16, Menu, Tooltip, classifyFileType, contentLines,
-  type DiffHunk,
+  languageForPath, type DiffHunk,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { pathPartsOf } from '@deepseek-ai/dsh-util-workspace-path'
 import type { TextInjected } from './face.ts'
 import type { ChangeReviewDecision } from '@deepseek-ai/dsh-change-review'
 import type { SessionFileChange } from '@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client'
 import type { ReviewTarget } from './review-target.ts'
-import { languageForPath } from './code/languages.ts'
 import { diffBlockLabels } from './diff-labels.ts'
 import { failureLine } from './failure-line.ts'
 import { IconNowrapFill16, IconWrapFill16 } from './icons.tsx'
@@ -183,6 +182,15 @@ export function TextPreview({
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const scrollportRef = useRef<HTMLElement | null>(null)
   const storedScrollTopRef = useRef(0)
+  /** The open editing session's scrolling surface, which follows the preview beside it. */
+  const editorSurfaceRef = useRef<HTMLTextAreaElement | null>(null)
+  /**
+   * The half a mirror's own scroll event will come from, so that echo is not
+   * mirrored back. Without it, a half that cannot reach the offset — a preview
+   * still paging in, a shorter rendered file — would drag the half the reader
+   * is moving back to its own limit.
+   */
+  const echoRef = useRef<'editor' | 'preview' | null>(null)
   // The change the comparison last landed on, so it lands once per entry into
   // that layout rather than on every render of the file it draws.
   const landedChangeRef = useRef<number | undefined>(undefined)
@@ -236,6 +244,23 @@ export function TextPreview({
     const next = scrollport ?? bodyRef.current
     scrollportRef.current = next
     if (next !== null) next.scrollTop = storedScrollTopRef.current
+  }, [])
+  const bindEditorSurface = useCallback((surface: HTMLTextAreaElement | null): void => {
+    editorSurfaceRef.current = surface
+  }, [])
+  /**
+   * Take the other half of an editing split to this one's place. The write's own
+   * scroll event is the echo {@link echoRef} records and is not mirrored back.
+   * @param moved - the half that scrolled.
+   * @param from - that half's scrolling surface, which delivered the event.
+   */
+  const followPane = useCallback((moved: 'editor' | 'preview', from: HTMLElement): void => {
+    const to = moved === 'editor' ? scrollportRef.current : editorSurfaceRef.current
+    // The other half exists only while an editing session is open.
+    if (to === null) return
+    echoRef.current = moved === 'editor' ? 'preview' : 'editor'
+    to.scrollTop = from.scrollTop
+    to.scrollLeft = from.scrollLeft
   }, [])
 
   // First mount reads the first page; a body coming back to a tab with content
@@ -769,6 +794,12 @@ export function TextPreview({
               onChange={(text) => { actions.drafted(tab.id, text) }}
               wrap={state.wrap}
               label={t('edit.editorAria')}
+              lang={changeLang}
+              scrollRef={bindEditorSurface}
+              onScroll={(surface) => {
+                if (echoRef.current === 'editor') echoRef.current = null
+                else followPane('editor', surface)
+              }}
             />
           ))}
         <div
@@ -780,6 +811,12 @@ export function TextPreview({
             const body = scrollportRef.current
             /* v8 ignore next -- callback refs bind the scrollport during commit, before user input. */
             if (body === null) return
+            // The preview and an open draft are two views of one file, so a
+            // scroll of either moves both. The offset read is the scrollport's
+            // own, which is also where a code renderer keeps its inner scroller,
+            // and a mirror's echo is not mirrored back.
+            if (echoRef.current === 'preview') echoRef.current = null
+            else followPane('preview', body)
             if (event.target !== body) return
             actions.scrolled(tab.id, body.scrollTop)
             // The change view is one finite surface: reaching its bottom must not
