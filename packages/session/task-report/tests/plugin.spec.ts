@@ -47,10 +47,12 @@ function turnLog(options: { changes?: boolean; verification?: boolean; closed?: 
       turn: 1,
       step: 1,
       message: {
-        role: 'user',
+        role: 'tool',
         id: 'r1',
         source: { kind: 'tool', callId: 'c1' },
-        content: [{ type: 'tool-result', toolCallId: 'c1', content: [{ type: 'text', text: 'ok' }], isError: false }],
+        toolCallId: 'c1',
+        content: [{ type: 'text', text: 'ok' }],
+        isError: false,
       },
       meta: { diffs: [{ path: 'src/a.ts', oldText: 'a', newText: 'a\nb' }] },
     }, 2))
@@ -61,10 +63,12 @@ function turnLog(options: { changes?: boolean; verification?: boolean; closed?: 
       turn: 1,
       step: 1,
       message: {
-        role: 'user',
+        role: 'tool',
         id: 'r2',
         source: { kind: 'tool', callId: 'c2' },
-        content: [{ type: 'tool-result', toolCallId: 'c2', content: [{ type: 'text', text: '[exit code: 0]' }], isError: false }],
+        toolCallId: 'c2',
+        content: [{ type: 'text', text: '[exit code: 0]' }],
+        isError: false,
       },
     }, 4))
   }

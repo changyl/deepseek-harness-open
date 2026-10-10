@@ -1,7 +1,7 @@
 /**
- * The turn fold: request, closing text, applied hunks, and verification
- * outcomes read from one turn's log window, plus the bounds and the malformed
- * payloads that must contribute nothing.
+ * The turn fold: request, closing text, applied hunks, reported creates, and
+ * verification outcomes read from one turn's log window, plus the bounds and the
+ * malformed payloads that must contribute nothing.
  */
 import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
@@ -38,7 +38,18 @@ function bashCall(command: string, callId = 'call-1', turn = 1, seq = 0): Sessio
   return event('tool/call', { turn, step: 1, callId, name: 'bash', arguments: JSON.stringify({ command }) }, seq)
 }
 
-/** One tool result carrying a rendered text body and optional presentation meta. */
+/** One `write` call carrying the whole text it supplied. */
+function writeCall(content: string, callId = 'call-1', turn = 1, seq = 0): SessionEvent {
+  return event('tool/call', {
+    turn,
+    step: 1,
+    callId,
+    name: 'write',
+    arguments: JSON.stringify({ file_path: 'src/new.ts', content }),
+  }, seq)
+}
+
+/** One tool-role result message carrying a rendered text body and optional presentation meta. */
 function toolResult(
   text: string,
   options: { callId?: string; isError?: boolean; meta?: unknown; turn?: number } = {},
@@ -49,15 +60,12 @@ function toolResult(
     turn: options.turn ?? 1,
     step: 1,
     message: {
-      role: 'user',
+      role: 'tool',
       id: `r${String(seq)}`,
       source: { kind: 'tool', callId },
-      content: [{
-        type: 'tool-result',
-        toolCallId: callId,
-        content: [{ type: 'text', text }],
-        isError: options.isError ?? false,
-      }],
+      toolCallId: callId,
+      content: [{ type: 'text', text }],
+      isError: options.isError ?? false,
     },
     ...(options.meta === undefined ? {} : { meta: options.meta }),
   }, seq)
@@ -105,11 +113,35 @@ describe('foldTaskReport', () => {
     })
   })
 
-  it('reports a create as create with no removed lines', () => {
+  it('reports a create from the write result operation and the call text', () => {
     const result = fold(turn([
-      toolResult('wrote', { meta: { diffs: [{ path: 'src/new.ts', oldText: null, newText: 'one\ntwo' }] } }, 1),
+      writeCall('one\ntwo', 'c1', 1, 1),
+      toolResult('wrote', { callId: 'c1', meta: { operation: 'create', path: 'src/new.ts', diffs: [] } }, 2),
     ]))
     expect(result.changes).toEqual([{ path: 'src/new.ts', kind: 'create', added: 2, removed: 0 }])
+  })
+
+  it('reports a create with zero added lines when its write call is absent from the window', () => {
+    const result = fold(turn([
+      toolResult('wrote', { callId: 'c1', meta: { operation: 'create', path: 'src/new.ts', diffs: [] } }, 1),
+    ]))
+    expect(result.changes).toEqual([{ path: 'src/new.ts', kind: 'create', added: 0, removed: 0 }])
+  })
+
+  it('ignores a create whose result names no usable path', () => {
+    const result = fold(turn([
+      toolResult('wrote', { callId: 'c1', meta: { operation: 'create', path: 7, diffs: [] } }, 1),
+      toolResult('wrote', { callId: 'c2', meta: { operation: 'create', path: '', diffs: [] } }, 2),
+    ]))
+    expect(result.changes).toEqual([])
+  })
+
+  it('records no change for an update whose result carries no hunk', () => {
+    const result = fold(turn([
+      writeCall('same\n', 'c1', 1, 1),
+      toolResult('wrote', { callId: 'c1', meta: { operation: 'update', path: 'src/a.ts', diffs: [] } }, 2),
+    ]))
+    expect(result.changes).toEqual([])
   })
 
   it('keeps the last hunk of a path but its first position', () => {
@@ -245,60 +277,54 @@ describe('foldTaskReport', () => {
     expect(result.verification).toEqual([{ command: 'pnpm test', status: 'passed', exitCode: 0 }])
   })
 
-  it('ignores a result whose blocks name no tool call', () => {
-    const result = fold(turn([
-      event('tool/result', {
-        turn: 1,
-        step: 1,
-        message: {
-          role: 'user',
-          id: 'r',
-          source: { kind: 'tool', callId: 'c1' },
-          content: [
-            null,
-            { type: 'text', text: 'not a result block' },
-            { type: 'tool-result', content: [{ type: 'text', text: 'no call id' }] },
-          ],
-        },
-      }, 1),
-    ]))
-    expect(result.verification).toEqual([])
-    expect(result.changes).toEqual([])
-  })
-
-  it('reads a message whose content is not a block list as empty text', () => {
-    const notAList = event('user/message', { role: 'user', id: 'm', source: { kind: 'user' }, content: 'nope' }, 1)
-    expect(fold(turn([notAList])).request).toBeUndefined()
-
-    const oddBlocks = event('user/message', {
-      role: 'user',
-      id: 'm2',
-      source: { kind: 'user' },
-      content: [null, { type: 'image' }, { type: 'text', text: 7 }, { type: 'text', text: 'kept' }],
-    }, 1)
-    expect(fold(turn([oddBlocks])).request).toBe('kept')
-  })
-
-  it('reads a tool result whose content is not a block list as no text', () => {
+  it('ignores a result whose message names no paired tool call', () => {
     const result = fold(turn([
       bashCall('pnpm test', 'c1', 1, 1),
       event('tool/result', {
         turn: 1,
         step: 1,
-        message: { role: 'user', id: 'r', source: { kind: 'tool', callId: 'c1' }, content: 'nope' },
+        message: {
+          role: 'tool',
+          id: 'r',
+          source: { kind: 'tool', callId: 'other' },
+          toolCallId: 'other',
+          content: [{ type: 'text', text: '[exit code: 0]' }],
+        },
       }, 2),
+    ]))
+    expect(result.verification).toEqual([])
+    expect(result.changes).toEqual([])
+  })
+
+  it('joins only the text blocks of a message', () => {
+    const notAList = event('user/message', { role: 'user', id: 'm', source: { kind: 'user' }, content: 'nope' }, 1)
+    expect(fold(turn([notAList])).request).toBeUndefined()
+
+    const mixedBlocks = event('user/message', {
+      role: 'user',
+      id: 'm2',
+      source: { kind: 'user' },
+      content: [{ type: 'reasoning', text: 'ignored' }, { type: 'text', text: 'kept' }],
+    }, 1)
+    expect(fold(turn([mixedBlocks])).request).toBe('kept')
+  })
+
+  it('reads only text blocks when it parses a tool result outcome', () => {
+    const result = fold(turn([
+      bashCall('pnpm test', 'c1', 1, 1),
       event('tool/result', {
         turn: 1,
         step: 1,
         message: {
-          role: 'user',
-          id: 'r2',
-          source: { kind: 'tool', callId: 'c2' },
-          content: [{ type: 'tool-result', content: [null, 'nested', { type: 'text', text: 'nested text' }] }],
+          role: 'tool',
+          id: 'r',
+          source: { kind: 'tool', callId: 'c1' },
+          toolCallId: 'c1',
+          content: [{ type: 'reasoning', text: '[exit code: 0]' }],
         },
-      }, 3),
+      }, 2),
     ]))
-    expect(result.verification).toEqual([])
+    expect(result.verification).toEqual([{ command: 'pnpm test', status: 'unknown' }])
   })
 
   it('skips an empty assistant message when it looks for the closing text', () => {

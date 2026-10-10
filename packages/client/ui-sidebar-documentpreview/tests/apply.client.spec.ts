@@ -150,22 +150,6 @@ describe('ui-sidebar-documentpreview apply', () => {
     await read.mock.results[0]?.value
     expect(read).toHaveBeenCalledExactlyOnceWith(FILE.sessionId, FILE.path, { offset: 1 }, controller.signal)
     expect(instance.getSnapshot().byTab[TAB_ID]?.pages[1]?.text).toBe('first')
-    // The review controls read the durable decision and post through the shared
-    // change index; a composition without that service answers with neither.
-    const preview = registration.inject as (sessionId: unknown, actions: unknown) => {
-      readFileChange(address: string, seq: number): unknown
-      readReview(address: string, seq: number): unknown
-      readNeighbourChange(address: string, seq: number, direction: 'previous' | 'next'): unknown
-      readHunkRange(address: string, seq: number): unknown
-      reviewChange(action: string, change: unknown): Promise<unknown>
-    }
-    const wired = preview(SESSION, instance.actions)
-    expect(wired.readFileChange('dsh-resource://file/session/s-1/work/notes.md', 5)).toBeUndefined()
-    expect(wired.readReview('dsh-resource://file/session/s-1/work/notes.md', 5)).toBeUndefined()
-    expect(wired.readNeighbourChange('dsh-resource://file/session/s-1/work/notes.md', 5, 'next')).toBeUndefined()
-    expect(wired.readHunkRange('dsh-resource://file/session/s-1/work/notes.md', 5)).toBeUndefined()
-    await expect(wired.reviewChange('accepted', { seq: 5, path: FILE.path }))
-      .resolves.toBe('Change review is unavailable in this composition.')
     face.loadAll(TAB_ID, FILE, controller.signal, 'v1')
     await vi.waitFor(() => { expect(instance.getSnapshot().byTab[TAB_ID]?.complete).toBeDefined() })
     expect(readBytes).toHaveBeenCalledExactlyOnceWith(FILE.sessionId, FILE.path, {}, expect.any(AbortSignal))

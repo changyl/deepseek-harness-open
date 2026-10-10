@@ -1354,11 +1354,14 @@ async function foreignCallerBench() {
     },
   })
   ctx.provide('locale', { bind: () => (key: string) => key })
-  ctx.provide('sessions', {
-    scope: () => undefined,
-    scopeOf: () => undefined,
-    subagentAddress: () => undefined,
+  const sessions = new TestSessions(async (action) => { await action() }, ctx)
+  onTestFinished(async () => {
+    await sessions.disposeScopes()
+    await ctx.fiber.dispose()
   })
+  ctx.provide('sessions', sessions)
+  await sessions.add({ id: 's1' })
+  sessions.retainFor(ctx, sid('s1'))
   await ctx.plugin({
     name: 'api-gateway',
     apply(provider: Context) {

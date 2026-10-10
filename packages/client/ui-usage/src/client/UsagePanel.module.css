@@ -60,7 +60,7 @@
   margin: 0;
   padding: 14px 16px;
   border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: 14px;
+  border-radius: var(--dsw-radius-md);
   background: var(--dsw-alias-bg-module-platform);
 }
 
