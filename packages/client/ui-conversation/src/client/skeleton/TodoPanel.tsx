@@ -13,6 +13,12 @@ import css from './TodoPanel.module.css'
 export interface TodoPanelProps {
   /** The session's current plan (empty renders nothing) — selected by the dock adapter. */
   todos: readonly TodoItem[]
+  /**
+   * Whether a turn is running for this session. The plan is standing state that outlives its
+   * turn, so a recorded `in_progress` claims active work only while a turn runs; with none
+   * running nothing is being worked on and the item renders as unfinished.
+   */
+  running: boolean
   /** The dock entry's locale seat, passed down as a plain prop. */
   t: TodoDockProps['t']
 }
@@ -71,6 +77,18 @@ function StatusGlyph({ status }: { status: TodoItem['status'] }) {
   }
 }
 
+/**
+ * The plan as rendered: with no turn running, nothing is being worked on, so a recorded
+ * `in_progress` item reads as the unfinished task it is.
+ * @param todos - the session's recorded plan.
+ * @param running - whether a turn is running for this session.
+ * @returns the rendered list, the recorded one itself while a turn runs.
+ */
+function renderedTodos(todos: readonly TodoItem[], running: boolean): readonly TodoItem[] {
+  if (running) return todos
+  return todos.map(item => (item.status === 'in_progress' ? { content: item.content, status: 'pending' as const } : item))
+}
+
 /** Header summary: "·"-joined per-status counts; zero-count segments are omitted as noise (a non-empty list keeps at least one). */
 function progressLabel(todos: readonly TodoItem[], t: TodoPanelProps['t']): string {
   const done = todos.filter(item => item.status === 'completed').length
@@ -85,9 +103,10 @@ function progressLabel(todos: readonly TodoItem[], t: TodoPanelProps['t']): stri
   ].join('\u2002·\u2002')
 }
 
-export function TodoPanel({ todos, t }: TodoPanelProps) {
+export function TodoPanel({ todos, running, t }: TodoPanelProps) {
   const [collapsed, setCollapsed] = useState(true)
-  if (todos.length === 0) return null
+  const items = renderedTodos(todos, running)
+  if (items.length === 0) return null
 
   return (
     <section className={css.root} data-testid="todo-panel" aria-label={t('todo.title')}>
@@ -100,14 +119,14 @@ export function TodoPanel({ todos, t }: TodoPanelProps) {
         >
           <span className={css.lead} aria-hidden><IconChecklistOutline14 /></span>
           <span className={css.title}>{t('todo.title')}</span>
-          <span className={css.progress}>{progressLabel(todos, t)}</span>
+          <span className={css.progress}>{progressLabel(items, t)}</span>
           <span className={css.chevron} aria-hidden>
             {collapsed ? <IconChevronUpOutline14 /> : <IconChevronDownOutline14 />}
           </span>
         </button>
         {!collapsed && (
           <ul className={css.list}>
-            {todos.map(item => (
+            {items.map(item => (
               <li key={item.content} className={css.item} data-status={item.status}>
                 <span className={css.glyph} aria-hidden><StatusGlyph status={item.status} /></span>
                 <span className={css.content}>{item.content}</span>
@@ -124,9 +143,10 @@ export function TodoPanel({ todos, t }: TodoPanelProps) {
 export type TodoDockProps = PropsRuntime<'conversation.input.dock'> & PropsLocale<'conversation'>
 
 /** Renders the current todo projection, or nothing when it is absent. */
-export function TodoDock({ useProjection, t }: TodoDockProps) {
+export function TodoDock({ useProjection, useSession, t }: TodoDockProps) {
   const todos = useProjection('todos')
-  return <TodoPanel todos={todos ?? []} t={t} />
+  const running = useSession(s => s.running)
+  return <TodoPanel todos={todos ?? []} running={running} t={t} />
 }
 
 /** Registers the projected todo dock. */

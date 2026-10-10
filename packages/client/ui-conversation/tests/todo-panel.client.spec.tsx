@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
  * Todo display acceptance: the TodoPanel plan strip (empty-hidden, status rows
- * including several `in_progress` at once, collapse), and its TodoDock
- * adapter (selects the plan off the session snapshot and follows changes).
+ * including several `in_progress` at once, collapse, and a stale active item
+ * retired once the turn is over), and its TodoDock adapter (selects the plan
+ * and the running flag off the session snapshot and follows changes).
  */
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -35,12 +36,12 @@ const PARALLEL: TodoItem[] = [
 
 describe('TodoPanel', () => {
   it('renders nothing while the list is empty', () => {
-    const { container } = render(<TodoPanel todos={[]} t={t} />)
+    const { container } = render(<TodoPanel todos={[]} running t={t} />)
     expect(container.innerHTML).toBe('')
   })
 
   it('starts collapsed with the per-status count summary visible', () => {
-    render(<TodoPanel todos={LIST} t={t} />)
+    render(<TodoPanel todos={LIST} running t={t} />)
     expect(screen.getByTestId('todo-panel')).toBeTruthy()
     expect(screen.getByText('任务')).toBeTruthy()
     expect(screen.getByText('1 已完成 · 1 进行中 · 1 待处理')).toBeTruthy()
@@ -52,13 +53,13 @@ describe('TodoPanel', () => {
     render(<TodoPanel todos={[
       { content: '写组件', status: 'in_progress' },
       { content: '补测试', status: 'pending' },
-    ]} t={t} />)
+    ]} running t={t} />)
     expect(screen.getByText('1 进行中 · 1 待处理')).toBeTruthy()
     expect(screen.queryByText(/已完成/)).toBeNull()
   })
 
   it('expands to show one row per item with its status glyph', () => {
-    render(<TodoPanel todos={LIST} t={t} />)
+    render(<TodoPanel todos={LIST} running t={t} />)
     fireEvent.click(screen.getByRole('button', { expanded: false }))
     const items = screen.getAllByRole('listitem')
     expect(items.map(li => li.getAttribute('data-status'))).toEqual(['completed', 'in_progress', 'pending'])
@@ -69,7 +70,7 @@ describe('TodoPanel', () => {
   })
 
   it('collapse hides an expanded list; expand restores; header keeps the count summary', () => {
-    render(<TodoPanel todos={LIST} t={t} />)
+    render(<TodoPanel todos={LIST} running t={t} />)
     fireEvent.click(screen.getByRole('button', { expanded: false }))
     const header = screen.getByRole('button', { expanded: true })
     fireEvent.click(header)
@@ -82,7 +83,7 @@ describe('TodoPanel', () => {
   })
 
   it('marks every parallel active item, and counts them all in the header', () => {
-    render(<TodoPanel todos={PARALLEL} t={t} />)
+    render(<TodoPanel todos={PARALLEL} running t={t} />)
     fireEvent.click(screen.getByRole('button', { expanded: false }))
     // An unconditional in-progress cap would make this list unreachable: three
     // items carry the in-progress glyph at once, and the header counts all three.
@@ -94,31 +95,52 @@ describe('TodoPanel', () => {
   })
 
   it('an all-completed list collapses the summary to the done count alone', () => {
-    render(<TodoPanel todos={[{ content: '都完了', status: 'completed' }]} t={t} />)
+    render(<TodoPanel todos={[{ content: '都完了', status: 'completed' }]} running t={t} />)
     expect(screen.getByRole('button', { expanded: false })).toBeTruthy()
     expect(screen.queryByText('都完了')).toBeNull()
     expect(screen.getByText('1 已完成')).toBeTruthy()
     expect(screen.queryByText(/进行中|待处理/)).toBeNull()
   })
+
+  it('renders a recorded active item as unfinished once no turn runs', () => {
+    // The plan outlives its turn; with the session idle nothing is being
+    // worked on now, so the stale in-progress item is an unfinished task.
+    render(<TodoPanel todos={LIST} running={false} t={t} />)
+    expect(screen.getByText('1 已完成 · 2 待处理')).toBeTruthy()
+    expect(screen.queryByText(/进行中/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { expanded: false }))
+    expect(screen.getAllByRole('listitem').map(li => li.getAttribute('data-status')))
+      .toEqual(['completed', 'pending', 'pending'])
+    expect(screen.getByText('写组件')).toBeTruthy()
+  })
 })
 
-/** Dock props stub: the adapter reads the 'todos' projection only; the rest of the owner share is unused. */
-function dockProps(store: ReturnType<typeof createSnapshotStore<{ value: readonly TodoItem[] | null | undefined }>>): TodoDockProps {
+/** The dock adapter's two reads: the 'todos' projection and the session running flag. */
+interface DockState {
+  value: readonly TodoItem[] | null | undefined
+  running: boolean
+}
+
+/** Dock props stub: the rest of the owner share is unused. */
+function dockProps(store: ReturnType<typeof createSnapshotStore<DockState>>): TodoDockProps {
   const useProjection = (_key: string, selector?: (v: unknown) => unknown) =>
     bindSnapshotSelector(store)(s => (selector ?? (v => v))(s.value))
-  return { useProjection, t } as unknown as TodoDockProps
+  return { useProjection, useSession: bindSnapshotSelector(store), t } as unknown as TodoDockProps
 }
 
 describe('TodoDock', () => {
   it('reads the host-computed todos projection and follows pushed updates', () => {
-    const store = createSnapshotStore<{ value: readonly TodoItem[] | null | undefined }>({ value: undefined })
+    const store = createSnapshotStore<DockState>({ value: undefined, running: true })
     render(<TodoDock {...dockProps(store)} />)
     // Capability absent (no baseline/frame yet) renders nothing.
     expect(screen.queryByTestId('todo-panel')).toBeNull()
-    act(() => { store.set({ value: LIST }) })
+    act(() => { store.set({ value: LIST, running: true }) })
     expect(screen.getByText('1 已完成 · 1 进行中 · 1 待处理')).toBeTruthy()
+    // The settled turn retires the active claim without touching the recorded list.
+    act(() => { store.set({ value: LIST, running: false }) })
+    expect(screen.getByText('1 已完成 · 2 待处理')).toBeTruthy()
     // The pre-first-write whole value (null) retires the strip (the panel owns no data).
-    act(() => { store.set({ value: null }) })
+    act(() => { store.set({ value: null, running: false }) })
     expect(screen.queryByTestId('todo-panel')).toBeNull()
   })
 

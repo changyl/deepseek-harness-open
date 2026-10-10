@@ -108,7 +108,9 @@ async function bench(nodes: ToolResultNode[]) {
 describe('todo_write assembly (product registrations, no outlet twins)', () => {
   it('reaches the keyed toolview row and the dock plan strip, and the strip follows projection retirement', async () => {
     const runtime = await bench([todoResult(3)])
-    // The dock strip reads the host-computed 'todos' projection.
+    // The dock strip reads the host-computed 'todos' projection, and claims an
+    // active task only while the Session's turn runs.
+    await runtime.sessions.updateSessionSnapshot(SID, (draft) => { draft.running = true })
     runtime.sessions.behavior(SID).projections.set('todos', TODOS)
     const view = runtime.renderRoot()
 
@@ -125,6 +127,15 @@ describe('todo_write assembly (product registrations, no outlet twins)', () => {
     fireEvent.click(panel!.querySelector('button')!)
     expect([...panel!.querySelectorAll('li')].map(li => li.getAttribute('data-status')))
       .toEqual(['completed', 'in_progress', 'pending'])
+
+    // The turn settles: the plan outlives it, so nothing is being worked on
+    // now and the recorded active item renders as unfinished.
+    await runtime.sessions.updateSessionSnapshot(SID, (draft) => { draft.running = false })
+    await waitFor(() => {
+      expect(panel!.textContent).toContain('1 已完成\u2002·\u20022 待处理')
+    })
+    expect([...panel!.querySelectorAll('li')].map(li => li.getAttribute('data-status')))
+      .toEqual(['completed', 'pending', 'pending'])
 
     // Next turn retires the standing plan (host pushes null): the strip
     // clears while the historical row stays in the flow.
