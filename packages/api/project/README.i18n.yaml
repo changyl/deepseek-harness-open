@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/api/project/README.md
-README.md: b6eb3939acca133d8b08dc8efb32ebd1e05de486
-README.zh.md: 6a5ac844310adaaee552d7e653635c583fc24dbd
+/:
+  en: dbfc725748e01ebd
+  zh: d19b7e5f20f66bfa
+/project-controller:
+  en: 8a26a25d434381c8
+  zh: fa8735be3464f2e2
+/project-controller/summary:
+  en: 57409bdbfd577668
+  zh: 209c292279c3b7e7
+/project-controller/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 1db86285abf6c499
+/project-controller/use-this-package:
+  en: 961cb9bf423e3c2a
+  zh: 69fc21f042b23a73
+/project-controller/understand-the-implementation:
+  en: 42b15ac6321706aa
+  zh: c5500056b41ce570
+/project-controller/understand-the-implementation/design-concept:
+  en: 376f77ca5e839ad2
+  zh: e84451a09b50d27d
+/project-controller/understand-the-implementation/source-map:
+  en: 72acbab31e5c9d61
+  zh: 90694e0964cb28d5
+/project-controller/understand-the-implementation/service-and-namespace:
+  en: c9fd90c2114338a8
+  zh: 506ee0d28cc360d7
+/project-controller/understand-the-implementation/methods:
+  en: d9b5107eaff6bea7
+  zh: 527acc596ef9e8e8
+/project-controller/understand-the-implementation/failures:
+  en: 8c46361d7656b4e0
+  zh: 8927b34877aacde9
+/project-controller/understand-the-implementation/wire-values:
+  en: fb323bb37ece04d1
+  zh: 69904b2458b38a63
+/project-controller/further-exploration:
+  en: c7d1dd9a678eecaf
+  zh: c027f04ce3480377
+/project-controller/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/project-controller/model-experience/nothing-model-visible-is-added:
+  en: 2e0a39272a4e5310
+  zh: 7abcbcd966e63b03
+/project-controller/model-experience/nothing-model-visible-is-added/what-the-model-sees:
+  en: 8ff5cabc87c1270d
+  zh: c66eeb0e76749156
+/project-controller/model-experience/nothing-model-visible-is-added/token-effect:
+  en: e3aa47bf52a00d35
+  zh: fdab32380cc63abe
+/project-controller/model-experience/nothing-model-visible-is-added/kv-cache-effect:
+  en: f0ce306a5b2204b9
+  zh: c46d87676c18d3bc
+/project-controller/known-limitations-and-deferred-work:
+  en: e90b7f86adb9729e
+  zh: 81ddc95571e401b0
+/project-controller/known-limitations-and-deferred-work/dev-note:
+  en: 162bdb410e136020
+  zh: f541ad8e350a3f84

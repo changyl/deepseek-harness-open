@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-14-web-command-palette.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-14-web-command-palette.md
-2026-09-14-web-command-palette.md: 91530a23c7dc62abb437ca2217b80fd2b889079d
-2026-09-14-web-command-palette.zh.md: 84aba4868efa6a0e0cd86335b4d54880a44fb5e3
+/agent-note-web-command-palette:
+  en: af56ae8c3e60b093
+  zh: e742b40d5bbae58f
+/agent-note-web-command-palette/problem:
+  en: 9cacf721840486af
+  zh: eb261348f655bed7
+/agent-note-web-command-palette/decision:
+  en: e1e2925e66debf86
+  zh: 508503ee7f43d348
+/agent-note-web-command-palette/decision/the-command-surface-grows-a-query-and-a-bare-run:
+  en: ec1f84277d74d183
+  zh: 5e86a0d28746d1af
+/agent-note-web-command-palette/decision/the-palette-is-a-view-over-those-rows:
+  en: c74d35e938004f18
+  zh: 8206e1ba94d51dc7
+/agent-note-web-command-palette/decision/one-keyboard-registry-not-one-listener-per-feature:
+  en: dc8228f2c990e9ac
+  zh: 8831373d69f34b7d
+/agent-note-web-command-palette/decision/a-composer-less-popup-consumes-nothing:
+  en: d129eae02e9ee5aa
+  zh: e7a3924db698803a
+/agent-note-web-command-palette/alternatives-considered:
+  en: bf5e8fc13704e9a9
+  zh: d487125e2f2faa32
+/agent-note-web-command-palette/consequences:
+  en: 1494474be116c326
+  zh: 67879cb82623788b

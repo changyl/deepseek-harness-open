@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-localized-first-party-command-faces.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-localized-first-party-command-faces.md
-2026-09-16-localized-first-party-command-faces.md: ed985b75dcfc723e8c6f7a3b888df5aa7d72f302
-2026-09-16-localized-first-party-command-faces.zh.md: 4dc406ce17dd60e23ebcbf30791c7997d14022d7
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands:
+  en: c070ec53ffc67574
+  zh: 5ec1aaf1e6ec9952
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands/problem:
+  en: b4e8eebaed151ed2
+  zh: ae98db66a690e6af
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands/decision:
+  en: 8a1f81fa00af423d
+  zh: a9ced00648f78396
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands/alternatives-considered:
+  en: f86b54b0d0f35c37
+  zh: fdf675ddb5d8b830
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands/consequences:
+  en: fcd7d0daec48b7c0
+  zh: c17eb1d44a88fdc3
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands/deferred:
+  en: e389f759e8dea66d
+  zh: 7ddc764bdd32089c
+/agent-note-localized-composer-faces-for-the-last-three-first-party-commands/testing:
+  en: add1c98e92530d3c
+  zh: 0ea214efe5165e88

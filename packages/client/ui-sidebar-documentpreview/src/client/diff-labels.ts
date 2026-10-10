@@ -11,12 +11,16 @@ type T = TranslateNS<'sidebarDocumentPreview'>
  */
 export function diffBlockLabels(t: T): DiffBlockLabels {
   return {
+    // The shared toolbar names the language it cannot highlight and the two
+    // wrapping actions; this namespace already owns that copy for the preview.
+    codeLabel: t('viewer.text'),
+    wrapLabel: t('wrap.enable'),
+    unwrapLabel: t('wrap.disable'),
     copy: t('diff.copy'),
     copied: t('diff.copied'),
     collapseAria: t('diff.collapseAria'),
     expandAria: count => t('diff.expandAria', { count }),
     collapse: t('diff.collapse'),
     expand: count => t('diff.expandRest', { count }),
-    files: count => t(count === 1 ? 'diff.files.one' : 'diff.files.other', { count }),
   }
 }

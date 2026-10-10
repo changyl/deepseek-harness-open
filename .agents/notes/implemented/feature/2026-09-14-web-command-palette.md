@@ -16,7 +16,7 @@ One new client package, `@deepseek-ai/dsh-client-ui-command-palette`, owns the k
 
 ### The command surface grows a query and a bare run
 
-`CommandUiContract` gains `palette(session, signal)` and `run(name, session)`. `palette` is the existing candidate synthesis at a leading position with ranking removed: the rows the `/` menu shows at line start, in the section order the [composer menu decision](2026-09-08-composer-menu-sections-and-localized-rows.md) owns, without contribution icons. `run` is a menu pick without a composer token — an available contribution, then a decoration on a resolvable host row, then the host row's bare line run detached. Neither method re-derives the directory, the availability gates, or the name-collision rules: both call the private paths the composer already uses.
+`CommandUiContract` gains `palette(session, signal)` and `run(name, session)`. `palette` is the existing candidate synthesis at a leading position with ranking removed: the rows the `/` menu shows at line start, in the section order the composer menu decision owns, without contribution icons. `run` is a menu pick without a composer token — an available contribution, then a decoration on a resolvable host row, then the host row's bare line run detached. Neither method re-derives the directory, the availability gates, or the name-collision rules: both call the private paths the composer already uses.
 
 The palette row type deliberately omits the contribution icon. A `ComponentType` is neither JSON-compatible data nor a callback, and injected values and render state admit only those, so the overlay draws one glyph per entry kind and the composer menu keeps the component-per-command rendering.
 

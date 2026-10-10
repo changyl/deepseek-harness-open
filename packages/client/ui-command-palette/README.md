@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package owns the Web GUI's keyboard surface: `ctx.shortcuts`, the global keydown registry that other client plugins bind chords to, and one frame-wide overlay entry rendering the command palette behind Cmd/Ctrl+K. Opening the palette loads the current session's commands from `ctx.commandUi.palette` once, prepends the two actions this surface owns — start a new session, stop the running turn — ranks the loaded rows locally as you type, and dispatches a pick without touching the composer draft. It changes nothing the model sees.
+This package owns the Web GUI's command palette: one frame-wide overlay entry behind Cmd/Ctrl+K and Cmd/Ctrl+Shift+P, whose chords register through [`@deepseek-ai/dsh-client-shortcuts`](../shortcuts/README.md) — the surface every client plugin binds its chords to. Opening the palette loads the current session's commands from `ctx.commandUi.palette` once, prepends the two actions this surface owns — start a new session, stop the running turn — ranks the loaded rows locally as you type, and dispatches a pick without touching the composer draft. It changes nothing the model sees.
 
 ## Table of Contents
 
@@ -39,7 +39,7 @@ With no current session the palette lists New Session alone and says so, because
 
 ### Binding another shortcut
 
-`ctx.shortcuts.register({ id, keys, run })` adds one global binding and returns the disposer; the registration is an effect on the calling fiber, so a plugin's chords leave with it. `keys` is `+`-joined modifiers followed by one key (`mod+k`, `mod+shift+p`), where `mod` accepts the platform command key or Control. Matching is exact: `mod+k` does not fire for `mod+shift+k`. A duplicate id, an unknown modifier, or a missing key throws at registration rather than at the first keystroke. The first matching binding in registration order runs, and the event is consumed; a composing keystroke or an event another handler already consumed is left alone.
+The palette registers one fixed application action (`commandPalette.open`) through the shortcuts service, so its chords appear in the shortcut reference, reserve their keys against conflicting registrations, and leave with this plugin's fiber. Exact-modifier matching is the service's: `mod+k` does not fire for `mod+shift+k`, and a composing keystroke or an already-consumed event is left alone.
 
 -----
 

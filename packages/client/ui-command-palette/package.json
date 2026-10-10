@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-command-palette",
-  "description": "Global command palette and keyboard-shortcut registry: the Cmd/Ctrl+K surface over the command directory and the current conversation's actions",
-  "version": "0.1.6-alpha.2",
+  "description": "The Web command palette: the Cmd/Ctrl+K and Cmd/Ctrl+Shift+P surface over the command directory, registering its chords through the client shortcuts service",
+  "version": "0.2.1-alpha.2",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
@@ -21,6 +21,7 @@
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-shortcuts",
         "@deepseek-ai/dsh-client-ui-commands",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-primitives",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@deepseek-ai/dsh-api-session-controller": "workspace:^",
     "@deepseek-ai/dsh-client-locale": "workspace:^",
+    "@deepseek-ai/dsh-client-shortcuts": "workspace:^",
     "@deepseek-ai/dsh-client-store": "workspace:^",
     "@deepseek-ai/dsh-client-test-runtime": "workspace:^",
     "@deepseek-ai/dsh-client-ui-commands": "workspace:^",

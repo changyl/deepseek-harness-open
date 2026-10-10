@@ -12,7 +12,7 @@ Messages requires every assistant `tool_use` to be answered by a `tool_result` i
 
 Request conversion projects the wire history onto the pairings Messages can represent. An unanswered `tool_use` and an orphan `tool_result` are dropped from the outgoing request; an assistant turn left with no content is dropped; the user or assistant neighbors that a removal exposes are merged back into one turn; and a repeated call id keeps its first declaration. Each in-history system update stays its own message.
 
-Durable messages stay unchanged, including the original blocks and their Session events, and the projection never executes the historical call again. Nothing is fabricated: the request omits the unrepresentable block instead of inventing a result, which keeps the [empty-input fallback](2026-09-16-messages-historical-tool-input.md) the only substitution for historical tool content. The [Messages adapter decision](../feature/2026-09-07-deepseek-messages-adapter.md) owns the surrounding conversion rules.
+Durable messages stay unchanged, including the original blocks and their Session events, and the projection never executes the historical call again. Nothing is fabricated: the request omits the unrepresentable block instead of inventing a result, which keeps the [empty-input fallback](../../archived/bug-fix/2026-09-16-messages-historical-tool-input.md) the only substitution for historical tool content. The [Messages adapter decision](../feature/2026-09-07-deepseek-messages-adapter.md) owns the surrounding conversion rules.
 
 ## Alternatives considered
 

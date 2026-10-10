@@ -5,7 +5,7 @@ import type {
   EffectivenessSessionRowWire,
   FeedbackCategoryWire,
 } from '@deepseek-ai/dsh-api-effectiveness/types'
-import { Button, IconRefreshOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS, type EffectivenessLocaleKey } from './locales.ts'
 import css from './EffectivenessPanel.module.css'
@@ -90,7 +90,7 @@ export function EffectivenessPanel(props: EffectivenessPanelProps) {
       <section className={css.panel} aria-label={t('title')}>
         <p className={css.error} role="alert">{t('failed')}</p>
         <div>
-          <Button size="sm" variant="outline" icon={<IconRefreshOutline16 />} onClick={reload}>
+          <Button size="sm" variant="outline" icon={<IconRefreshOutlineRegular />} onClick={reload}>
             {t('refresh')}
           </Button>
         </div>
@@ -111,7 +111,7 @@ export function EffectivenessPanel(props: EffectivenessPanelProps) {
         <Button
           size="sm"
           variant="outline"
-          icon={<IconRefreshOutline16 />}
+          icon={<IconRefreshOutlineRegular />}
           disabled={pending}
           onClick={reload}
         >

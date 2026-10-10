@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-15-sidebar-document-editing.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-15-sidebar-document-editing.md
-2026-09-15-sidebar-document-editing.md: 6a94811154ba5ca8bffcbe6b04da3377307632ba
-2026-09-15-sidebar-document-editing.zh.md: 908d96e7982a9af599608de7583469703007601c
+/agent-note-editing-text-documents-from-the-right-sidebar:
+  en: 58b10101728e13d9
+  zh: 50f58958a5f60a87
+/agent-note-editing-text-documents-from-the-right-sidebar/problem:
+  en: 556920a65db63ccb
+  zh: 93e15f0b6ef44584
+/agent-note-editing-text-documents-from-the-right-sidebar/decision:
+  en: b26c81af646bd846
+  zh: 1331308c246b4a2c
+/agent-note-editing-text-documents-from-the-right-sidebar/decision/the-draft-is-read-whole-never-assembled-from-the-pages:
+  en: 9d2452896febaa05
+  zh: f316f5c81b5dde5c
+/agent-note-editing-text-documents-from-the-right-sidebar/decision/the-save-is-guarded-by-the-version-the-draft-came-from:
+  en: 7d97e5ccc93b4cb0
+  zh: 6ba28464ed81b9f4
+/agent-note-editing-text-documents-from-the-right-sidebar/decision/the-host-gates-the-write-on-a-live-session-and-a-writable-policy:
+  en: 01906e92cfd45bb1
+  zh: 0735e68a8e6ce54d
+/agent-note-editing-text-documents-from-the-right-sidebar/decision/editing-is-declared-by-the-renderer-not-inferred-from-its-loading-mode:
+  en: 48b5661fcb639747
+  zh: 60ac3c507164d7af
+/agent-note-editing-text-documents-from-the-right-sidebar/decision/narrow-shows-one-view-fullscreen-shows-both:
+  en: aa415858f179a26a
+  zh: 722e8bf2b2c7b768
+/agent-note-editing-text-documents-from-the-right-sidebar/alternatives-considered:
+  en: b7cdad97a69f3fad
+  zh: a5416e42582860d5
+/agent-note-editing-text-documents-from-the-right-sidebar/consequences:
+  en: dcebb194599ccf67
+  zh: b4fe12096020229a

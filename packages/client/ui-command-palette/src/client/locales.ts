@@ -11,6 +11,7 @@ export const NS = 'commandPalette'
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
   'palette.aria': '命令面板',
+  'palette.shortcut.open': '打开命令面板',
   'palette.placeholder': '输入命令或操作名称…',
   'palette.listbox': '命令与操作',
   'palette.section.actions': '操作',
@@ -30,6 +31,7 @@ export type CommandPaletteKey = keyof typeof zh
 /** English dictionary, key-identical to the Chinese source of truth. */
 export const en: Record<CommandPaletteKey, string> = {
   'palette.aria': 'Command palette',
+  'palette.shortcut.open': 'Open command palette',
   'palette.placeholder': 'Type a command or action…',
   'palette.listbox': 'Commands and actions',
   'palette.section.actions': 'Actions',

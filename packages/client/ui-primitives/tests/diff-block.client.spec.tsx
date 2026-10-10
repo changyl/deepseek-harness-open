@@ -3,17 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
-import {
-  buildDiffRows, DEFAULT_DIFF_MAX_LINES, DiffBlock as LocalizedDiffBlock, diffTotals, type DiffHighlighter, type DiffHunk,
-} from '../src/index.ts'
+import { DEFAULT_DIFF_MAX_LINES, DiffBlock as LocalizedDiffBlock, type DiffHunk } from '../src/index.ts'
 import { diffBlockLabels } from './labels.client.ts'
-
-/**
- * A highlighter that makes every line one run of its own text, so a spec can
- * see which line of which side a row's runs came from without depending on a
- * grammar's tokenization.
- */
-const oneRunPerLine: DiffHighlighter = text => text.split('\n').map(line => [{ text: line, style: { color: line } }])
+import { diffTotals } from '../src/DiffBlock.tsx'
 
 function DiffBlock(props: Omit<ComponentProps<typeof LocalizedDiffBlock>, 'labels'>) {
   return <LocalizedDiffBlock {...props} labels={diffBlockLabels} />
@@ -83,73 +75,20 @@ describe('DiffBlock structure', () => {
   })
 
   it('treats a trailing newline as a terminator, not an extra blank line', () => {
-    // A create whose newText ends in a newline is one added line, not two, and
-    // the footer counts one — the phantom `+ ` empty line the naive split drew.
     const { container } = render(<DiffBlock diffs={[{ path: 'n.txt', oldText: null, newText: 'hello\n' }]} />)
     expect(changeRows(container)).toEqual(['hello'])
-    expect(screen.getByText('└ +1 -0 · 1 file')).toBeTruthy()
   })
 
   it('renders a full deletion as removed-only with no phantom added line', () => {
     // newText '' is zero added lines: an empty string must contribute nothing.
     const { container } = render(<DiffBlock diffs={[{ path: 'gone.ts', oldText: 'a\nb', newText: '' }]} />)
     expect(container.querySelectorAll('[class*="_add_"]').length).toBe(0)
-    expect(screen.getByText('└ +0 -2 · 1 file')).toBeTruthy()
+    expect(changeRows(container)).toEqual(['a', 'b'])
   })
 
   it('keeps a genuine interior blank line', () => {
     const { container } = render(<DiffBlock diffs={[{ path: 'a.ts', oldText: null, newText: 'x\n\ny' }]} />)
     expect(container.querySelectorAll('[class*="_add_"]').length).toBe(3)
-  })
-})
-
-describe('buildDiffRows highlighting', () => {
-  it("draws the shared line once as context and gives every changed row its own side's runs", () => {
-    const { rows } = buildDiffRows([{ path: 'a.ts', oldText: 'one\ntwo', newText: 'one\nTHREE' }], oneRunPerLine)
-    expect(rows.slice(1)).toEqual([
-      { kind: 'context', text: 'one', spans: [{ text: 'one', style: { color: 'one' } }] },
-      { kind: 'del', text: 'two', spans: [{ text: 'two', style: { color: 'two' } }] },
-      { kind: 'add', text: 'THREE', spans: [{ text: 'THREE', style: { color: 'THREE' } }] },
-    ])
-  })
-
-  it('draws a line the highlighter left uncovered as plain text', () => {
-    // A grammar that reports fewer lines than the side has (a partial load)
-    // must drop that line's runs, not its text.
-    const { rows } = buildDiffRows([{ path: 'a.ts', oldText: null, newText: 'one\ntwo' }], () => [])
-    expect(rows.slice(1)).toEqual([{ kind: 'add', text: 'one' }, { kind: 'add', text: 'two' }])
-  })
-
-  it('draws every row plain when no highlighter is supplied', () => {
-    const { rows } = buildDiffRows([{ path: 'a.ts', oldText: 'old', newText: 'new' }])
-    expect(rows.slice(1)).toEqual([{ kind: 'del', text: 'old' }, { kind: 'add', text: 'new' }])
-  })
-})
-
-describe('DiffBlock language', () => {
-  const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: 'const a = 1', newText: 'const b = 2' }]
-
-  it("draws each changed line as its file type's grammar runs", () => {
-    const { container } = render(<DiffBlock diffs={diffs} lang="ts" />)
-    expect(container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(true)
-    // Both sides are tokenized, and the line's own text survives the runs.
-    const [removed, added] = [...container.querySelectorAll('[class*="_del_"], [class*="_add_"]')]
-    expect(removed?.textContent).toBe('const a = 1')
-    expect(added?.textContent).toBe('const b = 2')
-    expect(removed?.querySelectorAll('span[style]').length).toBeGreaterThan(1)
-    expect(added?.querySelectorAll('span[style]').length).toBeGreaterThan(1)
-  })
-
-  it('draws bare text and marks nothing for a language that cannot be highlighted', () => {
-    const absent = render(<DiffBlock diffs={diffs} />)
-    expect(absent.container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(false)
-    expect(absent.container.querySelectorAll('span[style]').length).toBe(0)
-    expect(changeRows(absent.container)).toEqual(['const a = 1', 'const b = 2'])
-    cleanup()
-    const unknown = render(<DiffBlock diffs={[{ path: 'a.cob', oldText: null, newText: 'MOVE X' }]} lang="cobol" />)
-    expect(unknown.container.querySelector('[data-diff]')?.hasAttribute('data-diff-highlight')).toBe(false)
-    expect(unknown.container.querySelectorAll('span[style]').length).toBe(0)
-    expect(changeRows(unknown.container)).toEqual(['MOVE X'])
   })
 })
 
@@ -163,7 +102,6 @@ describe('DiffBlock local changes', () => {
     const total = count === 128 ? count : count + 1
     render(<DiffBlock diffs={diffs} maxLines={1000} />)
     expect(diffTotals(diffs)).toEqual({ added: total, removed: total })
-    expect(screen.getByText(`└ +${total} -${total} · 1 file`)).toBeTruthy()
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: '复制' })) })
     expect(writeText).toHaveBeenCalledWith(count === 128
       ? ['large.txt', '  shared context', ...oldLines.slice(1).map(line => `- ${line}`), ...newLines.slice(1).map(line => `+ ${line}`)].join('\n')
@@ -190,7 +128,6 @@ describe('DiffBlock local changes', () => {
     render(<DiffBlock diffs={diffs} />)
     expect(screen.getAllByText('start')).toHaveLength(1)
     expect(screen.getAllByText('end')).toHaveLength(1)
-    expect(screen.getByText('└ +1 -1 · 1 file')).toBeTruthy()
     expect(diffTotals(diffs)).toEqual({ added: 1, removed: 1 })
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: '复制' })) })
     expect(writeText).toHaveBeenCalledWith('settings.ts\n  start\n- mode = 1\n+ mode = 2\n  end')
@@ -208,7 +145,6 @@ describe('DiffBlock local changes', () => {
       'item 40', 'changed 40', 'item 41', 'item 42', 'item 43',
     ])
     expect(changeRows(container)).toEqual(['item 10', 'changed 10', 'item 40', 'changed 40'])
-    expect(screen.getByText('└ +2 -2 · 1 file')).toBeTruthy()
   })
 
   it.each([
@@ -221,26 +157,10 @@ describe('DiffBlock local changes', () => {
     ['a\n\nb', 'a\nb', 0, 1],
   ])('counts ordered changes in %j → %j', (oldText, newText, added, removed) => {
     const diffs = [{ path: 'a.txt', oldText, newText }]
-    render(<DiffBlock diffs={diffs} />)
+    const { container } = render(<DiffBlock diffs={diffs} />)
     expect(diffTotals(diffs)).toEqual({ added, removed })
-    expect(screen.getByText(`└ +${added} -${removed} · 1 file`)).toBeTruthy()
-  })
-})
-
-describe('DiffBlock footer', () => {
-  it('counts added and removed lines and one file', () => {
-    const diffs: DiffHunk[] = [{ path: 'a.ts', oldText: 'a\nb', newText: 'c' }]
-    render(<DiffBlock diffs={diffs} />)
-    expect(screen.getByText('└ +1 -2 · 1 file')).toBeTruthy()
-  })
-
-  it('pluralizes the distinct-file count', () => {
-    const diffs: DiffHunk[] = [
-      { path: 'a.ts', oldText: null, newText: 'x' },
-      { path: 'b.ts', oldText: null, newText: 'y' },
-    ]
-    render(<DiffBlock diffs={diffs} />)
-    expect(screen.getByText('└ +2 -0 · 2 files')).toBeTruthy()
+    expect(container.querySelectorAll('[class*="_add_"]')).toHaveLength(added)
+    expect(container.querySelectorAll('[class*="_del_"]')).toHaveLength(removed)
   })
 })
 

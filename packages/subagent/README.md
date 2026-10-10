@@ -25,7 +25,6 @@ The subagent package family lets an agent delegate a task to a child, continue t
 | Package | Role | ctx key |
 |---|---|---|
 | [`subagent/`](subagent/README.md) | Defines the delegation service: provider registry, one-shot runs, continuable children, and discovery | `ctx.subagents` |
-| [`subagent-in-process-driver/`](subagent-in-process-driver/README.md) | Provides the shared in-process run driver | — |
 | [`subagent-spawn-in-process/`](subagent-spawn-in-process/README.md) | Runs a fresh in-process child | registers on `ctx.subagents` |
 | [`subagent-fork-in-process/`](subagent-fork-in-process/README.md) | Runs an in-process child seeded from the parent's completed history | registers on `ctx.subagents` |
 | [`subagent-acp/`](subagent-acp/README.md) | Runs an out-of-process child over the Agent Client Protocol | registers on `ctx.subagents` |
@@ -36,8 +35,8 @@ The subagent package family lets an agent delegate a task to a child, continue t
 | [`agent-definitions-filesystem/`](agent-definitions-filesystem/README.md) | Discovers project, custom, and user Markdown definition files as the local definition provider | registers on `ctx.agentDefinitions` |
 | [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
-| [`agent-team/`](agent-team/README.md) | Runs a small team of named teammates in one session with durable peer messages and a shared task board | `ctx.agentTeams` |
-| [`tool-agent-team/`](tool-agent-team/README.md) | Exposes team creation, peer messaging, and the shared task board to the model | registers scoped tools on `ctx.tools` |
+| [`agent-team/`](../experimental/agent-team/README.md) | Runs a small team of named teammates in one session with durable peer messages and a shared task board | `ctx.agentTeams` |
+| [`tool-agent-team/`](../experimental/tool-agent-team/README.md) | Exposes team creation, peer messaging, and the shared task board to the model | registers scoped tools on `ctx.tools` |
 
 -----
 
@@ -45,7 +44,7 @@ The subagent package family lets an agent delegate a task to a child, continue t
 ## Related documentation
 
 - [Subagent subsystem](../../docs/subsystems/subagent.md) — the service contract, provider contract, and terminal result semantics.
-- [Subagent capability seam](../../.agents/notes/implemented/feature/2026-06-21-subagent-capability-seam.md) — the design record for the delegation capability family.
+- [historical Subagent capability seam](../../.agents/notes/archived/feature/2026-06-21-subagent-capability-seam.md) — the design record for the delegation capability family.
 - [Continuable subagents](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.md) — durable children that accept follow-up turns.
 - [tool-subagent-control README](tool-subagent-control/README.md) — the follow-up, interrupt, and listing surface.
 

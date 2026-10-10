@@ -202,7 +202,7 @@ describe('workspaceFiles.write — the change feed', () => {
     await writeFile(join(harness.workspace, 'notes.md'), 'one\n', 'utf8')
     const endpoint = harness.endpoint()
     const controller = new AbortController()
-    const iterator = endpoint.changes(harness.scope, controller.signal)[Symbol.asyncIterator]()
+    const iterator = endpoint.changes(harness.scope, 'notes.md', controller.signal)[Symbol.asyncIterator]()
     closeStreams.push(async () => {
       controller.abort()
       await iterator.return?.()

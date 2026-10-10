@@ -1,8 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import UsageService from '@deepseek-ai/dsh-usage'
-import type { SettingsScope } from '@deepseek-ai/dsh-settings'
-import { MemorySettings } from '../../../settings/settings/tests/memory.ts'
 import * as pricingPlugin from '../src/index.ts'
 import { UsagePricingTable } from '../src/index.ts'
 import type { Config } from '../src/index.ts'
@@ -83,34 +81,9 @@ describe('usage pricing plugin', () => {
     expect(ctx.usage.price('deepseek', 'chat')).toBeUndefined()
   })
 
-  it('registers without a settings provider and keeps the composed table', async () => {
+  it('keeps the composed table when the configuration names no routes', async () => {
     const ctx = await mountUsage()
     await ctx.plugin(pricingPlugin, { currency: CHAT.currency, version: CHAT.version, routes: [] })
     expect(ctx.usage.price('deepseek', 'chat')).toBeUndefined()
-    expect(ctx.get('settings')).toBeUndefined()
-  })
-
-  it('adopts committed settings values when a provider is mounted', async () => {
-    const ctx = await mountUsage()
-    await ctx.plugin(MemorySettings)
-
-    const scopes: SettingsScope<Config>[] = []
-    const original = ctx.settings.register.bind(ctx.settings)
-    vi.spyOn(ctx.settings, 'register').mockImplementation((ns, schema, options) => {
-      const scope = original(ns, schema, options) as SettingsScope<Config>
-      scopes.push(scope)
-      return scope
-    })
-
-    await ctx.plugin(pricingPlugin, CHAT)
-    await vi.waitFor(() => {
-      expect(scopes).toHaveLength(1)
-    })
-
-    await scopes[0]!.update({ version: 'v2', currency: 'USD', routes: [] })
-    await vi.waitFor(() => {
-      expect(ctx.usage.price('deepseek', 'chat')).toBeUndefined()
-    })
-    expect(scopes[0]!.get().currency).toBe('USD')
   })
 })

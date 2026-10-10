@@ -12,7 +12,7 @@ Status: implemented
 
 ## Decision
 
-专用 agent 现在是有自己能力 seam 的可编写数据。[`@deepseek-ai/dsh-agent-definitions`](../../../../packages/subagent/agent-definitions/README.zh.md) 是 Service Definition：`ctx.agentDefinitions` 上的分层提供方注册表，负责合并提供方目录、解析重名、校验每个候选项并加载获胜定义。[`@deepseek-ai/dsh-agent-definitions-filesystem`](../../../../packages/subagent/agent-definitions-filesystem/README.zh.md) 是 Service Provider：它发现项目、自定义与用户根目录中的平铺 Markdown 文件，并解析其 YAML frontmatter 与 persona 正文。[`@deepseek-ai/dsh-tool-subagent`](../../../../packages/subagent/tool-subagent/README.zh.md) 是 Consumer：它向模型提供新的 `agent_type` 参数，并发布持久的可用 subagent 目录。该 seam 专门化于它所扩展的 [subagent 能力 seam](2026-06-21-subagent-capability-seam.zh.md)。
+专用 agent 现在是有自己能力 seam 的可编写数据。[`@deepseek-ai/dsh-agent-definitions`](../../../../packages/subagent/agent-definitions/README.zh.md) 是 Service Definition：`ctx.agentDefinitions` 上的分层提供方注册表，负责合并提供方目录、解析重名、校验每个候选项并加载获胜定义。[`@deepseek-ai/dsh-agent-definitions-filesystem`](../../../../packages/subagent/agent-definitions-filesystem/README.zh.md) 是 Service Provider：它发现项目、自定义与用户根目录中的平铺 Markdown 文件，并解析其 YAML frontmatter 与 persona 正文。[`@deepseek-ai/dsh-tool-subagent`](../../../../packages/subagent/tool-subagent/README.zh.md) 是 Consumer：它向模型提供新的 `agent_type` 参数，并发布持久的可用 subagent 目录。该 seam 专门化于它所扩展的 [subagent 能力 seam](../../archived/feature/2026-06-21-subagent-capability-seam.md)。
 
 ### 每个专用 agent 一个平铺 Markdown 文件
 
@@ -28,7 +28,7 @@ Status: implemented
 
 定义解析为委派 seam 已经携带的字段：正文成为 `SubagentStartRequest.persona`，`tools` 成为 `toolFilter`，`model` 与 `reasoning_effort` 并入 `agentOptions`，`max_depth` 并入 `maxDepth`。由于只有这些字段，定义绝不会授予发起委派的 agent 所没有的工具或插件：每个工具名都必须已对该 agent 可见，所有拒绝都发生在子 agent 存在之前，且子 agent 仍加入其父级的组合。[subagent 子系统](../../../../docs/subsystems/subagent.zh.md)负责这些请求字段。
 
-这正是与 [agent preset](../../../../packages/preset/agent-presets/README.zh.md) 的区别：preset 选择会话运行的插件，属于受信任配置；而定义是只能收窄的路由数据。
+这正是与 [agent preset](../../../../packages/preset/agent-preset-registry/README.zh.md) 的区别：preset 选择会话运行的插件，属于受信任配置；而定义是只能收窄的路由数据。
 
 ### 模型从持久目录中获知名称
 

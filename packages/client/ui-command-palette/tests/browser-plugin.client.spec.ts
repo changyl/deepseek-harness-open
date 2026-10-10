@@ -1,21 +1,23 @@
 /**
- * ui-command-palette browser half on a real SlotRegistry and ShortcutRegistry:
- * the plugin occupies the frame-wide `shell.overlay` seat, its injected face
- * drives the controller's verbs, the registry's open chords reach the same
- * controller, and teardown releases the slot entry, the bindings, and the
- * dictionaries (HMR safety).
+ * ui-command-palette browser half on a real SlotRegistry and a recording
+ * shortcuts face: the plugin occupies the frame-wide `shell.overlay` seat, its
+ * injected face drives the controller's verbs, its reserved open chords reach
+ * the same controller, and teardown releases the slot entry, the chords, and
+ * the dictionaries (HMR safety).
  */
 // @vitest-environment jsdom
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
-import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
+import { stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
+import type { ShortcutBinding, ShortcutFixedCommand, ShortcutFixedInput, ShortcutGesture } from '@deepseek-ai/dsh-client-shortcuts/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { CommandPalette } from '../src/client/CommandPalette.tsx'
 import type { CommandPaletteInjected } from '../src/client/index.ts'
 import { apply, inject } from '../src/client/index.ts'
-import { ShortcutRegistry } from '../src/client/shortcuts.ts'
+import type { PaletteShortcutFace } from '../src/client/open-shortcut.ts'
 import { en, NS, zh } from '../src/client/locales.ts'
 import { apply as applyNode } from '../src/index.ts'
 
@@ -44,11 +46,15 @@ async function bench() {
   ctx.provide('uiSession', {
     adapter: { current: { getSnapshot: () => ({ key: SESSION }) } },
   } as never)
-  // The locale plugin binds a settings scope, which reads the connection handle
-  // and the forwarded-event port.
-  ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
+  // The locale plugin binds the language preference form, which reads the
+  // forwarded-event port and the shared configuration-form registry.
   ctx.provide('remote', { $on: () => () => {} } as never)
-  ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+  ctx.provide('configForms', {
+    developerTools: { enabled: createSnapshotStore(true) },
+    get: () => stubConfigForm().scope,
+  } as never)
+  const chords = fakeShortcuts()
+  ctx.provide('shortcuts', chords.face as never)
   await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
   ctx.locale.setLocale('zh')
 
@@ -57,12 +63,52 @@ async function bench() {
   const entry = ctx.slots.entries('shell.overlay')[0]
   if (entry === undefined) throw new Error('shell.overlay entry not registered')
   const injected = (entry.inject as unknown as () => CommandPaletteInjected)()
-  return { ctx, fiber, entry, injected, startSession, focusComposer, run }
+  return { ctx, fiber, entry, injected, startSession, focusComposer, run, chords }
 }
 
-/** Build one keydown for the registry's own dispatch. */
-function keydown(key: string, over: KeyboardEventInit = {}): KeyboardEvent {
-  return new KeyboardEvent('keydown', { key, cancelable: true, ...over })
+/** One keydown gesture on the primary modifier plus Shift. */
+function gesture(code: string, shift: boolean): ShortcutGesture {
+  return { code, control: false, alt: false, shift, meta: true, repeat: false, composing: false, defaultPrevented: false }
+}
+
+/**
+ * Recording shortcuts face: it keeps the reserved row and delivers fixed input
+ * to the palette's listener, releasing both on the plugin's disposers.
+ * @returns the face plus the recorded row, the send verb, and the release flag.
+ */
+function fakeShortcuts(): {
+  face: PaletteShortcutFace
+  command(): ShortcutFixedCommand | undefined
+  send(gesture: ShortcutGesture): boolean
+  released(): boolean
+} {
+  let command: ShortcutFixedCommand | undefined
+  let listener: ((input: ShortcutFixedInput) => void) | undefined
+  let released = false
+  return {
+    face: {
+      platform: 'macos',
+      describeBinding: (binding: ShortcutBinding) => ({
+        binding: null, keys: binding.code === 'KeyK' ? ['⌘', 'K'] : ['⇧', '⌘', 'P'], issue: null, conflicts: [],
+      }),
+      registerFixed: (next: ShortcutFixedCommand) => {
+        command = next
+        return () => { command = undefined; released = true }
+      },
+      observeFixedInput: (next: (input: ShortcutFixedInput) => void) => {
+        listener = next
+        return () => { listener = undefined; released = true }
+      },
+    },
+    command: () => command,
+    released: () => released,
+    send: (next) => {
+      let consumed = false
+      listener?.({ type: 'keydown', gesture: next, context: { region: 'page', modal: null, target: null },
+        consume: () => { consumed = true } })
+      return consumed
+    },
+  }
 }
 
 describe('ui-command-palette browser apply', () => {
@@ -80,16 +126,15 @@ describe('ui-command-palette browser apply', () => {
     expect(entry.locale).toBe(NS)
   })
 
-  it('opens and closes through the injected verbs and the registry chords', async () => {
-    const { ctx, injected } = await bench()
-    const registry = ctx.get('shortcuts') as unknown as ShortcutRegistry
+  it('opens and closes through the injected verbs and the reserved chords', async () => {
+    const { injected, chords } = await bench()
     const palette = (): ReturnType<CommandPaletteInjected['hooks']['palette']['getSnapshot']> =>
       injected.hooks.palette.getSnapshot()
 
     expect(palette().open).toBe(false)
-    expect(registry.handle(keydown('k', { metaKey: true }))).toBe(true)
+    expect(chords.send(gesture('KeyK', false))).toBe(true)
     expect(palette().open).toBe(true)
-    expect(registry.handle(keydown('p', { metaKey: true, shiftKey: true }))).toBe(true)
+    expect(chords.send(gesture('KeyP', true))).toBe(true)
     expect(palette().open).toBe(false)
 
     injected.retry()
@@ -115,14 +160,15 @@ describe('ui-command-palette browser apply', () => {
   })
 
   it('releases the slot entry, the chords, and the dictionaries with the fiber', async () => {
-    const { ctx, fiber } = await bench()
-    const registry = ctx.get('shortcuts') as unknown as ShortcutRegistry
+    const { ctx, fiber, chords } = await bench()
     const translate = ctx.locale.bind(NS)
     expect(translate('palette.aria')).toBe(zh['palette.aria'])
 
     await fiber.dispose()
     expect(ctx.slots.entries('shell.overlay')).toHaveLength(0)
-    expect(registry.handle(keydown('k', { metaKey: true }))).toBe(false)
+    expect(chords.command()).toBeUndefined()
+    expect(chords.released()).toBe(true)
+    expect(chords.send(gesture('KeyK', false))).toBe(false)
     // Withdrawn dictionaries leave the key unresolved rather than translated.
     expect(translate('palette.aria')).not.toBe(zh['palette.aria'])
   })

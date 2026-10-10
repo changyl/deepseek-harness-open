@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-effectiveness-remote-namespace.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-effectiveness-remote-namespace.md
-2026-09-16-effectiveness-remote-namespace.md: 021e96461fb44bc4321f4b2ad4997752230f9487
-2026-09-16-effectiveness-remote-namespace.zh.md: f061701b1a18dce57d64e925a6da0374dbc74fbc
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace:
+  en: d86d72f04564bf88
+  zh: fcd653beafb535b3
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace/problem:
+  en: f4b271b211cf9a70
+  zh: 1ad148b8f4dd1e13
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace/decision:
+  en: 55870aec02065750
+  zh: 03c7077d54251d07
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace/alternatives-considered:
+  en: 0f3f7f36a08844bf
+  zh: 6deb12cf66a1abe3
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace/consequences:
+  en: 574e4be11de930a7
+  zh: bb5e5573312f45f2
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace/deferred:
+  en: 38e16e43b38b61b4
+  zh: dbd4e53560e0a3b0
+/agent-note-publish-cross-session-outcome-signals-as-a-remote-namespace/testing:
+  en: c1bb816f4f2ef166
+  zh: e91c2bbfc18233fb

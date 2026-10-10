@@ -10,7 +10,7 @@ import { Fragment, useEffect, useRef } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import clsx from 'clsx'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import { IconCodeOutline16, IconNewChatOutline16, IconSearchOutline16, IconStopFill16, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCodeOutlineRegular, IconNewChatOutlineRegular, IconSearchOutlineRegular, IconStopFillRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { filterEntries, type PaletteEntryKind, type PaletteState } from './palette.ts'
 import css from './CommandPalette.module.css'
@@ -45,11 +45,11 @@ export type CommandPaletteProps =
 function EntryGlyph({ kind }: { kind: PaletteEntryKind }): ReactNode {
   switch (kind) {
     case 'new-session':
-      return <IconNewChatOutline16 size={14} />
+      return <IconNewChatOutlineRegular size={14} />
     case 'stop':
-      return <IconStopFill16 size={14} />
+      return <IconStopFillRegular size={14} />
     case 'command':
-      return <IconCodeOutline16 size={14} />
+      return <IconCodeOutlineRegular size={14} />
   }
 }
 
@@ -117,7 +117,7 @@ export function CommandPalette({
     <Modal open={state.open} onClose={close} title={t('palette.aria')} headless className={css.dialog as string}>
       <div className={css.card} onKeyDown={onKeyDown}>
         <div className={css.searchRow}>
-          <IconSearchOutline16 size={14} className={css.searchIcon} />
+          <IconSearchOutlineRegular size={14} className={css.searchIcon} />
           <input
             ref={searchRef}
             className={css.search}

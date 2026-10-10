@@ -7,7 +7,8 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
 import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { TaskReportCard } from '../src/client/TaskReportCard.tsx'
 import { apply, inject } from '../src/client/index.ts'
@@ -33,7 +34,10 @@ async function bench() {
   // and the forwarded-event port.
   ctx.provide('connection', { api: { settings: {} }, isLoopback: false } as never)
   ctx.provide('remote', { $on: () => () => {} } as never)
-  ctx.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+  ctx.provide('configForms', {
+    developerTools: { enabled: createSnapshotStore(true) },
+    get: () => stubConfigForm().scope,
+  } as never)
   await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
   ctx.locale.setLocale('zh')
 

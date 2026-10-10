@@ -1,6 +1,6 @@
 /** Code preview metadata and body registered through the public document extension points. */
 import type { Context } from '@deepseek-ai/cordis'
-import { CODE_EXTENSIONS } from '@deepseek-ai/dsh-client-ui-primitives'
+import { CODE_HIGHLIGHT_EXTENSIONS } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '../index.ts'
 import { CodeBody } from './CodeBody.tsx'
 import { en, zh } from './locales.ts'
@@ -14,12 +14,11 @@ export function apply(ctx: Context): void {
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.documentPreviews.register({
     id: ID,
-    extensions: CODE_EXTENSIONS,
+    extensions: CODE_HIGHLIGHT_EXTENSIONS,
     priority: 'builtin',
     title: () => t('title'),
     loading: 'text-pages',
     wrap: true,
-    editable: true,
   }))
   ctx.effect(() => ctx.slots.inject('sidebar.right.tab.document', () => ctx.slots.register(
     { name: 'sidebar.right.tab.document', key: ID, locale: NS }, CodeBody,

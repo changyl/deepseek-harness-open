@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-17-settings-section-remote-arity.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-17-settings-section-remote-arity.md
-2026-09-17-settings-section-remote-arity.md: 2368e6337b7e7a9377e8c7fdea4ef42cdce9d4e2
-2026-09-17-settings-section-remote-arity.zh.md: 791fb56e5171c4f0b381eed0743a188ba48f0548
+/agent-note-fork-data-panels-pass-every-declared-remote-parameter:
+  en: bbad6ab63b6b820c
+  zh: b0dc737e6ade25a5
+/agent-note-fork-data-panels-pass-every-declared-remote-parameter/problem:
+  en: 8309cb776cd30639
+  zh: 36a38afb1cb620c0
+/agent-note-fork-data-panels-pass-every-declared-remote-parameter/decision:
+  en: 3b1d96b2c6774d70
+  zh: f0052f6d7395bf84
+/agent-note-fork-data-panels-pass-every-declared-remote-parameter/alternatives-considered:
+  en: cddb7d84c3f26d01
+  zh: b46aeda8307096ce
+/agent-note-fork-data-panels-pass-every-declared-remote-parameter/consequences:
+  en: 35d1628ff007c5d3
+  zh: 89324d6a2024de04

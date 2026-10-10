@@ -33,7 +33,7 @@ The note lists each change with the reader's decision, oldest first, and caps th
 
 The plugin registers one `agent/pre-step` listener. After the step's own decision resolves, it walks the session log backwards collecting `change/review` events, stopping at this plugin's own last message — which is what makes each decision reported exactly once — and at a `session/end-seed` boundary, which keeps a fork from re-reporting its parent's reviews. A typed user message does not end the window, so a reader who reverts and then types still reaches the model in one note.
 
-The injected message carries `source.kind === 'plugin'` and this plugin's name, the same shape `dsh-time-context` uses, so the walk can recognize its own output.
+The injected message declares this plugin's own `source.kind` — the plugin name — the way `dsh-time-context` declares its own, so the walk can recognize its own output.
 
 ## Model Experience
 

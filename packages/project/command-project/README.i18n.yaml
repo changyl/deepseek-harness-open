@@ -1,6 +1,79 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/project/command-project/README.md
-README.md: 0b2bd9b19e779c5c18637a5c2e4f77dac65dcfa6
-README.zh.md: 7ca4eb08eca1999404c6a68ed15d92bbebec3f84
+/:
+  en: 082134cb73b8e4ce
+  zh: d57cb82d9820db37
+/deepseek-ai-dsh-command-project:
+  en: b151b50cd1a2e7e5
+  zh: babb8b28a9617d76
+/deepseek-ai-dsh-command-project/summary:
+  en: 45a2d51fea425c76
+  zh: 32ea0745331e597e
+/deepseek-ai-dsh-command-project/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 1db86285abf6c499
+/deepseek-ai-dsh-command-project/use-this-package:
+  en: 7054205708951645
+  zh: 1fdd69024694da9f
+/deepseek-ai-dsh-command-project/use-this-package/when-to-choose-it:
+  en: 232eafc1a9a95a28
+  zh: 2d6477cf4b6d329c
+/deepseek-ai-dsh-command-project/use-this-package/minimal-composition:
+  en: 1fba7556231d1bfa
+  zh: 57ea645f644d7b62
+/deepseek-ai-dsh-command-project/use-this-package/command-grammar:
+  en: 8c64ef07636d7bf1
+  zh: a5aa7966433100cf
+/deepseek-ai-dsh-command-project/use-this-package/what-the-list-shows:
+  en: 26bd63c3d5ed8343
+  zh: 875ec71b33bd43d6
+/deepseek-ai-dsh-command-project/use-this-package/what-the-board-shows:
+  en: 23e37e0cdd8387a4
+  zh: a60bcf12c1f529ee
+/deepseek-ai-dsh-command-project/use-this-package/failures-the-reader-sees:
+  en: 039dd19b452e9c65
+  zh: 083c3b99f2832210
+/deepseek-ai-dsh-command-project/understand-the-implementation:
+  en: d23b7d4d615c3058
+  zh: cfde5423eaa552b4
+/deepseek-ai-dsh-command-project/understand-the-implementation/design-concept:
+  en: 1f638cc66430d61d
+  zh: 19ca6d1efa553548
+/deepseek-ai-dsh-command-project/understand-the-implementation/source-map:
+  en: cb20c5674ee056de
+  zh: 134f941f70444c70
+/deepseek-ai-dsh-command-project/understand-the-implementation/export-shape:
+  en: d6f638735401a3ea
+  zh: cd35e3eec32ef02c
+/deepseek-ai-dsh-command-project/understand-the-implementation/caller-identity-and-workspace:
+  en: 7a8489e79fe32e63
+  zh: be6313be41a06d62
+/deepseek-ai-dsh-command-project/understand-the-implementation/read-only-by-design:
+  en: 8e38d06e61df49b2
+  zh: 7c7281b64e2fa16b
+/deepseek-ai-dsh-command-project/further-exploration:
+  en: aa96974976a09f25
+  zh: 25d27d45426f966c
+/deepseek-ai-dsh-command-project/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-command-project/model-experience/human-project-command:
+  en: f12ee822e4211624
+  zh: 2d7a2240169664d8
+/deepseek-ai-dsh-command-project/model-experience/human-project-command/what-the-model-sees:
+  en: 4f47bdedc495f26b
+  zh: ea8e0217f77a774e
+/deepseek-ai-dsh-command-project/model-experience/human-project-command/token-effect:
+  en: b135bfbe9bf421a9
+  zh: 5e8185b97aeb1041
+/deepseek-ai-dsh-command-project/model-experience/human-project-command/kv-cache-effect:
+  en: f8812f53dc3b8322
+  zh: e316e9a13382e073
+/deepseek-ai-dsh-command-project/known-limitations-and-deferred-work:
+  en: 9e244ffd76cc6b65
+  zh: 7cabbaba31a35b8c
+/deepseek-ai-dsh-command-project/known-limitations-and-deferred-work/dev-note:
+  en: 107a9778970e9e4f
+  zh: b8804057abe59195

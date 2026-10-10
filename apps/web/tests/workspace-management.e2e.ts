@@ -17,7 +17,7 @@ import { join, sep } from 'node:path'
 import type { Browser, Locator, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import { logPath } from '../../../packages/session/session-persistence-jsonl/src/format.ts'
 import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
@@ -743,19 +743,77 @@ describe('web e2e: workspace management (create / rename / grouping / hover affo
     await page.getByRole('button', { name: 'View options', exact: true }).click()
     await page.getByRole('menuitem', { name: 'Workspace Tree', exact: true }).click()
     await section.getByText('project-two', { exact: true }).waitFor()
+    const previousParentSessionIds = [...parentWorkspace.sessionIds]
+    const newParentSession = page.waitForResponse('**/api/session/create')
     await clickHoverAction(parent, 'New session in folder-group')
+    const createdResponse = await newParentSession
+    const createdBody = await createdResponse.json() as { result: { ok: boolean; value: { sessionId: string } } }
+    expect(createdBody.result.ok).toBe(true)
+    const createdSessionId = createdBody.result.value.sessionId
+    expect(previousParentSessionIds).not.toContain(createdSessionId)
+    await page.locator(`[data-conversation-session="${createdSessionId}"]`).waitFor()
     await expect.poll(() => section.locator('[aria-selected="true"]').evaluate(row =>
       row.closest('[class*="groupSection"]')?.querySelector('[role="treeitem"]')?.textContent,
     ), { timeout: 10_000 }).toBe('folder-group')
-    expect(parentWorkspace.sessionIds).toHaveLength(1)
+    await expect.poll(() => parentWorkspace.sessionIds).toHaveLength(previousParentSessionIds.length + 1)
+    expect(parentWorkspace.sessionIds).toEqual(expect.arrayContaining([...previousParentSessionIds, createdSessionId]))
     expect([...childWorkspace.sessionIds]).toEqual(childSessionIds)
     expect(tripwire.pageErrors).toEqual([])
   })
 
   it.skipIf(MODE === 'record')('issued zero model calls and stayed clean', async () => {
     expect(tripwire.warnings).toEqual([])
-    // The directory-browser aria golden is this spec's one owned artifact;
-    // the seed it reuses is owned (and inventory-guarded) by seeded-history.
-    await assertFixtureInventory(SNAPSHOT_DIR, ['.gitkeep', 'directory-browser.expected.md'])
+    await assertFixtureInventory(SNAPSHOT_DIR, [
+      '.gitkeep', 'directory-browser.expected.md', 'new-session.expected.md',
+    ])
+  })
+})
+
+describe('web e2e: New Session after an outdated blank cache', () => {
+  it('opens a fresh conversation instead of reusing the recorded conversation', async () => {
+    const scaffold = await launchWebScaffold({})
+    let browser: Browser | undefined
+    try {
+      const now = Date.UTC(2026, 8, 16)
+      const id = await seedSession(scaffold, await readFile(SEED, 'utf8'), 'new-session-stale-blank',
+        undefined, { createdAt: now - 60_000 })
+      const stored = await scaffold.ctx.sessionPersistence.stat(id)
+      if (stored === undefined) throw new Error('seeded Session is missing')
+      // A durable log may advance after its last blank projection checkpoint.
+      // An unregistered Session writes only the checkpoint, leaving the persisted log intact.
+      const blank = scaffold.ctx.sessions.prepare(id, {
+        eventState: 'detached', seed: [], meta: stored.header, inheritedEventCount: SessionLogOffset(0),
+      })
+      await scaffold.ctx.sessionProjectionCache.write(blank)
+      const workspace = await scaffold.ctx.workspaceRegistry.create(scaffold.workspaceCwd, 'New session regression')
+      await workspace.attachSession(id)
+      browser = await chromium.launch()
+      const page = await newEnglishPage(browser)
+      await page.clock.setFixedTime(now)
+      const tripwire = watchConsole(page)
+      onTestFailed(() => saveFailureShot(page, 'web-e2e-new-session-stale-blank'))
+
+      await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
+      await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor()
+      const selected = page.locator('[role="treeitem"][aria-selected="true"]')
+      await expect.poll(() => selected.innerText()).not.toBe('New Session')
+      const previous = (await selected.innerText()).split('\n')[0]!
+      const before = await captureStableAria(page, '[role="tree"]', scaffold.workspaceCwd)
+
+      await page.getByRole('button', { name: 'New session', exact: true }).last().click()
+      await expect.poll(() => selected.innerText()).toBe('New Session')
+      await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ state: 'hidden' })
+      await expect.poll(() => workspace.sessionIds.length).toBe(2)
+      expect(workspace.sessionIds).toContain(id)
+      await page.getByRole('treeitem').filter({ hasText: previous }).waitFor()
+      const after = await captureStableAria(page, '[role="tree"]', scaffold.workspaceCwd)
+      await compareOrRefreshGolden(join(SNAPSHOT_DIR, 'new-session.expected.md'),
+        `Before New Session\n${before}\nAfter New Session\n${after}`, MODE)
+      expect(tripwire.pageErrors).toEqual([])
+      expect(tripwire.warnings).toEqual([])
+    } finally {
+      await browser?.close()
+      await scaffold.close()
+    }
   })
 })

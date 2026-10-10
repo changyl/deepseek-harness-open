@@ -9,6 +9,10 @@
  * `rankByName`). A host/contribution name collision fails loud. Every
  * execute addresses the session's agent by sessionId — sessions are always
  * agent-backed.
+ * Catalog RPCs retain an existing Client Session through completion and
+ * wait for its initial history open to succeed before contacting the Host.
+ * A composer-less surface (the command palette) reads the same rows through
+ * `palette` and dispatches a pick through `run`, which owns no composer token.
  */
 import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
@@ -32,7 +36,14 @@ import { CommandDirectory } from './directory.ts'
 import { PopupSelectController } from './popup.ts'
 import { builtinRowFace, sectionRows } from './presentation.ts'
 import { claimToken } from './resolution.ts'
-import type { ComposerTokenSegment, TokenSegment } from './popup.ts'
+import type { TokenSegment } from './popup.ts'
+
+declare module '@deepseek-ai/dsh-api-session-controller/client' {
+  interface SessionReferenceSourceMap {
+    /** A command-catalog fetch waiting for initial history and its RPC result. */
+    commandCatalog: unknown
+  }
+}
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
@@ -96,6 +107,8 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    * reaches this service from a fiber that names only `commandUi`.
    */
   private readonly owner: Context
+  /** Composer focus hooks by session (each session's composer binds its own). */
+  private readonly focusHooks = new Map<SessionId, () => void>()
   /** `command`-namespace translator (composer refusal notices). */
   private readonly t: TranslateNS<'command'>
 
@@ -110,10 +123,20 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     if (locale === undefined) throw new Error('ui-commands: locale service unavailable')
     this.t = locale.bind('command')
     this.directory = new CommandDirectory(async (sessionId) => {
-      if (this.sessions().subagentAddress(sessionId) !== undefined) return []
-      const result = await this.owner.remote.commands.list(sessionId)
-      if (!result.ok) throw new Error(`command.list failed: ${result.error.code}: ${result.error.message}`)
-      return result.value
+      const sessions = this.sessions()
+      if (sessions.subagentAddress(sessionId) !== undefined) return []
+      if (sessions.binding(sessionId) === undefined) {
+        throw new Error(`command catalog requires a retained session "${sessionId}"`)
+      }
+      return sessions.using(sessionId, { source: 'commandCatalog' }, async (reference) => {
+        const state = reference.binding.session.getSnapshot()
+        if (state.openState !== 'open') {
+          throw state.openError ?? new Error(`session "${sessionId}" is not open`)
+        }
+        const result = await this.owner.remote.commands.list(sessionId)
+        if (!result.ok) throw new Error(`command.list failed: ${result.error.code}: ${result.error.message}`)
+        return result.value
+      })
     })
     const inputTriggers = ctx.get('inputTriggers')
     if (inputTriggers === undefined) throw new Error('ui-commands: slash service unavailable')
@@ -205,6 +228,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     if (existing !== undefined) return existing
     const controller = new PopupSelectController<ClientSessionContext>({
       consume: segment => consumeToken(binding.ctx, segment),
+      // The shell took the keyboard; the composer restores it, caret included.
       focusComposer: () => { this.focusComposer(binding.session.sessionId) },
     })
     popups.set(binding, controller)
@@ -214,9 +238,6 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     }, 'command: session popup')
     return controller
   }
-
-  /** Composer focus hooks by session (each session's composer binds its own). */
-  private readonly focusHooks = new Map<SessionId, () => void>()
 
   /**
    * Bind one session's composer-focus hook (the composer's wiring binds it for
@@ -250,8 +271,12 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    * @returns the available rows.
    */
   async palette(session: ClientSessionContext, signal: AbortSignal): Promise<readonly CommandPaletteRow[]> {
-    const rows = await this.candidates(session, { query: '', position: 'leading', drilled: false, signal })
-    return rows.map(row => ({
+    return (await this.candidates(session, {
+      query: '',
+      position: 'leading',
+      drilled: false,
+      signal,
+    })).map(row => ({
       name: row.name,
       ...(row.label === undefined ? {} : { label: row.label }),
       ...(row.description === undefined ? {} : { description: row.description }),
@@ -277,8 +302,6 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
       return
     }
     const desc = this.directory.resolve(session.sessionId, name)
-    // The catalog can change between listing and pick; a row that no longer
-    // resolves is a miss, never a fallback to a different command.
     if (desc === undefined) {
       this.focusComposer(session.sessionId)
       return
@@ -298,11 +321,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    * opens with a segment that consumes nothing and keeps focus until it
    * settles.
    */
-  private invokeDetached(
-    name: string,
-    ui: CommandContribution['ui'],
-    session: ClientSessionContext,
-  ): void {
+  private invokeDetached(name: string, ui: CommandContribution['ui'], session: ClientSessionContext): void {
     if (ui.kind === 'action') {
       ui.run(session)
       this.focusComposer(session.sessionId)
@@ -454,7 +473,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     name: string,
     ui: CommandContribution['ui'],
     session: ClientSessionContext,
-    segment: ComposerTokenSegment,
+    segment: TokenSegment,
   ): void {
     if (ui.kind === 'action') {
       this.consumeVia(session.sessionId, segment)
@@ -557,7 +576,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
   }
 
   /** Dispatch a consume-token event to one session (menu-pick / bare-enter execute paths). */
-  private consumeVia(id: SessionId, segment: ComposerTokenSegment): void {
+  private consumeVia(id: SessionId, segment: TokenSegment): void {
     const actx = this.scopeFor(id)
     if (actx === undefined) return
     consumeToken(actx, segment)

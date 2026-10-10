@@ -12,7 +12,7 @@ Messages 要求每个 assistant 的 `tool_use` 都由紧随其后的 user 轮次
 
 请求转换会把 wire 历史投影为 Messages 能够表示的配对关系。未获应答的 `tool_use` 与孤立的 `tool_result` 会从发出的请求中移除；内容被清空的 assistant 轮次会被丢弃；移除后暴露出的相同角色 user 或 assistant 邻居会重新合并为一个轮次；重复的调用 id 保留首次声明。每条 in-history system 更新仍保持为独立消息。
 
-持久消息保持不变，包括原始内容块及其 Session 事件，该投影也绝不会重新执行历史调用。这里不虚构任何内容：请求省略无法表示的块，而不是发明一个结果，因此[空输入兜底](2026-09-16-messages-historical-tool-input.zh.md)仍是历史工具内容唯一的替换。[Messages 适配器决策](../feature/2026-09-07-deepseek-messages-adapter.zh.md)拥有周围的转换规则。
+持久消息保持不变，包括原始内容块及其 Session 事件，该投影也绝不会重新执行历史调用。这里不虚构任何内容：请求省略无法表示的块，而不是发明一个结果，因此[空输入兜底](../../archived/bug-fix/2026-09-16-messages-historical-tool-input.md)仍是历史工具内容唯一的替换。[Messages 适配器决策](../feature/2026-09-07-deepseek-messages-adapter.zh.md)拥有周围的转换规则。
 
 ## Alternatives considered
 

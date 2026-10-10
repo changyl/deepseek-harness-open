@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-golden-task-eval-lane.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-09-16-golden-task-eval-lane.md
-2026-09-16-golden-task-eval-lane.md: ebf1a889767ff2c2c96cd1241f3d1cd65134f0bf
-2026-09-16-golden-task-eval-lane.zh.md: bd2a35589ddcf4041c65ce558e15cac3577eb49b
+/agent-note-measure-model-effectiveness-with-golden-tasks:
+  en: b3e6f5e31969b06d
+  zh: 21fed1d488cc729c
+/agent-note-measure-model-effectiveness-with-golden-tasks/problem:
+  en: 4b1e5200ac5be76c
+  zh: c67075264f44821e
+/agent-note-measure-model-effectiveness-with-golden-tasks/decision:
+  en: 5517628e374f7eb4
+  zh: 4013fa2aeee59f83
+/agent-note-measure-model-effectiveness-with-golden-tasks/alternatives-considered:
+  en: 82f6361f2e8a1604
+  zh: 3c9051f4b2f6ac3e
+/agent-note-measure-model-effectiveness-with-golden-tasks/consequences:
+  en: 085be0ed0d5eca0f
+  zh: c7ba47684d9744a5
+/agent-note-measure-model-effectiveness-with-golden-tasks/testing:
+  en: c3e49a3f71bb3253
+  zh: 6a29ea22ad3d2f93

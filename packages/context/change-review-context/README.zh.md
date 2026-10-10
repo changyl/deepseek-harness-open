@@ -33,7 +33,7 @@ kind: "package-reference"
 
 本插件注册一个 `agent/pre-step` 监听器。在该步骤自身的决定落定之后，它从会话日志尾部向前收集 `change/review` 事件，遇到本插件自己发出的最后一条消息即停止——这正是每个决定只上报一次的原因——遇到 `session/end-seed` 边界同样停止，从而避免 fork 重复上报父会话的评审。用户手工输入的消息不会终止该窗口，因此读者先回滚再输入时，仍能在同一条说明里到达模型。
 
-注入的消息携带 `source.kind === 'plugin'` 与本插件名，与 `dsh-time-context` 的形状一致，因此回扫能识别自己的输出。
+注入的消息声明本插件自己的 `source.kind`——即插件名——与 `dsh-time-context` 声明自身 kind 的方式一致，因此回扫能识别自己的输出。
 
 <a id="model-experience"></a>
 ## 模型体验

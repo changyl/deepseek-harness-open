@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-effectiveness-projection.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-effectiveness-projection.md
-2026-09-16-effectiveness-projection.md: 4462c95971a2a0ac23d703af7eaa4bbd33d7f14b
-2026-09-16-effectiveness-projection.zh.md: 5a018d98fb61f5d9df1ff3497fb6e0744712a026
+/agent-note-read-session-outcomes-as-an-effectiveness-projection:
+  en: 48d3107f3dcd342e
+  zh: de203204d9da068c
+/agent-note-read-session-outcomes-as-an-effectiveness-projection/problem:
+  en: f640f8db9b48f57e
+  zh: c426ba648509e0ff
+/agent-note-read-session-outcomes-as-an-effectiveness-projection/decision:
+  en: 1bf77fe2464b5eea
+  zh: 2b41dfb96134231b
+/agent-note-read-session-outcomes-as-an-effectiveness-projection/alternatives-considered:
+  en: 84dcc11de83e783e
+  zh: c3eae5d3e90dea48
+/agent-note-read-session-outcomes-as-an-effectiveness-projection/consequences:
+  en: 6c94147cc06489b2
+  zh: e137afe3d1899686
+/agent-note-read-session-outcomes-as-an-effectiveness-projection/testing:
+  en: eccd5aa2b288f829
+  zh: fd30b4b2a26e26ad

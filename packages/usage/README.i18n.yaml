@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/usage/README.md
-README.md: 95b899d2fcaa97134ff66248e0690e2d596eeb5d
-README.zh.md: 78b6898719a4c31cdc21e293aa8b1f37badd3c06
+/:
+  en: a62c4101da197e56
+  zh: fbcf345b7013c9b5
+/usage-token-totals-and-cost:
+  en: 3eddb6338a4c1f0e
+  zh: 899c7af47faae975
+/usage-token-totals-and-cost/summary:
+  en: 83671dd3c89da570
+  zh: 35876609c1c8c320
+/usage-token-totals-and-cost/table-of-contents:
+  en: 1eb35b015a6c423f
+  zh: a8a3dceee2c9e943
+/usage-token-totals-and-cost/packages:
+  en: a18a51e2e9c5a88e
+  zh: 0e574dad44beeff7
+/usage-token-totals-and-cost/related-documentation:
+  en: 9efff2583c97f600
+  zh: f89cceaedb03139b
+/usage-token-totals-and-cost/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

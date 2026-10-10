@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-language-aware-sidebar-diffs.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-16-language-aware-sidebar-diffs.md
-2026-09-16-language-aware-sidebar-diffs.md: 13504323022d02722d6ce9d9996f1032edcb8d55
-2026-09-16-language-aware-sidebar-diffs.zh.md: d3828c3af59c583e82cee6b1eec1df6eabcdbcd4
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar:
+  en: d663b7cff43e7df3
+  zh: a2938bf63d439b11
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/problem:
+  en: 883103de05ef098a
+  zh: 27af8cc9550b0917
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/decision:
+  en: efcac1b2e051d0c4
+  zh: 54f0e6b4f1335af3
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/decision/the-runs-are-built-in-the-row-model-not-in-the-components:
+  en: dbf8e6efc5eae797
+  zh: 52f9630bdc3703b8
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/decision/each-side-s-whole-text-is-tokenized-once:
+  en: f502a175dd4600f9
+  zh: 8f647917bfd0d286
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/decision/highlighting-is-lazy-viewport-gated-and-additive:
+  en: ff2fce4647d85122
+  zh: a2c2146df9155a90
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/decision/the-side-of-the-change-moves-to-a-tinted-band:
+  en: 7d33d41552dea92f
+  zh: 12d58e03103cd1cd
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/alternatives-considered:
+  en: 468b7c2e17cedbf3
+  zh: c9e226152dfe8381
+/agent-note-rendering-sidebar-diffs-with-the-changed-file-s-own-grammar/consequences:
+  en: ef7961e51f71cb9d
+  zh: 1565a9a0793d7996

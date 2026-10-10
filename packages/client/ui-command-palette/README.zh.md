@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-本包拥有 Web GUI 的键盘界面：`ctx.shortcuts`——其他客户端插件用于绑定组合键的全局 keydown 注册表——以及一个跨整个框架的 overlay 条目，渲染 Cmd/Ctrl+K 背后的命令面板。打开面板时，它会通过 `ctx.commandUi.palette` 一次性读取当前会话的命令，在其前面加上本界面自己拥有的两个操作——新建会话、停止正在运行的轮次——在你输入时对已加载的行做本地排序，并在不触碰输入框草稿的情况下派发选择。它不改变模型看到的任何内容。
+本包拥有 Web GUI 的命令面板：一个跨整个框架的 overlay 条目，位于 Cmd/Ctrl+K 与 Cmd/Ctrl+Shift+P 背后，其组合键通过 [`@deepseek-ai/dsh-client-shortcuts`](../shortcuts/README.zh.md) 注册——那是所有客户端插件绑定组合键的界面。打开面板时，它会通过 `ctx.commandUi.palette` 一次性读取当前会话的命令，在其前面加上本界面自己拥有的两个操作——新建会话、停止正在运行的轮次——在你输入时对已加载的行做本地排序，并在不触碰输入框草稿的情况下派发选择。它不改变模型看到的任何内容。
 
 ## 目录
 
@@ -39,7 +39,7 @@ kind: "package-reference"
 
 ### 绑定其他快捷键
 
-`ctx.shortcuts.register({ id, keys, run })` 添加一个全局绑定并返回 disposer；注册是调用方 fiber 上的 effect，因此插件的组合键会随它一起离开。`keys` 是以 `+` 连接的修饰键加一个按键（`mod+k`、`mod+shift+p`），其中 `mod` 接受平台命令键或 Control。匹配是精确的：`mod+k` 不会因 `mod+shift+k` 触发。重复的 id、未知修饰键或缺少按键会在注册时抛错，而不是等到第一次按键。按注册顺序第一个匹配的绑定会运行，事件随即被消费；正在输入法组字的事件，或已被其他处理函数消费的事件，不会被触碰。
+本包通过快捷键服务注册一个固定的应用级操作（`commandPalette.open`），因此它的组合键会出现在快捷键参考里、在冲突注册时预留按键，并随本插件的 fiber 一起离开。精确修饰键匹配由该服务负责：`mod+k` 不会因 `mod+shift+k` 触发，正在输入法组字或已被消费的事件也不会被触碰。
 
 -----
 

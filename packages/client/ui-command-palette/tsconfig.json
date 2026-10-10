@@ -18,10 +18,13 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../locale"
+      "path": "../locale/tsconfig.client.json"
     },
     {
       "path": "../store"
+    },
+    {
+      "path": "../shortcuts/tsconfig.client.json"
     },
     {
       "path": "../ui-commands"

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-composer-focus-after-palette-pick.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-16-composer-focus-after-palette-pick.md
-2026-09-16-composer-focus-after-palette-pick.md: 65a263c9ce1f2fd45c749c3bf8d89b0ba34c5e96
-2026-09-16-composer-focus-after-palette-pick.zh.md: 31262b1906edf85c4afb527f3727b5ca5021aceb
+/agent-note-composer-focus-after-a-command-palette-pick:
+  en: d97f1d44e1098742
+  zh: 0e3299065ea51da4
+/agent-note-composer-focus-after-a-command-palette-pick/problem:
+  en: 02e8594a86443ee4
+  zh: 151adba51c878ae4
+/agent-note-composer-focus-after-a-command-palette-pick/decision:
+  en: af501899ca8eec4a
+  zh: 097f46efb10d1283
+/agent-note-composer-focus-after-a-command-palette-pick/alternatives-considered:
+  en: aea8f5aee8565179
+  zh: 43bc386e30fa1f08
+/agent-note-composer-focus-after-a-command-palette-pick/consequences:
+  en: 9f29741eaf418640
+  zh: 244680e6e4484389

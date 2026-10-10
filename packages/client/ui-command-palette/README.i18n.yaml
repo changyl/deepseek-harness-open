@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-command-palette/README.md
-README.md: d0b4c5d3e032ce119fc985b852a4c7d3876383e2
-README.zh.md: bbd4e5f854c43f4bbb6a1b052f7c09a1c696ba9f
+/:
+  en: 77fb55d569dcc4cd
+  zh: 1a2e685064242d42
+/deepseek-ai-dsh-client-ui-command-palette:
+  en: a44eaf0b7d08f238
+  zh: cb2c4ffd7c689a9f
+/deepseek-ai-dsh-client-ui-command-palette/summary:
+  en: 70b1f4bb707399c6
+  zh: 98f85072a364469d
+/deepseek-ai-dsh-client-ui-command-palette/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: fda25964bddb4a99
+/deepseek-ai-dsh-client-ui-command-palette/use-this-package:
+  en: bd1230de50becf74
+  zh: ef821429567f6c2c
+/deepseek-ai-dsh-client-ui-command-palette/use-this-package/what-a-pick-does:
+  en: 99c57ae98b203188
+  zh: a307e127d89de359
+/deepseek-ai-dsh-client-ui-command-palette/use-this-package/binding-another-shortcut:
+  en: c9f5022e05fe324b
+  zh: d799ed5a092acea3
+/deepseek-ai-dsh-client-ui-command-palette/understand-the-implementation:
+  en: e7a3d1d6b01175d4
+  zh: 0cdbe8227b70e9a9
+/deepseek-ai-dsh-client-ui-command-palette/further-exploration:
+  en: 8fd0aa8bab83aa8b
+  zh: a4c0e50e21c3fbf2
+/deepseek-ai-dsh-client-ui-command-palette/model-experience:
+  en: 3321144c8726c827
+  zh: 7c727dc7018d527a
+/deepseek-ai-dsh-client-ui-command-palette/model-experience/kv-cache-effect:
+  en: 47f982e326fe77fd
+  zh: c2241315dc0c89c9
+/deepseek-ai-dsh-client-ui-command-palette/known-limitations-and-deferred-work:
+  en: 233558dece2ec16e
+  zh: f5d46e6ff1273e69
+/deepseek-ai-dsh-client-ui-command-palette/known-limitations-and-deferred-work/dev-note:
+  en: 241f6c5898f3fb8c
+  zh: cb447b0b5ab10a7f

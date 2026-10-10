@@ -1,4 +1,4 @@
-import { IconLikeOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconLikeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 
 /**
@@ -7,5 +7,5 @@ import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
  * @returns the outcome-signal glyph at that size.
  */
 export function EffectivenessPanelIcon({ size }: PropsRuntime<'sidebar.panellist'>) {
-  return <IconLikeOutline16 size={size} />
+  return <IconLikeOutlineRegular size={size} />
 }

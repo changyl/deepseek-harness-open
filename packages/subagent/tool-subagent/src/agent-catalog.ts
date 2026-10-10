@@ -1,9 +1,10 @@
 /**
  * Durable model-facing catalog of available agent definitions.
  *
- * The catalog reuses the released `plugin` message source instead of adding a
- * source kind, so publishing it changes no session format. Its identity is the
- * rendered text, which makes publication idempotent across tool instances and
+ * The catalog is a `catalog`-form context that records exactly the entries it
+ * published beside the model-facing prose, so its identity never depends on
+ * re-parsing the `<available_subagents>` frame and a consumer presenting the
+ * list never needs to. Publication is idempotent across tool instances and
  * steps: an instance that finds the same list already visible publishes
  * nothing.
  *
@@ -17,17 +18,26 @@ import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { UserMessage } from '@deepseek-ai/dsh-session'
 import type { AgentDefinitionSummary } from '@deepseek-ai/dsh-agent-definitions'
 
-/**
- * Durable `plugin` source id identifying this catalog among context messages.
- * It is deliberately distinct from the plugin name so the catalog is
- * distinguishable from any other message that plugin source produces.
- */
-export const AGENT_CATALOG_PLUGIN = 'tool-subagent/agent-catalog'
-
 /** One catalog line: the definition name and its capped routing description. */
 export interface AgentCatalogEntry {
   readonly name: string
   readonly description: string
+}
+
+/**
+ * Durable records for one published available-subagent catalog.
+ */
+export interface AgentCatalogSource {
+  readonly kind: 'agent-catalog'
+  readonly form: 'catalog'
+  /** Exactly the entries this message published, in catalog order. */
+  readonly entries: readonly AgentCatalogEntry[]
+}
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'agent-catalog': AgentCatalogSource
+  }
 }
 
 /**
@@ -74,47 +84,65 @@ export function renderAgentCatalog(entries: readonly AgentCatalogEntry[]): strin
 }
 
 /**
- * Identity of one rendered catalog.
- * @param text - rendered catalog text.
+ * Identity of one published catalog, over its durable entry list rather than the
+ * rendered prose: the entries are what changes, and the surrounding
+ * `<system-reminder>` framing is written for the model.
+ * @param entries - published catalog entries.
  * @returns hexadecimal digest used for publication and replacement decisions.
  */
-export function digestAgentCatalog(text: string): string {
-  return createHash('sha256').update(text).digest('hex')
+export function digestAgentCatalog(entries: readonly AgentCatalogEntry[]): string {
+  // JSON per entry rather than a separator character: every separator is itself
+  // a legal description character, so only quoting makes the boundary exact.
+  const canonical = entries.map(entry => JSON.stringify([entry.name, entry.description])).join('\n')
+  return createHash('sha256').update(canonical).digest('hex')
 }
 
 /**
  * Build the durable user-role catalog message.
- * @param text - rendered catalog text.
+ * @param entries - exactly the entries to publish, possibly empty.
  * @returns the sourced user message appended to the step.
  */
-export function agentCatalogMessage(text: string): UserMessage {
+export function agentCatalogMessage(entries: readonly AgentCatalogEntry[]): UserMessage {
   return createUserMessage({
-    content: [{ type: 'text', text }],
-    source: { kind: 'plugin', plugin: AGENT_CATALOG_PLUGIN },
+    content: [{ type: 'text', text: renderAgentCatalog(entries) }],
+    source: { kind: 'agent-catalog', form: 'catalog', entries },
   })
 }
 
 /**
- * Whether a message is this plugin's agent catalog.
+ * Whether a message source is this plugin's agent catalog.
  * @param source - message source to classify.
- * @returns whether the source is this catalog's plugin source.
+ * @returns whether the source declares the catalog kind.
  */
 export function isAgentCatalogSource(source: unknown): boolean {
-  if (typeof source !== 'object' || source === null) return false
-  const candidate = source as { kind?: unknown; plugin?: unknown }
-  return candidate.kind === 'plugin' && candidate.plugin === AGENT_CATALOG_PLUGIN
+  return typeof source === 'object' && source !== null
+    && (source as { kind?: unknown }).kind === 'agent-catalog'
 }
 
 /**
- * Concatenate the text blocks of one message.
- * @param message - user message whose model-facing text is compared.
- * @returns the concatenated text blocks.
+ * Entries of one durable catalog source, or undefined when the record is not a
+ * usable catalog.
+ *
+ * A resumed, forked, or externally written seed guarantees only a source object
+ * with a non-empty `kind`; no per-kind field is validated there. An unreadable
+ * record is therefore treated as "not this plugin's catalog" rather than
+ * throwing inside the step listener, which would fail every subsequent turn of
+ * that session.
+ * @param source - source value read from a durable message.
+ * @returns the recorded entries, or undefined when the record is unusable.
  */
-export function messageText(message: UserMessage): string {
-  return message.content
-    .filter(block => block.type === 'text')
-    .map(block => block.text)
-    .join('')
+export function readAgentCatalogEntries(source: unknown): AgentCatalogEntry[] | undefined {
+  if (!isAgentCatalogSource(source)) return undefined
+  const entries = (source as { entries?: unknown }).entries
+  if (!Array.isArray(entries)) return undefined
+  const readable: AgentCatalogEntry[] = []
+  for (const entry of entries as readonly unknown[]) {
+    if (typeof entry !== 'object' || entry === null) return undefined
+    const { name, description } = entry as { name?: unknown; description?: unknown }
+    if (typeof name !== 'string' || name === '' || typeof description !== 'string') return undefined
+    readable.push({ name, description })
+  }
+  return readable
 }
 
 /**
@@ -134,9 +162,11 @@ export function visibleAgentCatalog(agent: Agent): { digest?: string; published:
       throw new Error(`agent catalog cannot read seq ${String(index)} below the current Session length`)
     }
     if (event.type !== 'user/message') continue
-    if (!isAgentCatalogSource(event.data.source)) continue
+    const entries = readAgentCatalogEntries(event.data.source)
+    if (entries === undefined) continue
+    const digest = digestAgentCatalog(entries)
     published = true
-    if (visible.has(event.seq)) return { digest: digestAgentCatalog(messageText(event.data)), published }
+    if (visible.has(event.seq)) return { digest, published }
   }
   /* jscpd:ignore-end */
   return { published }
@@ -145,10 +175,16 @@ export function visibleAgentCatalog(agent: Agent): { digest?: string; published:
 /**
  * The pending catalog message in one entering batch, if any.
  * @param messages - the step's claimed batch.
- * @returns the pending catalog message, or `undefined`.
+ * @returns the pending catalog message and its recorded entries, or `undefined`.
  */
-export function pendingAgentCatalog(messages: readonly UserMessage[]): UserMessage | undefined {
-  return messages.find(message => isAgentCatalogSource(message.source))
+export function pendingAgentCatalog(
+  messages: readonly UserMessage[],
+): { message: UserMessage; entries: AgentCatalogEntry[] } | undefined {
+  for (const message of messages) {
+    const entries = readAgentCatalogEntries(message.source)
+    if (entries !== undefined) return { message, entries }
+  }
+  return undefined
 }
 
 function catalogDescription(value: string, maxLength: number): string {

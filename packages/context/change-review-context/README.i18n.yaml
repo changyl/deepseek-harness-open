@@ -1,6 +1,46 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/context/change-review-context/README.md
-README.md: 358d54da82c987449d785252dfe8dcf610ee72c9
-README.zh.md: af63eddc979506a0847f03c21b2dd8e137ac068b
+/:
+  en: 5bd07ea7752ac079
+  zh: 5bd07ea7752ac079
+/deepseek-ai-dsh-change-review-context:
+  en: b76a2f7fa8bd6cbc
+  zh: 90b4a26c10e460dc
+/deepseek-ai-dsh-change-review-context/summary:
+  en: 6492221769b71ae3
+  zh: e0160f18b1693ee7
+/deepseek-ai-dsh-change-review-context/table-of-contents:
+  en: 76368b6b1da79c80
+  zh: 52384aee991ac542
+/deepseek-ai-dsh-change-review-context/use-this-package:
+  en: 17a23166464f6976
+  zh: 1de7ea3269a636a4
+/deepseek-ai-dsh-change-review-context/understand-the-implementation:
+  en: c3357dd06f8d7b0a
+  zh: ffbf4d33c63ded8c
+/deepseek-ai-dsh-change-review-context/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-change-review-context/model-experience/reader-decisions:
+  en: 3367f22e42d0e7ac
+  zh: 49d1b420cbf3a1a6
+/deepseek-ai-dsh-change-review-context/model-experience/reader-decisions/what-the-model-sees:
+  en: 7055a5d68f6659e2
+  zh: 371df1072234c10d
+/deepseek-ai-dsh-change-review-context/model-experience/reader-decisions/what-the-model-sees/review-note:
+  en: abbb72c841551011
+  zh: 09830472869fcbf9
+/deepseek-ai-dsh-change-review-context/model-experience/reader-decisions/token-effect:
+  en: 4fe6a23abc341670
+  zh: 5290ac661e83c867
+/deepseek-ai-dsh-change-review-context/model-experience/reader-decisions/kv-cache-effect:
+  en: 9c38783013122f9e
+  zh: 954486a8c38b0d66
+/deepseek-ai-dsh-change-review-context/known-limitations-and-deferred-work:
+  en: cdc34acfea1df87a
+  zh: 8696c2a64b49dfa2
+/deepseek-ai-dsh-change-review-context/known-limitations-and-deferred-work/dev-note:
+  en: 539d8c50418fbfc4
+  zh: 7fa21cd162ae931c

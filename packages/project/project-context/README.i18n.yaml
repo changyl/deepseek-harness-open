@@ -1,6 +1,49 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/project/project-context/README.md
-README.md: 964d744ea7af5cb8b99a3e8534c23da932f16761
-README.zh.md: 9bc708caed5ccc5762e0d0695502c63cc5ab12ae
+/:
+  en: cffa970610c7ccf6
+  zh: cffa970610c7ccf6
+/deepseek-ai-dsh-project-context:
+  en: a4c9b6756c4b2312
+  zh: dc58ab6af74ec98a
+/deepseek-ai-dsh-project-context/summary:
+  en: 09d9f423c3f0c090
+  zh: 268782cc7965f142
+/deepseek-ai-dsh-project-context/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: f14f34fce35a8d90
+/deepseek-ai-dsh-project-context/use-this-package:
+  en: 94eac9ff931f87f4
+  zh: b14a79bbf0974d42
+/deepseek-ai-dsh-project-context/understand-the-implementation:
+  en: bd713d9896eb2e3f
+  zh: d6fc50c901ddd9f9
+/deepseek-ai-dsh-project-context/further-exploration:
+  en: ff7ad95f3dc692dd
+  zh: d4ca8f410d8ef36f
+/deepseek-ai-dsh-project-context/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-project-context/model-experience/linked-board-tasks:
+  en: 07fbc3f38f2c8184
+  zh: c6a2c388f855609b
+/deepseek-ai-dsh-project-context/model-experience/linked-board-tasks/what-the-model-sees:
+  en: 023244d2c60a58e2
+  zh: 760aa19dc2ccd599
+/deepseek-ai-dsh-project-context/model-experience/linked-board-tasks/what-the-model-sees/project-note:
+  en: 3c7e64ef93fbbf76
+  zh: f04a540765d7469d
+/deepseek-ai-dsh-project-context/model-experience/linked-board-tasks/token-effect:
+  en: fda54440870ab904
+  zh: 559cfffee964a8ba
+/deepseek-ai-dsh-project-context/model-experience/linked-board-tasks/kv-cache-effect:
+  en: f0b838d7ca85f6f8
+  zh: 592ddadf75d68540
+/deepseek-ai-dsh-project-context/known-limitations-and-deferred-work:
+  en: 5c2d603c113f9671
+  zh: 32aeb09866f93e2d
+/deepseek-ai-dsh-project-context/known-limitations-and-deferred-work/dev-note:
+  en: 48d404e7fbc8d678
+  zh: dc35700e6749d180

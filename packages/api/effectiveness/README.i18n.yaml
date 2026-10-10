@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/api/effectiveness/README.md
-README.md: 6eac0c1bdd30d829677799125b8edec0abb5893b
-README.zh.md: 07b6c24c5ae8ce7afc31d0b2664c1cfe16ef495c
+/:
+  en: 3f7d7c4baa127894
+  zh: 7e4b90d77eb96c50
+/effectiveness-controller:
+  en: e79b1150f53f645d
+  zh: 0177ff3a1ff02abd
+/effectiveness-controller/summary:
+  en: 1bf9ca56b4eac88b
+  zh: 5bfed1e8911c73a5
+/effectiveness-controller/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 1db86285abf6c499
+/effectiveness-controller/use-this-package:
+  en: e6d0f53e9aef152a
+  zh: 53f56d113ba2fc77
+/effectiveness-controller/understand-the-implementation:
+  en: 42b15ac6321706aa
+  zh: c5500056b41ce570
+/effectiveness-controller/understand-the-implementation/design-concept:
+  en: 79d03d2f46c93193
+  zh: ef7e4411863f01b6
+/effectiveness-controller/understand-the-implementation/source-map:
+  en: 38214a4e693328ca
+  zh: a0ab2ee938c6d41a
+/effectiveness-controller/understand-the-implementation/service-and-namespace:
+  en: 66080e93a0c5133d
+  zh: 3a813baab655ec40
+/effectiveness-controller/understand-the-implementation/methods:
+  en: ba7d5f9039a90f31
+  zh: f7191f1e8cf5bb14
+/effectiveness-controller/understand-the-implementation/failures:
+  en: 07477eedc616e493
+  zh: c34c96c89541f883
+/effectiveness-controller/understand-the-implementation/wire-values:
+  en: bbdd8c3f51a275af
+  zh: 2764c386a763797a
+/effectiveness-controller/further-exploration:
+  en: e6a6bbe742168f3a
+  zh: e7b4fd6187b96dab
+/effectiveness-controller/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/effectiveness-controller/model-experience/nothing-model-visible-is-added:
+  en: 2e0a39272a4e5310
+  zh: 7abcbcd966e63b03
+/effectiveness-controller/model-experience/nothing-model-visible-is-added/what-the-model-sees:
+  en: 5ebacdc7b75c62f6
+  zh: 8e0d7fe6eb6a43ac
+/effectiveness-controller/model-experience/nothing-model-visible-is-added/token-effect:
+  en: e3aa47bf52a00d35
+  zh: fdab32380cc63abe
+/effectiveness-controller/model-experience/nothing-model-visible-is-added/kv-cache-effect:
+  en: 083acec259340340
+  zh: c5ddf6cc7707f0c3
+/effectiveness-controller/known-limitations-and-deferred-work:
+  en: 98ecfaca7369eb2c
+  zh: 47cb623b10c8bcb5
+/effectiveness-controller/known-limitations-and-deferred-work/dev-note:
+  en: 2a29cf4983ea9b8f
+  zh: 1e030959a0789466

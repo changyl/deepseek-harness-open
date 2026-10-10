@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-effectiveness-settings-section.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-effectiveness-settings-section.md
-2026-09-16-effectiveness-settings-section.md: 380a948c4c959636e166d50f5d8aacceff0e7bbd
-2026-09-16-effectiveness-settings-section.zh.md: 33deb20ba74b0714ebc6a73339ec5c0c3c439b91
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section:
+  en: 1df58ea5e4ff74c8
+  zh: b44b257db50fed13
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section/problem:
+  en: 79cbddfc1b74864d
+  zh: c0ccd3c01bcbd2ff
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section/decision:
+  en: 2e10e327085fa749
+  zh: f7de781611ce45cf
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section/alternatives-considered:
+  en: 50fe6b795491d367
+  zh: fc3e5be2b7a55faf
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section/consequences:
+  en: d06d9774a205fbed
+  zh: 71178abf612a762d
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section/deferred:
+  en: 34b3de95859cbd84
+  zh: 133dfe8a65334f6f
+/agent-note-render-cross-session-outcome-signals-as-a-web-settings-section/testing:
+  en: 8e3d748d0c16ce1b
+  zh: 1eb2d7310fd47580

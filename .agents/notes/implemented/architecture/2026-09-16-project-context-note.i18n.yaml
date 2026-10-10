@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-project-context-note.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-project-context-note.md
-2026-09-16-project-context-note.md: 69884b78bfac880c01fca5b04099342d23a7d6ae
-2026-09-16-project-context-note.zh.md: d1eaa37ce6144d4fb36bd9b4964e8b94c9ba2c07
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to:
+  en: 900e9eafe5ad1436
+  zh: 1f2cb9f61a879e82
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to/problem:
+  en: 613a79959e5f241d
+  zh: de41503f00f19c6f
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to/decision:
+  en: 9f3cfd4de842789b
+  zh: 06238b616b712508
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to/alternatives-considered:
+  en: 1db2ee0df2c5c115
+  zh: 817325d396ea57dd
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to/consequences:
+  en: fb0974f6cb287208
+  zh: 020f074d9e297d74
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to/deferred:
+  en: e2d0b952913d6eaa
+  zh: eb4046f1b3180f97
+/agent-note-tell-the-model-which-board-tasks-its-session-is-linked-to/testing:
+  en: e4a09918d531c8cb
+  zh: 8b658858ccc74377

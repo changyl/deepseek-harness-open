@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-usage-statistics-seam.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-usage-statistics-seam.md
-2026-09-16-usage-statistics-seam.md: 2b4aa81120ec2e9651276878f11fc6f6d3a6d7ee
-2026-09-16-usage-statistics-seam.zh.md: 28eee096d4441e5eb3f731412624cb28653de81a
+/agent-note-report-token-usage-and-cost-through-one-usage-seam:
+  en: cedb3f8f809c1693
+  zh: defeeb800bbf98b7
+/agent-note-report-token-usage-and-cost-through-one-usage-seam/problem:
+  en: 50ba07bc7c7ab0ad
+  zh: 11561c9d0ed9fed0
+/agent-note-report-token-usage-and-cost-through-one-usage-seam/decision:
+  en: 6477f84a0034e26e
+  zh: 84789dbea16a2a81
+/agent-note-report-token-usage-and-cost-through-one-usage-seam/alternatives-considered:
+  en: 7c1c09f10421caeb
+  zh: 7ab9bb625428eb11
+/agent-note-report-token-usage-and-cost-through-one-usage-seam/consequences:
+  en: a9aa08a6e1ee47e5
+  zh: 1fa25539e291f5c0
+/agent-note-report-token-usage-and-cost-through-one-usage-seam/testing:
+  en: 15713439b75e81bd
+  zh: 70ab656e3965aac7

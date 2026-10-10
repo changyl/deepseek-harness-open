@@ -30,7 +30,7 @@ function injectedEvent(): SessionEvent {
     type: 'user/message',
     seq: SessionSeq(0),
     time: 0,
-    data: { role: 'user', content: [], source: { kind: 'plugin', plugin: name, form: 'snapshot', sections: [] } },
+    data: { role: 'user', content: [], source: { kind: name, form: 'snapshot', sections: [] } },
   } as unknown as SessionEvent
 }
 

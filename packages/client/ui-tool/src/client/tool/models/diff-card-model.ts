@@ -1,7 +1,8 @@
 /** Pure diff-card derivation from raw file-mutation calls and result metadata. @module */
-import { narrowDiffHunks, type DiffBlockProps, type DiffHunk } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { DiffBlockProps, DiffHunk } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallBlock } from './tool-call-model.ts'
-import { parsedToolCall, validEscalationFields } from './raw-tool-call.ts'
+import { parsedToolCall } from './raw-tool-call.ts'
+import { recordedAbsolutePath } from './recorded-path.ts'
 
 /** Room for a path, one removed/added pair, and three context lines on each side. */
 export const CHAT_DIFF_MAX_LINES = 9
@@ -18,6 +19,25 @@ export interface DiffCardModel {
    * neighbouring field into it.
    */
   card: Pick<DiffBlockProps, 'diffs'>
+}
+
+/**
+ * Narrow opaque result metadata's `diffs` to well-formed hunks.
+ * @param diffs - the metadata field to validate.
+ * @returns the validated hunks, or null when the payload is not usable.
+ */
+function narrowDiffs(diffs: unknown): DiffHunk[] | null {
+  if (!Array.isArray(diffs) || diffs.length === 0) return null
+  const out: DiffHunk[] = []
+  for (const hunk of diffs) {
+    if (typeof hunk !== 'object' || hunk === null) return null
+    const { path, oldText, newText } = hunk as Record<string, unknown>
+    if (typeof path !== 'string') return null
+    if (oldText !== null && typeof oldText !== 'string') return null
+    if (typeof newText !== 'string') return null
+    out.push({ path, oldText, newText })
+  }
+  return out
 }
 
 type IntendedDiff = { tool: 'write' | 'edit' | 'str_replace_editor'; diff: DiffHunk }
@@ -47,7 +67,6 @@ function intendedDiff(block: ToolCallBlock): IntendedDiff | null {
   }
   const { file_path: path } = parsed.args
   if (typeof path !== 'string' || path.trim() === '') return null
-  if (!validEscalationFields(parsed.args)) return null
   if (parsed.name === 'write') {
     const { content } = parsed.args
     return typeof content === 'string'
@@ -66,7 +85,7 @@ function appliedDiffs(meta: unknown): DiffHunk[] | 'empty' | null {
   const diffs = (meta as Record<string, unknown>).diffs
   if (!Array.isArray(diffs)) return null
   if (diffs.length === 0) return 'empty'
-  return narrowDiffHunks(diffs)
+  return narrowDiffs(diffs)
 }
 
 /**
@@ -89,5 +108,6 @@ export function diffCardModel(block: ToolCallBlock): DiffCardModel | null {
   if (applied === null || applied === 'empty') {
     return intended.tool === 'write' ? { card: { diffs: [intended.diff] } } : null
   }
-  return { card: { diffs: applied } }
+  const path = recordedAbsolutePath(block.meta, 'path')
+  return { card: { diffs: applied.map(diff => diff.path === path ? { ...diff, path: intended.diff.path } : diff) } }
 }

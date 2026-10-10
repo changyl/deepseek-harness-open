@@ -1,6 +1,94 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/project/tool-project/README.md
-README.md: b1de917e30d7f82781413e209d36371719d0b313
-README.zh.md: 42302a2b5bd7bbc0c0e6388a1144449ffc9118e1
+/:
+  en: 33a4a13a8de6880b
+  zh: 8f22561aef6db0bc
+/deepseek-ai-dsh-tool-project:
+  en: d1b7343c5b7133a5
+  zh: 4c0c7a6a67622c8a
+/deepseek-ai-dsh-tool-project/summary:
+  en: 51a214e2b3ca7e56
+  zh: e67b2d4b210d4233
+/deepseek-ai-dsh-tool-project/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 1db86285abf6c499
+/deepseek-ai-dsh-tool-project/use-this-package:
+  en: 640e6efccef6e4d2
+  zh: 00282bb04b193824
+/deepseek-ai-dsh-tool-project/use-this-package/when-to-choose-it:
+  en: af969f1798b95469
+  zh: cb4dcd89aa490c2b
+/deepseek-ai-dsh-tool-project/use-this-package/minimal-composition:
+  en: 1fba7556231d1bfa
+  zh: 57ea645f644d7b62
+/deepseek-ai-dsh-tool-project/use-this-package/configuration:
+  en: 3e5dd0416f06e73b
+  zh: 06875cdc84a786b9
+/deepseek-ai-dsh-tool-project/use-this-package/what-each-action-does:
+  en: 79228a66bb16f758
+  zh: 8bd722f617d67d68
+/deepseek-ai-dsh-tool-project/use-this-package/the-revision-contract:
+  en: e2ac2ed3b46dc963
+  zh: d68e2f6ffa69b6a8
+/deepseek-ai-dsh-tool-project/use-this-package/failures-the-model-sees:
+  en: ed24f63aa203f586
+  zh: 54a27a0203c023ea
+/deepseek-ai-dsh-tool-project/understand-the-implementation:
+  en: 8d94a7381bca3fa9
+  zh: 36fe1a3e0250bcf8
+/deepseek-ai-dsh-tool-project/understand-the-implementation/design-concept:
+  en: 157909e9ea08cb49
+  zh: d9d26df26dde2845
+/deepseek-ai-dsh-tool-project/understand-the-implementation/source-map:
+  en: 78efb03ebae556cc
+  zh: 8f687c5f2108e7e3
+/deepseek-ai-dsh-tool-project/understand-the-implementation/export-shape:
+  en: 50432ff90c974616
+  zh: d8937bf4893c6c2b
+/deepseek-ai-dsh-tool-project/understand-the-implementation/caller-identity-and-workspace:
+  en: 9f4bafb4fa72b885
+  zh: df3861cb7585cdad
+/deepseek-ai-dsh-tool-project/understand-the-implementation/result-bounds:
+  en: 0944e30243fa1d63
+  zh: d6eb5b84cb0abe02
+/deepseek-ai-dsh-tool-project/understand-the-implementation/bounded-result-types:
+  en: 6c84e9adb1a714aa
+  zh: db49a52bc4408470
+/deepseek-ai-dsh-tool-project/further-exploration:
+  en: 4366d1b8e27661c4
+  zh: fbace4072d0831b4
+/deepseek-ai-dsh-tool-project/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-project/model-experience/tool-schema:
+  en: e4c7376d4f29dbd5
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-tool-project/model-experience/tool-schema/what-the-model-sees:
+  en: 13ef531746f801af
+  zh: 1d73389fac34e2f7
+/deepseek-ai-dsh-tool-project/model-experience/tool-schema/token-effect:
+  en: a0a8f5ec3db0f500
+  zh: 42f5fabebe4fd0f4
+/deepseek-ai-dsh-tool-project/model-experience/tool-schema/kv-cache-effect:
+  en: 25c8548b998782cc
+  zh: faecc66bb7109f2d
+/deepseek-ai-dsh-tool-project/model-experience/tool-call-history-and-result:
+  en: 9717b983b6a857e3
+  zh: 611a2dadf7c0c706
+/deepseek-ai-dsh-tool-project/model-experience/tool-call-history-and-result/what-the-model-sees:
+  en: 8145cfa3ea19ddf2
+  zh: 3a7c2297f870b484
+/deepseek-ai-dsh-tool-project/model-experience/tool-call-history-and-result/token-effect:
+  en: 784f3d69875866eb
+  zh: f8ebef5c6d101723
+/deepseek-ai-dsh-tool-project/model-experience/tool-call-history-and-result/kv-cache-effect:
+  en: f5d5f97a153f7c70
+  zh: a5411047e008a0c1
+/deepseek-ai-dsh-tool-project/known-limitations-and-deferred-work:
+  en: 5dae341812f7a8e1
+  zh: cf885ee517ae72ea
+/deepseek-ai-dsh-tool-project/known-limitations-and-deferred-work/dev-note:
+  en: 1cf71b15880d9371
+  zh: 3e0368394d6ef9a0

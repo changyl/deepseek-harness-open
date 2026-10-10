@@ -50,7 +50,7 @@ The body is the child persona. The tool passes it as the start request's `person
 
 ## 5. Narrow, never grant
 
-Every field narrows the composition the child would otherwise inherit. `tools` becomes the child's allow-list, each named tool must already be visible to the spawning agent, and `max_depth` can only tighten a cap. A definition grants no plugin and cannot change the composition its child joins, so it is safe to author from a source an [agent preset](../../packages/preset/agent-presets/README.md) would not be trusted to supply: a preset selects its own plugins and is trusted configuration.
+Every field narrows the composition the child would otherwise inherit. `tools` becomes the child's allow-list, each named tool must already be visible to the spawning agent, and `max_depth` can only tighten a cap. A definition grants no plugin and cannot change the composition its child joins, so it is safe to author from a source an [agent preset](../../packages/preset/agent-preset-registry/README.md) would not be trusted to supply: a preset selects its own plugins and is trusted configuration.
 
 A definition that names a tool the spawning agent cannot see, or that carries `tools` or `max_depth` while its provider lacks the `toolFilter` or `depthLimit` capability, is rejected before any child exists. Definitions are hosted only by providers that advertise `persona`: the in-process `spawn` and `fork` backends. The out-of-process ACP, Codex, and Claude Code providers advertise no start capability, and the SDK provider advertises `agentOptions` only, so none of them hosts definitions.
 

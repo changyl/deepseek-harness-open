@@ -50,7 +50,7 @@ You review one database migration and report its problems in order of severity. 
 
 ## 5. 只收窄，不授予
 
-每个字段都收窄子 agent 本会继承的组装。`tools` 成为子 agent 的允许列表，其中每个工具名都必须已对发起委派的 agent 可见，而 `max_depth` 只收紧上限。定义不授予任何插件，也不能改变子 agent 加入的组装，因此可以安全地取自 [agent preset](../../packages/preset/agent-presets/README.zh.md) 不会被信任的来源：preset 会选择自己的插件，属于受信任配置。
+每个字段都收窄子 agent 本会继承的组装。`tools` 成为子 agent 的允许列表，其中每个工具名都必须已对发起委派的 agent 可见，而 `max_depth` 只收紧上限。定义不授予任何插件，也不能改变子 agent 加入的组装，因此可以安全地取自 [agent preset](../../packages/preset/agent-preset-registry/README.zh.md) 不会被信任的来源：preset 会选择自己的插件，属于受信任配置。
 
 定义了发起委派 agent 看不到的工具名，或在提供方缺少 `toolFilter` 或 `depthLimit` 能力时携带 `tools` 或 `max_depth`，都会在任何子 agent 存在之前被拒绝。只有声明 `persona` 的提供方承载定义：进程内的 `spawn` 与 `fork` 后端。进程外 ACP、Codex 与 Claude Code 提供方不声明任何启动能力，SDK 提供方只声明 `agentOptions`，因此它们都不承载定义。
 

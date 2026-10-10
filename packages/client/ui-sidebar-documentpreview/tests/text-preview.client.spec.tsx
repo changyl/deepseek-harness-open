@@ -4,11 +4,10 @@
  * with a navigation: load until the asked line is held, jump to it once, then
  * keep the reader's place.
  *
- * jsdom lays nothing out, so three geometry facts are supplied here: a line's
- * offset is its number times one line height, a comparison band's offset is its
- * band index times one line height, and `scrollTop` holds what it is set to.
- * All three are the browser's job; the specs assert the body's arithmetic over
- * them.
+ * jsdom lays nothing out, so two geometry facts are supplied here: a line's
+ * offset is its number times one line height, and `scrollTop` holds what it is
+ * set to. Both are the browser's job; the specs assert the body's arithmetic
+ * over them.
  */
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
@@ -28,7 +27,6 @@ const LINE_HEIGHT = 20
 const originals = {
   offsetTop: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop'),
   scrollTop: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTop'),
-  getBoundingClientRect: Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'getBoundingClientRect'),
 }
 
 beforeAll(() => {
@@ -40,21 +38,6 @@ beforeAll(() => {
       if (!this.matches('[data-code-preview] pre .line')) return 0
       const rows = this.closest('[data-code-preview]')?.querySelectorAll('pre .line') ?? []
       return Array.from(rows).indexOf(this) * LINE_HEIGHT
-    },
-  })
-  Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
-    configurable: true,
-    value(this: HTMLElement): DOMRect {
-      // Only the comparison's landing anchor is positioned; everything else sits
-      // at the scroller's origin, as it does in jsdom already.
-      const band = this.hasAttribute('data-split-change-start') ? this.closest('[data-split-row]') : null
-      const bands = band === null ? [] : Array.from(this.closest('[data-diff]')?.querySelectorAll('[data-split-row]') ?? [])
-      const anchor = this.hasAttribute('data-diff-hunk') ? this : null
-      const anchors = anchor === null ? [] : Array.from(this.closest('[data-diff]')?.querySelectorAll('[data-diff-hunk]') ?? [])
-      const top = anchor !== null
-        ? anchors.indexOf(anchor) * LINE_HEIGHT
-        : band === null ? 0 : bands.indexOf(band) * LINE_HEIGHT
-      return { top, bottom: top, height: 0, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }
     },
   })
   Object.defineProperty(HTMLElement.prototype, 'scrollTop', {
@@ -163,56 +146,6 @@ describe('TextPreview — pages', () => {
     expect(view.container.querySelector('[data-textpreview-path]')?.getAttribute('title')).toBe(ABSOLUTE_PATH)
   })
 
-  it('marks the path clipped while its text is wider than its box, re-reading on resize', async () => {
-    class FakeResizeObserver implements ResizeObserver {
-      static latest: FakeResizeObserver | undefined
-      readonly observe = vi.fn()
-      readonly unobserve = vi.fn()
-      readonly disconnect = vi.fn()
-      constructor(private readonly callback: ResizeObserverCallback) {
-        FakeResizeObserver.latest = this
-      }
-
-      fire(): void {
-        this.callback([], this)
-      }
-    }
-    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
-    let boxWidth = 300
-    const offsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')
-    const clientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 200 })
-    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => boxWidth })
-    try {
-      const h = harness({ 1: page(1, ['one'], true) })
-      const view = render(<TextPreview {...h.props()} />)
-      await settle()
-      const path = view.container.querySelector<HTMLElement>('[data-textpreview-path]')
-      const text = path?.firstElementChild
-      expect(path?.hasAttribute('data-textpreview-path-clipped')).toBe(false)
-      const observer = FakeResizeObserver.latest
-      if (observer === undefined) throw new Error('expected the path to observe its size')
-      expect(observer.observe).toHaveBeenCalledWith(path)
-      expect(observer.observe).toHaveBeenCalledWith(text)
-
-      boxWidth = 120
-      act(() => { observer.fire() })
-      expect(path?.hasAttribute('data-textpreview-path-clipped')).toBe(true)
-
-      boxWidth = 300
-      act(() => { observer.fire() })
-      expect(path?.hasAttribute('data-textpreview-path-clipped')).toBe(false)
-      view.unmount()
-      expect(observer.disconnect).toHaveBeenCalledTimes(1)
-    } finally {
-      vi.unstubAllGlobals()
-      for (const [name, descriptor] of [['offsetWidth', offsetWidth], ['clientWidth', clientWidth]] as const) {
-        if (descriptor === undefined) Reflect.deleteProperty(HTMLElement.prototype, name)
-        else Object.defineProperty(HTMLElement.prototype, name, descriptor)
-      }
-    }
-  })
-
   it('reads the first page on first mount and draws its lines, offering the next', async () => {
     const h = harness({ 1: page(1, ['one', 'two', 'three'], false) })
     const view = render(<TextPreview {...h.props()} />)
@@ -270,20 +203,59 @@ describe('TextPreview — pages', () => {
   })
 
   it('says why a page failed and retries the same page', async () => {
+    const h = harness({ 1: failure('gateway/internal', { path: PATH }) })
+    const view = render(<TextPreview {...h.props()} />)
+    await settle()
+    const failed = view.container.querySelector('[data-textpreview-failed]')
+    expect(failed?.getAttribute('data-textpreview-failed')).toBe('gateway/internal')
+    expect(view.container.textContent).toContain('error.unavailable(message=boom)')
+    // Nothing read yet: the failure stands as the body, under the file's type sheet.
+    expect(failed?.querySelector('svg')).not.toBeNull()
+    expect(view.container.querySelector('[data-textpreview-more]')).toBeNull()
+    expect(view.container.querySelector('[data-slot="sidebar.right.tab.document.unpreviewable"]')).toBeNull()
+    h.script(1, page(1, ['one'], true))
+    click(view.container, '[data-textpreview-retry]')
+    await settle()
+    expect(h.read).toHaveBeenLastCalledWith(SESSION, PATH, 1, h.controller.signal)
+    expect(lines(view.container)).toEqual(['one\n'])
+    expect(view.container.querySelector('[data-textpreview-failed]')).toBeNull()
+  })
+
+  it('hands a readable file it cannot render to the unpreviewable seat instead of Retry', async () => {
     const h = harness({ 1: failure('workspace-file/not-text', { path: PATH }) })
     const view = render(<TextPreview {...h.props()} />)
     await settle()
     const failed = view.container.querySelector('[data-textpreview-failed]')
     expect(failed?.getAttribute('data-textpreview-failed')).toBe('workspace-file/not-text')
     expect(view.container.textContent).toContain('error.notText')
-    // Nothing read yet: the failure stands as the body, under the file's type sheet.
-    expect(failed?.querySelector('svg')).not.toBeNull()
-    expect(view.container.querySelector('[data-textpreview-more]')).toBeNull()
-    h.script(1, page(1, ['one'], true))
-    click(view.container, '[data-textpreview-retry]')
+    expect(view.container.querySelector('[data-textpreview-retry]')).toBeNull()
+    const seat = failed?.querySelector('[data-slot="sidebar.right.tab.document.unpreviewable"]')
+    expect(seat?.getAttribute('data-slot-path')).toBe(ABSOLUTE_PATH)
+    // The header's own handoff seat receives the same file.
+    const actions = view.container.querySelector('[data-slot="sidebar.right.tab.document.actions"]')
+    expect(actions?.getAttribute('data-slot-path')).toBe(ABSOLUTE_PATH)
+  })
+
+  it('offers neither Retry nor a handoff for a path with nothing to show', async () => {
+    const h = harness({ 1: failure('workspace-file/not-found', { path: PATH }) })
+    const view = render(<TextPreview {...h.props()} />)
     await settle()
-    expect(h.read).toHaveBeenLastCalledWith(SESSION, PATH, 1, h.controller.signal)
-    expect(lines(view.container)).toEqual(['one\n'])
+    expect(view.container.querySelector('[data-textpreview-failed]')?.getAttribute('data-textpreview-failed')).toBe('workspace-file/not-found')
+    expect(view.container.querySelector('[data-textpreview-retry]')).toBeNull()
+    expect(view.container.querySelector('[data-slot="sidebar.right.tab.document.unpreviewable"]')).toBeNull()
+  })
+
+  it('withholds the handoff seats until the file reports a Host path', async () => {
+    const h = harness({ 1: failure('workspace-file/not-text', { path: PATH }) })
+    h.setVersion(undefined)
+    const view = render(<TextPreview {...h.props()} />)
+    await settle()
+    expect(view.container.querySelector('[data-textpreview-failed]')).not.toBeNull()
+    expect(view.container.querySelector('[data-slot]')).toBeNull()
+    h.script(1, page(1, ['reloaded'], true))
+    click(view.container, '[data-textpreview-tool="reload"]')
+    await settle()
+    expect(h.read).toHaveBeenCalledTimes(2)
     expect(view.container.querySelector('[data-textpreview-failed]')).toBeNull()
   })
 
@@ -304,11 +276,12 @@ describe('TextPreview — pages', () => {
     expect(view.container.querySelector('[data-textpreview-failed]')).toBeNull()
   })
 
-  it('announces a change and, on request, re-reads the pages keeping the reader\'s place', async () => {
+  it('announces a change while automatic refresh is paused and reloads on request, keeping the reader\'s place', async () => {
     const h = harness({ 1: page(1, ['a', 'b'], true) })
     const view = render(<TextPreview {...h.props()} />)
     await settle()
     fireEvent.scroll(body(view.container), { target: { scrollTop: 50 } })
+    click(view.container, '[data-textpreview-tool="auto-refresh"]')
     h.setVersion('v2')
     view.rerender(<TextPreview {...h.props()} />)
     expect(view.container.querySelector('[data-textpreview-changed]')?.textContent).toContain('changed')
@@ -324,10 +297,40 @@ describe('TextPreview — pages', () => {
 })
 
 describe('TextPreview — the file\'s metadata', () => {
+  it('refreshes by default with the toggle hidden and catches up when automatic refresh resumes', async () => {
+    const h = harness({ 1: page(1, ['old'], true) })
+    const view = render(<TextPreview {...h.props()} />)
+    await settle()
+    const toggle = view.container.querySelector('[data-textpreview-tool="auto-refresh"]')!
+    expect(toggle.closest('[hidden]')).not.toBeNull()
+    expect(toggle.getAttribute('aria-pressed')).toBe('true')
+    expect(view.queryByRole('button', { name: 'autoRefresh' })).toBeNull()
+    expect(view.getByRole('button', { name: 'reload' })).toBeTruthy()
+    fireEvent.scroll(body(view.container), { target: { scrollTop: 40 } })
+    h.script(1, page(1, ['updated'], true, 'v2'))
+    h.setVersion('v2')
+    view.rerender(<TextPreview {...h.props()} />)
+    await settle()
+    expect(lines(view.container)).toEqual(['updated\n'])
+    expect(body(view.container).scrollTop).toBe(40)
+    expect(h.read).toHaveBeenCalledTimes(2)
+    fireEvent.click(toggle)
+    h.script(1, page(1, ['latest'], true, 'v3'))
+    h.setVersion('v3')
+    view.rerender(<TextPreview {...h.props()} />)
+    expect(lines(view.container)).toEqual(['updated\n'])
+    expect(h.read).toHaveBeenCalledTimes(2)
+    fireEvent.click(toggle)
+    await settle()
+    expect(lines(view.container)).toEqual(['latest\n'])
+    expect(h.read).toHaveBeenCalledTimes(3)
+  })
+
   it('does not treat the observation present at read start as a later file change', async () => {
     const h = harness({ 1: page(1, ['newer read'], true, 'v2') })
     const view = render(<TextPreview {...h.props()} />)
     await settle()
+    click(view.container, '[data-textpreview-tool="auto-refresh"]')
     expect(h.instance.getSnapshot().byTab[TAB_ID]).toMatchObject({ version: 'v2', observedVersion: 'v1' })
     expect(view.container.querySelector('[data-textpreview-changed]')).toBeNull()
     h.setVersion('v3')
@@ -343,11 +346,12 @@ describe('TextPreview — the file\'s metadata', () => {
     expect(view.container.querySelector('[data-textpreview-changed]')).not.toBeNull()
   })
 
-  it('announces metadata that changes while the first content read is still pending', async () => {
+  it('announces metadata that changes during the first read while automatic refresh is paused', async () => {
     const h = harness()
     const pending = Promise.withResolvers<ReturnType<typeof page>>()
     h.read.mockReturnValueOnce(pending.promise)
     const view = render(<TextPreview {...h.props()} />)
+    click(view.container, '[data-textpreview-tool="auto-refresh"]')
     h.setVersion('v2')
     view.rerender(<TextPreview {...h.props()} />)
     await act(async () => { pending.resolve(page(1, ['read v1'], true)); await pending.promise })
@@ -365,6 +369,8 @@ describe('TextPreview — the file\'s metadata', () => {
     const first = render(<TextPreview {...firstProps} />)
     const second = render(<TextPreview {...secondProps} />)
     await settle()
+    click(first.container, '[data-textpreview-tool="auto-refresh"]')
+    click(second.container, '[data-textpreview-tool="auto-refresh"]')
     h.setVersion('v2')
     first.rerender(<TextPreview {...firstProps} />)
     second.rerender(<TextPreview {...secondProps} />)
@@ -585,6 +591,16 @@ describe('TextPreview — navigation and view', () => {
 })
 
 describe('TextPreview — header controls', () => {
+  it('displays the document refresh binding supplied by its tab owner', async () => {
+    const h = harness({ 0: page(0, ['hello'], true) })
+    const props = h.props(), info = props.useTabInfo()
+    const view = render(<TextPreview {...props} useTabInfo={() => ({ ...info, tab: { ...info.tab,
+      refreshShortcut: { id: 'page.refresh' as never, label: 'Refresh', aliases: [], binding: null,
+        keys: ['Ctrl', 'R'], aria: 'Control+R', modified: true, conflicts: [], issue: null },
+    } })} />)
+    await settle()
+    expect(view.container.querySelector('[data-textpreview-tool="reload"]')?.getAttribute('aria-keyshortcuts')).toBe('Control+R')
+  })
   it('toggles wrap off from the header, reporting the pressed state', async () => {
     const h = harness({ 1: page(1, ['a'], true) })
     const view = render(<TextPreview {...h.props()} />)
@@ -634,393 +650,5 @@ describe('TextPreview — header controls', () => {
     expect(armed.mock.calls.filter(([type]) => type === 'abort')).toHaveLength(1)
     h.controller.abort()
     expect(h.instance.getSnapshot().byTab[TAB_ID]).toBeUndefined()
-  })
-})
-
-describe('TextPreview — the Turn change', () => {
-  const change = (oldText: string, newText: string) => [{ path: PATH, oldText, newText }]
-
-  it('opens on the Turn change and returns to the file through the toggle', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    const drawn = view.container.querySelector('[data-textpreview-change]')
-    expect(drawn?.textContent).toContain('after')
-    expect(drawn?.textContent).toContain('before')
-    const toggle = view.container.querySelector<HTMLButtonElement>('[data-textpreview-tool="change"]')
-    if (toggle === null) throw new Error('expected the change toggle')
-    expect(toggle.getAttribute('aria-pressed')).toBe('true')
-    expect(toggle.textContent).toBe('change.show')
-    expect(toggle.getAttribute('aria-label')).toBe('change.aria')
-    fireEvent.scroll(body(view.container))
-    fireEvent.click(toggle)
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    expect(toggle.getAttribute('aria-pressed')).toBe('false')
-    expect(lines(view.container)).toEqual(['one\n'])
-    fireEvent.click(toggle)
-    expect(view.container.querySelector('[data-textpreview-change]')).not.toBeNull()
-  })
-
-  it("draws the change with the file type's own grammar", async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('const a = 1', 'const b = 2'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    // The tab's own path selects the grammar: `work/notes.md` is Markdown, so
-    // the change surface announces that it is rendering the change highlighted.
-    const drawn = view.container.querySelector('[data-textpreview-change] [data-diff]')
-    expect(drawn?.hasAttribute('data-diff-highlight')).toBe(true)
-    expect(drawn?.textContent).toContain('const b = 2')
-  })
-
-  it('shows the file and no toggle when no Turn indexed the change', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    expect(view.container.querySelector('[data-textpreview-tool="change"]')).toBeNull()
-    expect(view.container.querySelector('[data-textpreview-tool="split"]')).toBeNull()
-    expect(lines(view.container)).toEqual(['one\n'])
-  })
-
-  it('starts on the change again when the tab is navigated to another one', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    h.setChange(ADDRESS, 9, change('after', 'later'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="change"]')
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 9 }, revision: 3 })} />)
-    expect(view.container.querySelector('[data-textpreview-change]')?.textContent).toContain('later')
-  })
-
-  it('reports no stale file and offers no further pages under a change', async () => {
-    const h = harness({ 1: page(1, ['one'], false) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    h.setVersion('v2')
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    expect(view.container.querySelector('[data-textpreview-changed]')).toBeNull()
-    expect(view.container.querySelector('[data-textpreview-meta-failed]')).toBeNull()
-    expect(view.container.querySelector('[data-textpreview-more]')).toBeNull()
-    h.setChange(ADDRESS, 5, undefined)
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 3 })} />)
-    expect(view.container.querySelector('[data-textpreview-changed]')).not.toBeNull()
-    expect(view.container.querySelector('[data-textpreview-more]')).not.toBeNull()
-  })
-})
-
-describe('TextPreview — the side-by-side comparison', () => {
-  const change = (oldText: string, newText: string) => [{ path: PATH, oldText, newText }]
-
-  /** The two cells of every paired row, as `[old, new]`. */
-  const pairs = (container: HTMLElement): [string, string][] =>
-    [...container.querySelectorAll('[data-split-row="pair"]')].map((row) => {
-      const cells = row.querySelectorAll('[data-split-side]')
-      return [cells[0]?.textContent ?? '', cells[1]?.textContent ?? '']
-    })
-
-  it("draws the change in place among the file's own lines", async () => {
-    const h = harness({ 1: page(1, ['a', 'b', 'c', 'NEW', 'e', 'f', 'g'], true) })
-    h.setChange(ADDRESS, 5, [{ path: PATH, oldText: 'b\nc\nOLD', newText: 'b\nc\nNEW', newStart: 2 }])
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    // The unchanged lines around the change are drawn too: the comparison is the whole file.
-    expect(pairs(view.container)).toEqual([
-      ['a', 'a'], ['b', 'b'], ['c', 'c'], ['OLD', 'NEW'], ['e', 'e'], ['f', 'f'], ['g', 'g'],
-    ])
-  })
-
-  it('reads the whole file while the comparison is selected', async () => {
-    // Offsets are line numbers: lines 1-2 arrive first, the walk asks for line 3 next.
-    const h = harness({ 1: page(1, ['a', 'NEW'], false), 3: page(3, ['c', 'd'], true) })
-    h.setChange(ADDRESS, 5, [{ path: PATH, oldText: 'a\nOLD', newText: 'a\nNEW', newStart: 1 }])
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    // The one-column change is a closed surface: it does not page the file.
-    expect(h.read).toHaveBeenCalledTimes(1)
-    click(view.container, '[data-textpreview-tool="split"]')
-    await settle()
-    await settle()
-    expect(h.read).toHaveBeenCalledWith(SESSION, PATH, 3, expect.anything())
-    expect(pairs(view.container)).toEqual([['a', 'a'], ['OLD', 'NEW'], ['c', 'c'], ['d', 'd']])
-  })
-
-  it('records the reader\'s decision and shows it on the controls', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    const accept = view.container.querySelector<HTMLButtonElement>('[data-textpreview-tool="accept"]')
-    const revert = view.container.querySelector<HTMLButtonElement>('[data-textpreview-tool="revert"]')
-    expect(accept?.textContent).toBe('review.accept')
-    expect(revert?.textContent).toBe('review.revert')
-    fireEvent.click(accept as HTMLButtonElement)
-    await settle()
-    expect(h.review).toHaveBeenCalledWith('accepted', { seq: 5, path: PATH })
-    expect(view.container.querySelector('[data-textpreview-tool="accept"]')?.textContent).toBe('review.accepted')
-    // The change stays on screen: accepting keeps the file as the change left it.
-    expect(view.container.querySelector('[data-textpreview-change]')).not.toBeNull()
-  })
-
-  it('reverts the change, then shows the restored file', async () => {
-    const h = harness({ 1: page(1, ['before'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    fireEvent.click(view.container.querySelector('[data-textpreview-tool="revert"]') as HTMLButtonElement)
-    await settle()
-    expect(h.review).toHaveBeenCalledWith('reverted', { seq: 5, path: PATH })
-    // The change view is left behind and the file is read again.
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    expect(h.read).toHaveBeenCalledTimes(2)
-  })
-
-  it('steps between the changes of one Turn, stopping at both ends', async () => {
-    const h = harness({ 1: page(1, ['a'], true) })
-    h.setChange(ADDRESS, 5, [
-      { path: PATH, oldText: 'one', newText: 'ONE' },
-      { path: PATH, oldText: 'two', newText: 'TWO' },
-      { path: PATH, oldText: 'three', newText: 'THREE' },
-    ])
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    const position = (): string | null | undefined =>
-      view.container.querySelector('[data-textpreview-hunk-position]')?.textContent
-    const button = (tool: string): HTMLButtonElement =>
-      view.container.querySelector<HTMLButtonElement>(`[data-textpreview-tool="${tool}"]`) as HTMLButtonElement
-    expect(position()).toBe('hunk.position(index=1,count=3)')
-    expect(button('prev-hunk').disabled).toBe(true)
-    fireEvent.click(button('next-hunk'))
-    expect(position()).toBe('hunk.position(index=2,count=3)')
-    // The body lands on that change: one line height per anchor.
-    expect(body(view.container).scrollTop).toBe(20)
-    fireEvent.click(button('next-hunk'))
-    expect(position()).toBe('hunk.position(index=3,count=3)')
-    expect(button('next-hunk').disabled).toBe(true)
-    fireEvent.click(button('prev-hunk'))
-    expect(position()).toBe('hunk.position(index=2,count=3)')
-  })
-
-  it('steps between the changes of a whole-file comparison too', async () => {
-    const h = harness({ 1: page(1, ['a', 'b', 'ONE', 'c', 'd', 'TWO', 'e'], true) })
-    h.setChange(ADDRESS, 5, [
-      { path: PATH, oldText: 'b\none', newText: 'b\nONE', newStart: 2 },
-      { path: PATH, oldText: 'd\ntwo', newText: 'd\nTWO', newStart: 5 },
-    ])
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(view.container.querySelectorAll('[data-diff-hunk]')).toHaveLength(2)
-    click(view.container, '[data-textpreview-tool="next-hunk"]')
-    expect(view.container.querySelector('[data-textpreview-hunk-position]')?.textContent)
-      .toBe('hunk.position(index=2,count=2)')
-    expect(view.container.querySelector('[data-textpreview-tool="next-hunk"]')?.hasAttribute('disabled')).toBe(true)
-  })
-
-  it('steps into the next file of the Turn, and back into the previous one', async () => {
-    const h = harness({ 1: page(1, ['a'], true) })
-    h.setChange(ADDRESS, 5, [
-      { path: PATH, oldText: 'one', newText: 'ONE' },
-      { path: PATH, oldText: 'two', newText: 'TWO' },
-    ])
-    const other = 'dsh-resource://file/session/s-1/work/other.md'
-    const neighbour = { address: other, seq: 9, diffs: [{ path: PATH, oldText: 'x', newText: 'X' }], turn: 1 }
-    h.setNeighbour(ADDRESS, 5, 'next', neighbour)
-    h.setNeighbour(ADDRESS, 5, 'previous', neighbour)
-    // Two regions of the Turn precede this change, of five in it.
-    h.setHunkRange(ADDRESS, 5, { before: 2, total: 5 })
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    const position = (): string | null | undefined =>
-      view.container.querySelector('[data-textpreview-hunk-position]')?.textContent
-    const button = (tool: string): HTMLButtonElement =>
-      view.container.querySelector<HTMLButtonElement>(`[data-textpreview-tool="${tool}"]`) as HTMLButtonElement
-    expect(position()).toBe('hunk.position(index=3,count=5)')
-    // Past the last region of this file, the next step opens the next change's
-    // first region.
-    fireEvent.click(button('next-hunk'))
-    expect(position()).toBe('hunk.position(index=4,count=5)')
-    fireEvent.click(button('next-hunk'))
-    expect(h.tabActions.openResource).toHaveBeenCalledWith(other, { params: { changeSeq: 9, hunk: 0 } })
-    // Before the first region, the previous step opens the previous change's last.
-    fireEvent.click(button('prev-hunk'))
-    fireEvent.click(button('prev-hunk'))
-    expect(h.tabActions.openResource).toHaveBeenLastCalledWith(other, { params: { changeSeq: 9, hunk: 0 } })
-  })
-
-  it('lands on the region the navigation asked for', async () => {
-    const h = harness({ 1: page(1, ['a'], true) })
-    h.setChange(ADDRESS, 5, [
-      { path: PATH, oldText: 'one', newText: 'ONE' },
-      { path: PATH, oldText: 'two', newText: 'TWO' },
-      { path: PATH, oldText: 'three', newText: 'THREE' },
-    ])
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5, hunk: 1 }, revision: 2 })} />)
-    await settle()
-    expect(view.container.querySelector('[data-textpreview-hunk-position]')?.textContent)
-      .toBe('hunk.position(index=2,count=3)')
-  })
-
-  it('offers no stepper for a change that is a single region', async () => {
-    const h = harness({ 1: page(1, ['a'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    expect(view.container.querySelector('[data-textpreview-hunk-position]')).toBeNull()
-    expect(view.container.querySelector('[data-textpreview-tool="prev-hunk"]')).toBeNull()
-    expect(view.container.querySelector('[data-textpreview-tool="next-hunk"]')).toBeNull()
-  })
-
-  it('starts on the decision an earlier look already recorded', async () => {
-    const h = harness({ 1: page(1, ['after'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    h.setReview(ADDRESS, 5, 'reverted')
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    expect(view.container.querySelector('[data-textpreview-tool="revert"]')?.textContent).toBe('review.reverted')
-    expect(view.container.querySelector('[data-textpreview-tool="accept"]')?.textContent).toBe('review.accept')
-    // A navigation to another change starts undecided again.
-    h.setReview(ADDRESS, 9, undefined)
-    h.setChange(ADDRESS, 9, change('after', 'later'))
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 9 }, revision: 3 })} />)
-    expect(view.container.querySelector('[data-textpreview-tool="revert"]')?.textContent).toBe('review.revert')
-  })
-
-  it('reports a refused decision on the control that made it', async () => {
-    const h = harness({ 1: page(1, ['after'], true) })
-    h.review.mockResolvedValueOnce('notes.md changed after seq 5 (mismatch), so reverting it here would rewrite the wrong lines.')
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    fireEvent.click(view.container.querySelector('[data-textpreview-tool="revert"]') as HTMLButtonElement)
-    await settle()
-    expect(view.container.querySelector('[data-textpreview-tool="revert"]')?.textContent).toBe('review.failed')
-    expect(view.container.querySelector('[data-textpreview-change]')).not.toBeNull()
-  })
-
-  it('keeps the change-only body when the hunks cannot be placed in the file', async () => {
-    const h = harness({ 1: page(1, ['a', 'b', 'c'], true) })
-    h.setChange(ADDRESS, 5, change('OLD', 'NEW'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(pairs(view.container)).toEqual([['OLD', 'NEW']])
-  })
-
-  it('lands on the first change when the comparison draws the whole file', async () => {
-    const h = harness({ 1: page(1, ['a', 'b', 'c', 'NEW', 'e', 'f', 'g'], true) })
-    h.setChange(ADDRESS, 5, [{ path: PATH, oldText: 'b\nc\nOLD', newText: 'b\nc\nNEW', newStart: 2 }])
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    // The bands are the path header and then the file's lines, so the change on
-    // the file's fourth line opens on the fourth band, not on the first.
-    expect(body(view.container).scrollTop).toBe(4 * LINE_HEIGHT)
-    // A second entry into the layout lands there again.
-    click(view.container, '[data-textpreview-tool="split"]')
-    fireEvent.scroll(body(view.container), { target: { scrollTop: 0 } })
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(body(view.container).scrollTop).toBe(4 * LINE_HEIGHT)
-    // Staying in the layout leaves the reader where they scrolled to.
-    fireEvent.scroll(body(view.container), { target: { scrollTop: 0 } })
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    expect(body(view.container).scrollTop).toBe(0)
-  })
-
-  it('does not scroll when the comparison has no placed change to land on', async () => {
-    // The one-column body is the change itself, so selecting two columns keeps
-    // the reader at the top of a body that already opens on the change.
-    const h = harness({ 1: page(1, ['a', 'b', 'c'] , true) })
-    h.setChange(ADDRESS, 5, change('OLD', 'NEW'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(body(view.container).scrollTop).toBe(0)
-  })
-
-  it('swaps the change between one column and two without leaving the change', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    const split = view.container.querySelector('[data-textpreview-tool="split"]')
-    expect(split?.getAttribute('aria-pressed')).toBe('false')
-    expect(split?.textContent).toBe('split.label')
-    expect(view.container.querySelector('[data-change-mode="change"]')).toBeTruthy()
-    expect(view.container.querySelector('[data-diff-layout="split"]')).toBeNull()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
-    expect(view.container.querySelector('[data-diff-layout="split"]')).toBeTruthy()
-    // Both controls keep reporting their own fact: the change still shows.
-    expect(view.container.querySelector('[data-textpreview-tool="change"]')?.getAttribute('aria-pressed')).toBe('true')
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(view.container.querySelector('[data-change-mode="change"]')).toBeTruthy()
-    expect(view.container.querySelector('[data-diff-layout="split"]')).toBeNull()
-  })
-
-  it('reaches the comparison from the file view and leaves it through the change toggle', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="change"]')
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
-    click(view.container, '[data-textpreview-tool="change"]')
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    expect(lines(view.container)).toEqual(['one\n'])
-  })
-
-  it('keeps the comparison across a navigation to another change', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    h.setChange(ADDRESS, 9, change('after', 'later'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 9 }, revision: 3 })} />)
-    // The layout belongs to the session, so the next change is drawn in it too.
-    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
-    expect(view.container.querySelector('[data-diff-layout="split"]')).toBeTruthy()
-    expect(view.container.querySelector('[data-textpreview-change]')?.textContent).toContain('later')
-  })
-
-  it('returns to the change, in the session layout, after a step from the whole file', async () => {
-    const h = harness({ 1: page(1, ['one'], true) })
-    h.setChange(ADDRESS, 5, change('before', 'after'))
-    h.setChange(ADDRESS, 9, change('after', 'later'))
-    const view = render(<TextPreview {...h.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    click(view.container, '[data-textpreview-tool="change"]')
-    expect(view.container.querySelector('[data-textpreview-change]')).toBeNull()
-    view.rerender(<TextPreview {...h.props({ params: { changeSeq: 9 }, revision: 3 })} />)
-    // A step lands on the change: the whole-file look does not follow it, and
-    // the comparison it was asked for does.
-    expect(view.container.querySelector('[data-textpreview-change]')).not.toBeNull()
-    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
-  })
-
-  it('draws another tab of the same session in the comparison', async () => {
-    const first = harness({ 1: page(1, ['one'], true) })
-    first.setChange(ADDRESS, 5, change('before', 'after'))
-    const view = render(<TextPreview {...first.props({ params: { changeSeq: 5 }, revision: 2 })} />)
-    await settle()
-    click(view.container, '[data-textpreview-tool="split"]')
-    expect(view.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
-
-    // The neighbouring change's file is another tab of the same session store.
-    const second = harness({ 1: page(1, ['two'], true) }, 'tab-2' as TabId, first.instance)
-    second.setChange(ADDRESS, 9, change('after', 'later'))
-    const neighbour = render(<TextPreview {...second.props({ params: { changeSeq: 9 }, revision: 2 })} />)
-    await settle()
-    expect(neighbour.container.querySelector('[data-change-mode="split"]')).toBeTruthy()
   })
 })

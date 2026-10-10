@@ -1,9 +1,10 @@
 /**
  * Pure fold behind one task report: given a session log and one closed turn, it
  * extracts the request that opened the turn, the closing assistant text, the
- * files the turn changed (from the hunks `write`/`edit` recorded on their
- * results), and the verification commands the turn ran with the outcome their
- * rendered results reported.
+ * files the turn changed (from the hunks `write`/`edit` record on their
+ * results, plus the create a `write` result reports without hunks), and the
+ * verification commands the turn ran with the outcome their rendered results
+ * reported.
  *
  * Nothing here reads the filesystem, the workspace, or the model: the fold is a
  * function of the log window only, so the same log always yields the same
@@ -11,6 +12,9 @@
  */
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { TaskReportChange, TaskReportVerification } from './types.ts'
+
+/** One model-visible content block, as the Session's own message types declare it. */
+type ContentBlock = SessionEvent<'tool/result'>['data']['message']['content'][number]
 
 /** Bounds and matching rules one fold run applies. */
 export interface TaskReportFoldOptions {
@@ -38,13 +42,15 @@ export interface TaskReportFoldResult {
   readonly verification: readonly TaskReportVerification[]
 }
 
-/** One content block as far as this fold reads it. */
-interface ReadableBlock {
-  readonly type?: unknown
-  readonly text?: unknown
-  readonly content?: unknown
-  readonly isError?: unknown
-  readonly toolCallId?: unknown
+/**
+ * What one recorded tool call contributes: the shell command line a `bash` call
+ * prepared, or the text a `write` call supplied as its whole file.
+ */
+interface RecordedCall {
+  /** The command line of a `bash` call. */
+  readonly command?: string
+  /** The `content` argument of a `write` call: the whole text of a create. */
+  readonly newText?: string
 }
 
 /** One recorded applied hunk, as `write`/`edit` persist it on a tool result. */
@@ -69,7 +75,7 @@ export function foldTaskReport(
   options: TaskReportFoldOptions,
 ): TaskReportFoldResult {
   const window = turnWindow(events, inheritedEventCount, options.turn)
-  const calls = new Map<string, string>()
+  const calls = new Map<string, RecordedCall>()
   const changes = new Map<string, TaskReportChange>()
   const verification: TaskReportVerification[] = []
   let reason = 'completed'
@@ -87,13 +93,13 @@ export function foldTaskReport(
         }
         break
       case 'tool/call': {
-        const command = bashCommand(event)
-        if (command !== undefined) calls.set(event.data.callId, command)
+        const call = recordedCall(event)
+        if (call !== undefined) calls.set(event.data.callId, call)
         break
       }
       case 'tool/result': {
-        recordChanges(changes, event, options.maxChanges)
-        const command = calls.get(resultCallId(event) ?? '')
+        recordChanges(changes, event, calls, options.maxChanges)
+        const command = calls.get(event.data.message.toolCallId)?.command
         if (command !== undefined && matchesVerifyPattern(command, options.verifyPatterns)) {
           if (verification.length < options.maxVerifications) {
             verification.push(verificationOf(command, event))
@@ -144,11 +150,10 @@ function closingText(window: readonly SessionEvent[], limit: number): string | u
 }
 
 /** Join the text blocks of one message, ignoring every other block kind. */
-function messageText(content: unknown): string | undefined {
-  if (!Array.isArray(content)) return undefined
+function messageText(content: readonly ContentBlock[]): string | undefined {
   const parts: string[] = []
-  for (const block of content as readonly ReadableBlock[]) {
-    if (isRecord(block) && block.type === 'text' && typeof block.text === 'string') parts.push(block.text)
+  for (const block of content) {
+    if (block.type === 'text') parts.push(block.text)
   }
   const text = parts.join('\n').trim()
   return text === '' ? undefined : text
@@ -159,14 +164,31 @@ function bound(text: string, limit: number): string {
   return text.length <= limit ? text : `${text.slice(0, limit)}…`
 }
 
-/** The command line of one bash tool call, or undefined for any other call. */
-function bashCommand(event: SessionEvent<'tool/call'>): string | undefined {
-  if (event.data.name !== 'bash') return undefined
+/**
+ * What one tool call contributes to the fold: a `bash` command line that may
+ * count as verification, or the whole text a `write` supplied.
+ * @param event - one logged tool call.
+ * @returns the call's contribution, or undefined for a call this fold does not read.
+ */
+function recordedCall(event: SessionEvent<'tool/call'>): RecordedCall | undefined {
+  const args = callArguments(event)
+  if (args === undefined) return undefined
+  if (event.data.name === 'bash') {
+    if (typeof args.command !== 'string') return undefined
+    const command = args.command.trim()
+    return command === '' ? undefined : { command }
+  }
+  if (event.data.name === 'write') {
+    return typeof args.content === 'string' ? { newText: args.content } : undefined
+  }
+  return undefined
+}
+
+/** One call's raw argument JSON as a plain object, or undefined when it is not one. */
+function callArguments(event: SessionEvent<'tool/call'>): Record<string, unknown> | undefined {
   try {
     const args: unknown = JSON.parse(event.data.arguments)
-    if (!isRecord(args) || typeof args.command !== 'string') return undefined
-    const command = args.command.trim()
-    return command === '' ? undefined : command
+    return isRecord(args) ? args : undefined
   } catch {
     // Swallows a non-JSON argument string only: the loop logs the model's raw
     // text, so a malformed call describes no command and contributes nothing.
@@ -174,17 +196,59 @@ function bashCommand(event: SessionEvent<'tool/call'>): string | undefined {
   }
 }
 
-/** Record the hunks one tool result applied, keeping first-seen path order. */
-function recordChanges(changes: Map<string, TaskReportChange>, event: SessionEvent<'tool/result'>, limit: number): void {
-  for (const hunk of recordedHunks(event.data.meta)) {
-    if (!changes.has(hunk.path) && changes.size >= limit) continue
-    changes.set(hunk.path, {
+/**
+ * Record the file changes one tool result reported, keeping first-seen path order.
+ * @param changes - accumulated changes, keyed by path.
+ * @param event - the logged tool result.
+ * @param calls - calls recorded before this result, keyed by call id.
+ * @param limit - maximum distinct paths kept.
+ */
+function recordChanges(
+  changes: Map<string, TaskReportChange>,
+  event: SessionEvent<'tool/result'>,
+  calls: ReadonlyMap<string, RecordedCall>,
+  limit: number,
+): void {
+  const meta = event.data.meta
+  const operation = recordedOperation(meta)
+  const hunks = recordedHunks(meta)
+  for (const hunk of hunks) {
+    record(changes, {
       path: hunk.path,
-      kind: hunk.oldText === null ? 'create' : 'update',
+      // The producer's own operation wins; without one, a hunk with no previous
+      // text is how a whole-file create reaches the fold.
+      kind: operation ?? (hunk.oldText === null ? 'create' : 'update'),
       added: lineCount(hunk.newText),
       removed: hunk.oldText === null ? 0 : lineCount(hunk.oldText),
-    })
+    }, limit)
   }
+  if (hunks.length > 0) return
+  // A create carries no hunk of its own: `write` reports the operation and the
+  // canonical path while the written text stays in its call arguments.
+  if (operation !== 'create') return
+  const path = recordedPath(meta)
+  if (path === undefined) return
+  const written = calls.get(event.data.message.toolCallId)?.newText
+  record(changes, {
+    path,
+    kind: 'create',
+    added: written === undefined ? 0 : lineCount(written),
+    removed: 0,
+  }, limit)
+}
+
+/**
+ * Record one change under its path.
+ *
+ * A repeated path keeps its first position and its latest values; a new path
+ * past the limit is dropped.
+ * @param changes - accumulated changes, keyed by path.
+ * @param change - the change to record.
+ * @param limit - maximum distinct paths kept.
+ */
+function record(changes: Map<string, TaskReportChange>, change: TaskReportChange, limit: number): void {
+  if (!changes.has(change.path) && changes.size >= limit) return
+  changes.set(change.path, change)
 }
 
 /**
@@ -204,6 +268,20 @@ function recordedHunks(meta: unknown): readonly RecordedHunk[] {
   return hunks
 }
 
+/** The mutation operation one result's metadata reported, when it is a known one. */
+function recordedOperation(meta: unknown): 'create' | 'update' | undefined {
+  if (!isRecord(meta)) return undefined
+  const operation = meta.operation
+  return operation === 'create' || operation === 'update' ? operation : undefined
+}
+
+/** The path one result's metadata reported, for a change that has no hunk of its own. */
+function recordedPath(meta: unknown): string | undefined {
+  if (!isRecord(meta)) return undefined
+  const path = meta.path
+  return typeof path === 'string' && path !== '' ? path : undefined
+}
+
 /** Whether one command line matches the configured verification patterns. */
 function matchesVerifyPattern(command: string, patterns: readonly string[]): boolean {
   const lowered = command.toLowerCase()
@@ -215,11 +293,7 @@ function matchesVerifyPattern(command: string, patterns: readonly string[]): boo
  * produced its model-facing text (`[exit code: N]`, timeouts, signals).
  */
 function verificationOf(command: string, event: SessionEvent<'tool/result'>): TaskReportVerification {
-  const blocks = toolResultBlocks(event)
-  const text = blocks
-    .filter(block => block.type === 'text' && typeof block.text === 'string')
-    .map(block => block.text as string)
-    .join('\n')
+  const text = resultText(event)
   if (text.includes('[timed out') || text.includes('[killed by signal')) {
     return { command, status: 'failed' }
   }
@@ -228,33 +302,16 @@ function verificationOf(command: string, event: SessionEvent<'tool/result'>): Ta
     const exitCode = Number(match[1])
     return { command, status: exitCode === 0 ? 'passed' : 'failed', exitCode }
   }
-  return { command, status: blocks.some(block => block.isError === true) ? 'failed' : 'unknown' }
+  return { command, status: event.data.message.isError === true ? 'failed' : 'unknown' }
 }
 
-/** The tool call whose result this event carries, from its own result blocks. */
-function resultCallId(event: SessionEvent<'tool/result'>): string | undefined {
-  for (const block of toolResultBlocks(event)) {
-    const callId = block.toolCallId
-    if (block.type === 'tool-result' && typeof callId === 'string') return callId
+/** The text blocks of one tool result message, joined as the model read them. */
+function resultText(event: SessionEvent<'tool/result'>): string {
+  const parts: string[] = []
+  for (const block of event.data.message.content) {
+    if (block.type === 'text') parts.push(block.text)
   }
-  return undefined
-}
-
-/** Every text block of one tool result message, nested results included. */
-function toolResultBlocks(event: SessionEvent<'tool/result'>): readonly ReadableBlock[] {
-  const content = event.data.message.content
-  if (!Array.isArray(content)) return []
-  const blocks: ReadableBlock[] = []
-  for (const block of content as readonly ReadableBlock[]) {
-    if (!isRecord(block)) continue
-    blocks.push(block)
-    if (Array.isArray(block.content)) {
-      for (const nested of block.content as readonly ReadableBlock[]) {
-        if (isRecord(nested)) blocks.push(nested)
-      }
-    }
-  }
-  return blocks
+  return parts.join('\n')
 }
 
 /** Line count of one text value; the empty string counts as zero lines. */

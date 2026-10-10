@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-command-execute-caller-fiber.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-16-command-execute-caller-fiber.md
-2026-09-16-command-execute-caller-fiber.md: aa0e55a5115da171e5f5f4b41d66728c041897eb
-2026-09-16-command-execute-caller-fiber.zh.md: f336ed0f41ad14802dfb3a2aa680b164b52b51e0
+/agent-note-host-command-execution-from-a-caller-without-the-remote-namespace:
+  en: 76ac5a24a826aca0
+  zh: f1b11b1c9739b1ad
+/agent-note-host-command-execution-from-a-caller-without-the-remote-namespace/problem:
+  en: 311b1bbda6d5deb6
+  zh: fcd2aba9de9308ab
+/agent-note-host-command-execution-from-a-caller-without-the-remote-namespace/decision:
+  en: dd96b2ca20efa702
+  zh: 64eb4ddf35de6506
+/agent-note-host-command-execution-from-a-caller-without-the-remote-namespace/alternatives-considered:
+  en: e71dd0d649570f8b
+  zh: 0dc82864fa42398f
+/agent-note-host-command-execution-from-a-caller-without-the-remote-namespace/consequences:
+  en: 52669392fca67912
+  zh: f9a88289ffe74a4b

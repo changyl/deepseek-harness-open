@@ -12,7 +12,7 @@ The available workarounds each failed structurally. One `@deepseek-ai/dsh-tool-s
 
 ## Decision
 
-Specialists are now authored data with their own capability seam. [`@deepseek-ai/dsh-agent-definitions`](../../../../packages/subagent/agent-definitions/README.md) is the Service Definition: a layered provider registry on `ctx.agentDefinitions` that merges provider catalogs, resolves duplicate names, validates every candidate, and loads the winning definition. [`@deepseek-ai/dsh-agent-definitions-filesystem`](../../../../packages/subagent/agent-definitions-filesystem/README.md) is the Service Provider: it discovers flat Markdown files in project, custom, and user roots and parses their YAML frontmatter and persona body. [`@deepseek-ai/dsh-tool-subagent`](../../../../packages/subagent/tool-subagent/README.md) is the Consumer: it offers the model a new `agent_type` parameter and publishes the durable available-subagents catalog. The seam follows the [subagent capability seam](2026-06-21-subagent-capability-seam.md) it specializes.
+Specialists are now authored data with their own capability seam. [`@deepseek-ai/dsh-agent-definitions`](../../../../packages/subagent/agent-definitions/README.md) is the Service Definition: a layered provider registry on `ctx.agentDefinitions` that merges provider catalogs, resolves duplicate names, validates every candidate, and loads the winning definition. [`@deepseek-ai/dsh-agent-definitions-filesystem`](../../../../packages/subagent/agent-definitions-filesystem/README.md) is the Service Provider: it discovers flat Markdown files in project, custom, and user roots and parses their YAML frontmatter and persona body. [`@deepseek-ai/dsh-tool-subagent`](../../../../packages/subagent/tool-subagent/README.md) is the Consumer: it offers the model a new `agent_type` parameter and publishes the durable available-subagents catalog. The seam follows the [subagent capability seam](../../archived/feature/2026-06-21-subagent-capability-seam.md) it specializes.
 
 ### One flat Markdown file per specialist
 
@@ -28,7 +28,7 @@ A preset that declared the registry row instead publishes `agentDefinitions` int
 
 A definition resolves to fields the delegation seam already carries: the body becomes `SubagentStartRequest.persona`, `tools` becomes `toolFilter`, `model` and `reasoning_effort` join `agentOptions`, and `max_depth` joins `maxDepth`. Because those are the only fields, a definition never grants a tool or a plugin the spawning agent lacks: each named tool must already be visible to that agent, every rejection happens before a child exists, and the child still joins its parent's composition. The [subagent subsystem](../../../../docs/subsystems/subagent.md) owns those request fields.
 
-That is the distinction from an [agent preset](../../../../packages/preset/agent-presets/README.md): a preset selects the plugins a session runs and is trusted configuration, while a definition is routing data that can only narrow.
+That is the distinction from an [agent preset](../../../../packages/preset/agent-preset-registry/README.md): a preset selects the plugins a session runs and is trusted configuration, while a definition is routing data that can only narrow.
 
 ### The model learns names from a durable catalog
 

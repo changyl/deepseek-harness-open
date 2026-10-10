@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for fork-features.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/fork-features.md
-fork-features.md: ba6a1a9827643ba0225700732f33b09aa60c8736
-fork-features.zh.md: 84666e9444f4de66e2013b2962113179cf0aeb98
+/features-this-fork-adds:
+  en: 7cc82bb7d23d5a9a
+  zh: 5e1895913b173d8b
+/features-this-fork-adds/review-applied-file-changes:
+  en: c061391401e79bfd
+  zh: 83f26d1ef5568494
+/features-this-fork-adds/open-the-command-palette:
+  en: 0acbdc0c68385ce6
+  zh: cb9151410c30735a
+/features-this-fork-adds/read-the-turn-end-task-report:
+  en: a3e463baf593fe6b
+  zh: dfcc89e5e66095e7
+/features-this-fork-adds/delegate-to-a-specialized-subagent:
+  en: 56e63968a6e80172
+  zh: 37f8afbeab57b20a
+/features-this-fork-adds/edit-text-documents-in-the-right-sidebar:
+  en: a6cea6128a893018
+  zh: fcfda5dfc8bcdfb1
+/features-this-fork-adds/read-diffs-in-the-changed-file-s-own-grammar:
+  en: f8bf70e4a390266a
+  zh: eb113693106fe857
+/features-this-fork-adds/further-exploration:
+  en: eeed0a6e6e7ba0a4
+  zh: bd60b82bae00125c

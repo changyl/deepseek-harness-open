@@ -10,9 +10,9 @@ composer 的本地化行机制按定义逐项开启：[`ui-commands`](../../../.
 
 ## Decision
 
-本次改动把 [composer 菜单决策](../feature/2026-09-08-composer-menu-sections-and-localized-rows.zh.md)记录下来的规则——新增本地化一方命令需要标识映射、词典条目、图标与菜单位置——应用到这三个定义上。[`resolution.ts`](../../../../packages/client/ui-commands/src/client/resolution.ts) 把 `usage`、`effectiveness`、`project` 映射到 `@deepseek-ai/dsh-command-usage`、`@deepseek-ai/dsh-command-effectiveness` 与 `@deepseek-ai/dsh-command-project`；[`locales.ts`](../../../../packages/client/ui-commands/src/client/locales.ts) 在两种词典里为每个名字新增 `label`、`description` 与 `token` 条目；[`presentation.ts`](../../../../packages/client/ui-commands/src/client/presentation.ts) 为它们分别指定 `IconGaugeOutline16`、`IconDataOutline16` 与 `IconChecklistOutline14`。
+本次改动把 composer 菜单决策记录下来的规则——新增本地化一方命令需要标识映射、词典条目、图标与菜单位置——应用到这三个定义上。[`resolution.ts`](../../../../packages/client/ui-commands/src/client/resolution.ts) 把 `usage`、`effectiveness`、`project` 映射到 `@deepseek-ai/dsh-command-usage`、`@deepseek-ai/dsh-command-effectiveness` 与 `@deepseek-ai/dsh-command-project`；[`locales.ts`](../../../../packages/client/ui-commands/src/client/locales.ts) 在两种词典里为每个名字新增 `label`、`description` 与 `token` 条目；[`presentation.ts`](../../../../packages/client/ui-commands/src/client/presentation.ts) 为它们分别指定 `IconGaugeOutline16`、`IconDataOutline16` 与 `IconChecklistOutline14`。
 
-选择仍以 `definitionId` 为键，因此某个作用域组合注册了自己的 `usage`、`effectiveness` 或 `project` 行时，该行保留自己的文案，既不继承词典外观，也不会获得内置别名；[命令标识决策](../architecture/2026-09-10-command-identities-and-composer-file-action.zh.md)负责这条规则，以及命令名为何不能承载标识。
+选择仍以 `definitionId` 为键，因此某个作用域组合注册了自己的 `usage`、`effectiveness` 或 `project` 行时，该行保留自己的文案，既不继承词典外观，也不会获得内置别名；[命令标识决策](../archived/architecture/2026-09-10-command-identities-and-composer-file-action.md)负责这条规则，以及命令名为何不能承载标识。
 
 `token` 条目为每个命令增加第二种可键入的拼写——英文名之外的 `用量`、`有效性` 与 `项目`——因为菜单选中时填入的是当前语言的 token，而别名表把两种拼写都解析回同一个定义。解析仍然先尝试精确的命令名，再尝试任何别名，因此同名覆盖项只回应自己的拼写。
 
@@ -24,7 +24,7 @@ composer 的本地化行机制按定义逐项开启：[`ui-commands`](../../../.
 
 **只本地化标题。** 标题是中文、说明仍是英文的行读起来是半翻译状态，而 `builtinRowFace` 从同一张表读取标题、说明与图标；拆开这张表会让某一行保留后续编辑漏掉的任意一半。
 
-**在同一次改动里本地化 `/report`。** `/report` 在 [`packages/session/task-report`](../../../../packages/session/task-report/README.zh.md) 注册时没有 `definitionId`，因此客户端的任何映射都无法指向它的定义；在这里给它加外观需要按名字匹配的例外，而[命令标识决策](../architecture/2026-09-10-command-identities-and-composer-file-action.zh.md)已经否决了这种做法。那个包必须先声明一个 id。
+**在同一次改动里本地化 `/report`。** `/report` 在 [`packages/session/task-report`](../../../../packages/session/task-report/README.zh.md) 注册时没有 `definitionId`，因此客户端的任何映射都无法指向它的定义；在这里给它加外观需要按名字匹配的例外，而[命令标识决策](../archived/architecture/2026-09-10-command-identities-and-composer-file-action.md)已经否决了这种做法。那个包必须先声明一个 id。
 
 ## Consequences
 

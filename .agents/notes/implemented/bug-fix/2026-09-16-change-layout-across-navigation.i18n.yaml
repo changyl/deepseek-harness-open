@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-change-layout-across-navigation.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-16-change-layout-across-navigation.md
-2026-09-16-change-layout-across-navigation.md: 8f6a80071287fa3d35ca51516326c9ebdcde785c
-2026-09-16-change-layout-across-navigation.zh.md: 8b29067d5cd5751c6a8ef2e7ac3178f3177eed15
+/agent-note-change-layout-across-sidebar-change-navigation:
+  en: d10f2e488544abc0
+  zh: a8e175283effc8ce
+/agent-note-change-layout-across-sidebar-change-navigation/problem:
+  en: 11ed4738ac1aa39f
+  zh: adbd901613db3b58
+/agent-note-change-layout-across-sidebar-change-navigation/decision:
+  en: 97f51b7881e67894
+  zh: 9c3e8b51cbd2dc9b
+/agent-note-change-layout-across-sidebar-change-navigation/alternatives-considered:
+  en: 869cc58edf2924dd
+  zh: bfa09ab268fe3920
+/agent-note-change-layout-across-sidebar-change-navigation/consequences:
+  en: 474d854a6aacdb38
+  zh: 9587349c29bad9b6

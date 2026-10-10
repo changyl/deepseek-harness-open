@@ -6,25 +6,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
-  Button, DiffLineText, IconChevronDownOutline14, IconCodeOutline16, IconPanelLeftOutline16, IconRightUpOutline16,
-  IconWrapLinesOutline16, Menu, Tooltip, languageForPath, useHighlightedCode,
+  IconChevronDownOutlineRegular, IconCompareSplitOutlineRegular, IconInspectOutlineRegular,
+  IconNowrapFillRegular, IconWrapFillRegular, Menu, PathLabel, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { HighlightSpan, HighlightedBlock } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import { fileAddressFor } from '@deepseek-ai/dsh-util-workspace-path'
-import type { WorkspaceChangedFile, WorkspaceDiffHunk } from '@deepseek-ai/dsh-workspace-changes/types'
-import { changedFileUrl, changesDiffUrl, changesSummaryUrl, parseChangesReviewAddress, type ChangesDiff } from '../changes.ts'
+import type { WorkspaceChangedFile } from '@deepseek-ai/dsh-workspace-changes/types'
+import { changedFileUrl, changesDiffUrl, changesSummaryUrl, parseChangesReviewAddress } from '../changes.ts'
 import type { ChangesDiffStore } from './changes-diff.ts'
 import type { ChangesSummaryStore } from './changes-summary.ts'
 import type { PresentedOpenController } from './present-open.ts'
 import type { ChangesReviewParams } from './review-definition.ts'
 import type { createReviewStore } from './review-store.ts'
 import type { NS } from './locales.ts'
+import { FileDiff } from './FileDiff.tsx'
+import diffCss from './FileDiff.module.css'
 import css from './ReviewTab.module.css'
-
-/** Lines drawn before the tab stops; a coarse comparison of a file near the byte cap would otherwise draw every line. */
-export const MAX_RENDERED_LINES = 5000
 
 const GROUPED = new Intl.NumberFormat('en-US')
 
@@ -44,163 +42,7 @@ export interface ReviewInjected {
 
 /** The body's composed props: the tab it draws, its store, its injected face, and its copy. */
 export type ReviewTabProps = PropsRuntime<'sidebar.right.pane.tab'> & PropsStore<ReturnType<typeof createReviewStore>>
-  & InjectFace<ReviewInjected> & PropsLocale<typeof NS>
-
-/** One drawn line of a hunk with its line numbers on each side. */
-export interface DiffRow {
-  kind: 'add' | 'del' | 'context'
-  old: number | undefined
-  new: number | undefined
-  text: string
-  /** The grammar's runs for {@link text}, absent when the row draws its text plain. */
-  spans?: readonly HighlightSpan[] | undefined
-}
-
-/** One side of a side-by-side row: its line number, text, and grammar runs. */
-export interface SplitCell {
-  no: number
-  text: string
-  kind: 'add' | 'del' | 'context'
-  /** The grammar's runs for {@link text}, absent when the cell draws its text plain. */
-  spans?: readonly HighlightSpan[] | undefined
-}
-
-/** One side-by-side row: the old side, the new side, or both. */
-export interface SplitRow {
-  left?: SplitCell
-  right?: SplitCell
-}
-
-/**
- * One hunk's tokenized sides: the runs its removed/context lines take from the
- * old side and its added/context lines from the new one, one entry per source
- * line of that side. A side with no runs draws plain.
- */
-export interface HunkRuns {
-  readonly old?: readonly (readonly HighlightSpan[])[] | undefined
-  readonly new?: readonly (readonly HighlightSpan[])[] | undefined
-}
-
-/** The runs a side holds for the line at `index`, or an empty spread when it draws plain. */
-function spansOf(runs: readonly (readonly HighlightSpan[])[] | undefined, index: number): { spans?: readonly HighlightSpan[] | undefined } {
-  const spans = runs?.[index]
-  return spans === undefined ? {} : { spans }
-}
-
-/**
- * One hunk's old-side text: its removed and context lines, in file order. This
- * is what the shared highlighter tokenizes for that side, so a change inside a
- * block comment or a template literal keeps the context that colourises it.
- * @param hunk - a served hunk.
- * @returns the old side's lines joined by newlines.
- */
-export function oldSideOf(hunk: WorkspaceDiffHunk): string {
-  return hunk.lines.filter(line => !line.startsWith('+')).map(line => line.slice(1)).join('\n')
-}
-
-/**
- * One hunk's new-side text: its added and context lines, in file order.
- * @param hunk - a served hunk.
- * @returns the new side's lines joined by newlines.
- */
-export function newSideOf(hunk: WorkspaceDiffHunk): string {
-  return hunk.lines.filter(line => !line.startsWith('-')).map(line => line.slice(1)).join('\n')
-}
-
-/**
- * Number a hunk's lines: context lines count on both sides, deletions on the
- * old side, additions on the new side. Each row also takes the runs its own side
- * holds for that line, so the change reads in the file's grammar.
- * @param hunk - a served hunk.
- * @param runs - the hunk's tokenized sides; absent draws every row plain.
- * @returns the rows in order.
- */
-export function hunkRows(hunk: WorkspaceDiffHunk, runs?: HunkRuns): DiffRow[] {
-  let oldNo = hunk.oldStart
-  let newNo = hunk.newStart
-  let oldAt = 0
-  let newAt = 0
-  return hunk.lines.map((line): DiffRow => {
-    const text = line.slice(1)
-    switch (line[0]) {
-      case '+': return { kind: 'add', old: undefined, new: newNo++, text, ...spansOf(runs?.new, newAt++) }
-      case '-': return { kind: 'del', old: oldNo++, new: undefined, text, ...spansOf(runs?.old, oldAt++) }
-      // A shared line draws the current file's content, so its runs are the new
-      // side's, exactly as the diff cards take them.
-      default: {
-        const row: DiffRow = { kind: 'context', old: oldNo++, new: newNo++, text, ...spansOf(runs?.new, newAt) }
-        oldAt += 1
-        newAt += 1
-        return row
-      }
-    }
-  })
-}
-
-/**
- * Pair a hunk's lines for the side-by-side view: each run of deletions is
- * aligned with the run of additions that follows it, row by row, and context
- * lines sit on both sides. Each side carries the runs its own text was
- * tokenized into, so the two columns read in the file's grammar.
- * @param hunk - a served hunk.
- * @param runs - the hunk's tokenized sides; absent draws every cell plain.
- * @returns the rows in order.
- */
-export function splitRows(hunk: WorkspaceDiffHunk, runs?: HunkRuns): SplitRow[] {
-  const rows: SplitRow[] = []
-  let dels: SplitCell[] = []
-  let adds: SplitCell[] = []
-  const flush = (): void => {
-    for (let at = 0; at < Math.max(dels.length, adds.length); at += 1) {
-      const left = dels[at]
-      const right = adds[at]
-      rows.push({ ...left === undefined ? {} : { left }, ...right === undefined ? {} : { right } })
-    }
-    dels = []
-    adds = []
-  }
-  // A side's run index is its line's own distance from the hunk's start, which
-  // is exactly the position that line holds in that side's tokenized text.
-  for (const row of hunkRows(hunk)) {
-    if (row.kind === 'del') {
-      dels.push({ no: row.old as number, text: row.text, kind: 'del', ...spansOf(runs?.old, (row.old as number) - hunk.oldStart) })
-    } else if (row.kind === 'add') {
-      adds.push({ no: row.new as number, text: row.text, kind: 'add', ...spansOf(runs?.new, (row.new as number) - hunk.newStart) })
-    } else {
-      flush()
-      rows.push({
-        left: { no: row.old as number, text: row.text, kind: 'context', ...spansOf(runs?.old, (row.old as number) - hunk.oldStart) },
-        right: { no: row.new as number, text: row.text, kind: 'context', ...spansOf(runs?.new, (row.new as number) - hunk.newStart) },
-      })
-    }
-  }
-  flush()
-  return rows
-}
-
-/**
- * The hunks to draw, cut at {@link MAX_RENDERED_LINES} lines in total.
- * @param hunks - served hunks.
- * @returns the hunks with the last one shortened as needed, and whether anything was cut.
- */
-export function renderedHunks(hunks: readonly WorkspaceDiffHunk[]): { hunks: WorkspaceDiffHunk[]; truncated: boolean } {
-  let budget = MAX_RENDERED_LINES
-  const kept: WorkspaceDiffHunk[] = []
-  for (const hunk of hunks) {
-    if (budget === 0) return { hunks: kept, truncated: true }
-    kept.push(hunk.lines.length <= budget ? hunk : { ...hunk, lines: hunk.lines.slice(0, budget) })
-    budget -= Math.min(budget, hunk.lines.length)
-  }
-  return { hunks: kept, truncated: hunks.some((hunk, at) => kept[at] !== hunk) }
-}
-
-/** The one-line fact about a text comparison worth stating above its hunks, if any. */
-function noteOf(diff: Extract<ChangesDiff, { kind: 'text' }>): 'diff.created' | 'diff.deleted' | 'diff.unchanged' | undefined {
-  if (!diff.before) return 'diff.created'
-  if (!diff.after) return 'diff.deleted'
-  if (diff.hunks.length === 0) return 'diff.unchanged'
-  return undefined
-}
+  & InjectFace<ReviewInjected> & PropsLocale<typeof NS> & PropsRenderSlots<'deliverables.review.file.actions'>
 
 /** The file index a navigation names, when it names one. */
 function navigatedIndex(params: unknown): number | undefined {
@@ -225,7 +67,7 @@ function Counts({ file, t }: { file: WorkspaceChangedFile } & PropsLocale<typeof
  */
 export function ReviewTab({
   useTabInfo, sessionId, useSessions, useStore, actions, useChangesSummary, useChangesDiff, usePresentedOpen, usePresentedHost,
-  loadChangesSummary, loadChangesDiff, reloadPresentedHost, openChanged, t,
+  loadChangesSummary, loadChangesDiff, reloadPresentedHost, openChanged, t, renderSlot,
 }: ReviewTabProps): ReactNode {
   const { tab } = useTabInfo()
   const { navigation, signal } = tab
@@ -267,16 +109,16 @@ export function ReviewTab({
   const native = host !== null && host !== 'error' && host.available && phase !== 'nativeUnavailable'
   const summaryState = summary === undefined || summary === 'loading' ? 'loading' : summary === 'missing' ? 'missing' : 'ready'
   return (
-    <div className={css.root} data-changes-review data-review-state={summaryState}>
-      <div className={css.header}>
+    <div className={`${diffCss.root} ${css.root}`} data-changes-review data-review-state={summaryState}>
+      <div className={diffCss.header}>
         {file === undefined
           ? <span className={css.selectorLabel}>{t('review.title', { turn: String(coordinates.turn) })}</span>
           : <Menu className={css.selector} open={menuOpen} autoFocus portal align="start" dense onClose={() => { setMenuOpen(false) }}
             anchor={<button type="button" className={css.selectorButton} aria-haspopup="menu" aria-expanded={menuOpen}
               aria-label={t('review.selectFile')} title={file.display} data-review-file={file.path}
               onClick={() => { setMenuOpen(value => !value) }}>
-              <span className={css.selectorText}>{file.display}</span>
-              <IconChevronDownOutline14 size={12} />
+              <PathLabel path={file.display} />
+              <IconChevronDownOutlineRegular size={12} />
             </button>}
             items={files.map((entry, at) => ({ id: String(at), label: <span className={css.item}>
               <span className={css.itemPath}>{entry.display}</span>
@@ -288,144 +130,31 @@ export function ReviewTab({
         <span className={css.tools}>
           <Tooltip label={t(split ? 'review.unified' : 'review.split')} side="bottom" delayMs={500}>
             <button type="button" className={css.tool} aria-pressed={split} aria-label={t('review.splitAria')} data-review-tool="split"
-              onClick={() => { actions.toggledSplit(tab.id) }}><IconPanelLeftOutline16 /></button>
+              onClick={() => { actions.toggledSplit(tab.id) }}>
+              <IconCompareSplitOutlineRegular className={css.compareIcon} />
+            </button>
           </Tooltip>
           <Tooltip label={t(wrap ? 'review.nowrap' : 'review.wrap')} side="bottom" delayMs={500}>
             <button type="button" className={css.tool} aria-pressed={wrap} aria-label={t('review.wrapAria')} data-review-tool="wrap"
-              onClick={() => { actions.toggledWrap(tab.id) }}><IconWrapLinesOutline16 /></button>
+              onClick={() => { actions.toggledWrap(tab.id) }}>
+              {wrap ? <IconNowrapFillRegular /> : <IconWrapFillRegular />}
+            </button>
           </Tooltip>
           {file !== undefined && <Tooltip label={t('review.openFile')} side="bottom" delayMs={500}>
             <button type="button" className={css.tool} aria-label={t('review.openFileAria', { name: file.display })} data-review-tool="open-file"
-              onClick={() => { tab.actions.openResource(fileAddressFor(sessionId, cwd, file.path)) }}><IconCodeOutline16 /></button>
+              onClick={() => { tab.actions.openResource(fileAddressFor(sessionId, cwd, file.path)) }}><IconInspectOutlineRegular /></button>
           </Tooltip>}
-          {file !== undefined && native && <Tooltip label={t(phase === 'error' ? 'diff.openNativeError' : 'diff.openNative')} side="bottom" delayMs={500}>
-            <button type="button" className={css.tool} disabled={phase === 'opening'} data-review-tool="open-native"
-              aria-label={t('diff.openNativeAria', { name: file.display })} data-error={phase === 'error' || undefined}
-              onClick={() => { void openChanged(sessionId, seq, index) }}><IconRightUpOutline16 /></button>
-          </Tooltip>}
+          {file !== undefined && renderSlot('deliverables.review.file.actions', {
+            actionUrl: changedFileUrl(sessionId, seq, index), available: native,
+            pending: phase === 'opening' || phase === 'revealing',
+            onAction: (action, application) => openChanged(sessionId, seq, index, action, application),
+          })}
         </span>
       </div>
-      {summaryState === 'loading' && <p className={css.status} role="status">{t('diff.loading')}</p>}
-      {summaryState === 'missing' && <p className={css.status}>{t('diff.missing')}</p>}
-      {file !== undefined && <FileBody state={diffState} split={split} wrap={wrap} t={t}
+      {summaryState === 'loading' && <p className={diffCss.status} role="status">{t('diff.loading')}</p>}
+      {summaryState === 'missing' && <p className={diffCss.status}>{t('diff.missing')}</p>}
+      {file !== undefined && <FileDiff state={diffState} split={split} wrap={wrap} t={t}
         retry={() => { void loadChangesDiff(sessionId, seq, index) }} />}
-    </div>
-  )
-}
-
-/** The selected file's comparison, or the state that stands in for it. */
-function FileBody({ state, split, wrap, retry, t }: {
-  state: ChangesDiffStore['state'] extends { getSnapshot(): infer S } ? (S extends Record<string, infer V> ? V : never) : never
-  split: boolean
-  wrap: boolean
-  retry: () => void
-} & PropsLocale<typeof NS>): ReactNode {
-  if (state === undefined || state === 'loading') return <p className={css.status} role="status">{t('diff.loading')}</p>
-  if (state === 'missing') return <p className={css.status}>{t('diff.missing')}</p>
-  if (state === 'error') {
-    return <div className={css.status}><span>{t('diff.error')}</span><Button size="sm" onClick={retry}>{t('presented.retry')}</Button></div>
-  }
-  if (state.kind === 'binary') return <p className={css.status}>{t('diff.binary')}</p>
-  if (state.kind === 'oversized') return <p className={css.status}>{t('diff.oversized')}</p>
-  return <TextDiff diff={state} split={split} wrap={wrap} t={t} />
-}
-
-/** The kind a paired row carries: a deletion or addition on either side, otherwise context. */
-function splitRowKind(row: SplitRow): DiffRow['kind'] {
-  return row.left?.kind === 'del' ? 'del' : row.right?.kind === 'add' ? 'add' : 'context'
-}
-
-function hunkHeader(hunk: WorkspaceDiffHunk): string {
-  return `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`
-}
-
-/**
- * The side-by-side view without wrapping: one grid of two columns whose long
- * lines widen the whole surface, so the sides share one horizontal and vertical
- * scroll position and can never move apart. Every line is one fixed-height row,
- * which keeps the sides aligned.
- */
-function SplitColumns({ hunks, runs }: {
-  hunks: readonly WorkspaceDiffHunk[]
-  runs: readonly HighlightedBlock[]
-}): ReactNode {
-  const paired = useMemo(
-    () => hunks.map((hunk, position) => ({
-      header: hunkHeader(hunk),
-      rows: splitRows(hunk, { old: runs[2 * position], new: runs[2 * position + 1] }),
-    })),
-    [hunks, runs],
-  )
-  return (
-    <div className={css.columns}>
-      {(['left', 'right'] as const).map(side => (
-        <div key={side} className={css.column} data-diff-side={side}>
-          {paired.map((hunk, position) => (
-            <section key={position} className={css.hunk}>
-              <div className={css.hunkHeader}>{hunk.header}</div>
-              {hunk.rows.map((row, at) => {
-                const cell = row[side]
-                return (
-                  <div key={at} className={`${css.sideLine} ${cell === undefined ? css.empty : css[cell.kind]}`} data-diff-line={splitRowKind(row)}>
-                    <span className={css.number}>{cell?.no ?? ''}</span>
-                    <span className={css.text}><DiffLineText text={cell?.text ?? ''} spans={cell?.spans} /></span>
-                  </div>
-                )
-              })}
-            </section>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/** One split cell: its line number and its text in the file's own grammar. */
-function SplitCellText({ cell }: { cell: SplitRow['left'] }): ReactNode {
-  return (
-    <span className={`${css.cell} ${cell === undefined ? css.empty : css[cell.kind]}`}>
-      <span className={css.number}>{cell?.no ?? ''}</span>
-      <span className={css.text}><DiffLineText text={cell?.text ?? ''} spans={cell?.spans} /></span>
-    </span>
-  )
-}
-
-/** The hunks of a text comparison with their line numbers, unified or side by side. */
-function TextDiff({ diff, split, wrap, t }: { diff: Extract<ChangesDiff, { kind: 'text' }>; split: boolean; wrap: boolean } & PropsLocale<typeof NS>): ReactNode {
-  const note = noteOf(diff)
-  const { hunks, truncated } = useMemo(() => renderedHunks(diff.hunks), [diff.hunks])
-  // The comparison draws the changed file's own grammar. Each hunk's two sides
-  // are tokenized as blocks of their own, so a hunk seam never carries one
-  // hunk's open comment or string into the next.
-  const blocks = useMemo(() => hunks.flatMap(hunk => [oldSideOf(hunk), newSideOf(hunk)]), [hunks])
-  const runs = useHighlightedCode(blocks, languageForPath(diff.path))
-  return (
-    <div className={css.body} data-review-view={split ? 'split' : 'unified'} data-review-wrap={wrap || undefined}
-      data-review-highlight={runs.some(block => block !== undefined) ? '' : undefined}>
-      {note !== undefined && <p className={css.note}>{t(note)}</p>}
-      {diff.coarse && <p className={css.note} data-diff-coarse>{t('diff.coarse')}</p>}
-      {truncated && <p className={css.note} data-diff-truncated>{t('diff.truncated', { count: String(MAX_RENDERED_LINES) })}</p>}
-      {split && !wrap ? <SplitColumns hunks={hunks} runs={runs} /> : hunks.map((hunk, position) => {
-        const pair = { old: runs[2 * position], new: runs[2 * position + 1] }
-        return (
-          <section key={position} className={css.hunk}>
-            <div className={css.hunkHeader}>{hunkHeader(hunk)}</div>
-            {split ? splitRows(hunk, pair).map((row, at) => (
-              <div key={at} className={css.splitLine} data-diff-line={splitRowKind(row)}>
-                <SplitCellText cell={row.left} />
-                <SplitCellText cell={row.right} />
-              </div>
-            )) : hunkRows(hunk, pair).map((row, at) => (
-              <div key={at} className={`${css.line} ${css[row.kind]}`} data-diff-line={row.kind}>
-                <span className={css.number}>{row.old ?? ''}</span>
-                <span className={css.number}>{row.new ?? ''}</span>
-                <span className={css.sign}>{row.kind === 'add' ? '+' : row.kind === 'del' ? '-' : ' '}</span>
-                <span className={css.text}><DiffLineText text={row.text} spans={row.spans} /></span>
-              </div>
-            ))}
-          </section>
-        )
-      })}
     </div>
   )
 }

@@ -19,13 +19,18 @@
 import type { BoundActions } from '@deepseek-ai/dsh-client-store'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile, WriteWorkspaceFile } from './rpc.ts'
-import { decodeDocumentText } from './rpc.ts'
+import type { ReadDocumentBytes, ReadWorkspaceFilePage, SessionFile } from './rpc.ts'
 import type { TextStore } from './store.ts'
 import type { DocumentLoadMode } from './document/registry.ts'
+import type { Resources } from '@deepseek-ai/dsh-client-resources/client'
+import { ResourceGroup } from './document/resource-group.ts'
 
 /** The preview's injected business face, as the body receives it. */
 export interface TextInjected {
+  /** Observe one renderer dependency. @param tabId - owning tab. @param address - resource address. @param signal - tab lifetime. */
+  readonly addResource: (tabId: TabId, address: string, signal: AbortSignal) => void
+  /** Replace dependency membership. @param tabId - owning tab. @param addresses - resource addresses. @param signal - tab lifetime. */
+  readonly setResources: (tabId: TabId, addresses: readonly string[], signal: AbortSignal) => void
   /**
    * Read one page into the store. A page of a newer file version than the pages
    * held, arriving past the first line, is not kept: the tab's pages are dropped
@@ -69,43 +74,6 @@ export interface TextInjected {
     tabId: TabId, file: SessionFile, signal: AbortSignal, observedVersion?: string,
   ) => void
   /**
-   * Open an editing session by reading the whole file.
-   *
-   * The draft is read whole rather than assembled from the loaded pages: a page
-   * is a lossy view, so an editor seeded from one would write back a file whose
-   * line endings had quietly changed. `readAll` returns the file itself.
-   * @param tabId - the tab being edited.
-   * @param file - the session and workspace path the tab's address names.
-   * @param signal - the tab record's lifetime.
-   */
-  readonly openDraft: (tabId: TabId, file: SessionFile, signal: AbortSignal) => void
-  /**
-   * Close the editing session, discarding an unsaved draft. A draft read still
-   * in flight writes nothing when it settles.
-   * @param tabId - the tab being edited.
-   */
-  readonly closeDraft: (tabId: TabId) => void
-  /**
-   * Save the draft.
-   *
-   * The guard is the version the draft was read from, so a file that moved on
-   * since — the Agent wrote it, another tab saved it — is refused rather than
-   * overwritten; the refusal is reported as a conflict for the reader to
-   * resolve. Omitting the guard is the forced overwrite that resolution offers.
-   * @param tabId - the tab being edited.
-   * @param file - the session and workspace path the tab's address names.
-   * @param text - the draft to write.
-   * @param expectedVersion - the version the draft came from, or undefined to overwrite regardless.
-   * @param signal - the tab record's lifetime.
-   */
-  readonly saveDraft: (
-    tabId: TabId,
-    file: SessionFile,
-    text: string,
-    expectedVersion: string | undefined,
-    signal: AbortSignal,
-  ) => void
-  /**
    * Begin a renderer-owned load without reading source bytes.
    * @param tabId - owning tab.
    * @param signal - tab lifetime.
@@ -118,31 +86,29 @@ export interface TextInjected {
 
 /**
  * What the face remembers of one tab: the read generation a settlement must
- * match, the version of the pages held, and the token for the one draft read or
- * save a tab may have outstanding. Created by the tab's first read, which also
- * arms the one abort listener that forgets the tab.
+ * match, and the version of the pages held. Created by the tab's first read,
+ * which also arms the one abort listener that forgets the tab.
  */
 interface TabReads {
+  group: ResourceGroup
   generation: number
   version: string | undefined
   mode: DocumentLoadMode
-  /** Bumped whenever a draft read starts or the session closes, retiring the one before it. */
-  draft: number
   rendererId?: string
   controller?: AbortController
 }
 
 /**
- * Bind the preview's face to one paged read, one complete-byte read, and one write.
+ * Bind the preview's face to one paged read and one complete-byte read.
  * @param read - the bound `workspaceFiles.read` call.
- * @param readAll - ordinary complete-byte Remote read.
- * @param write - the guarded `workspaceFiles.write` call.
+ * @param readAll - complete-byte workspace Remote read.
+ * @param resources - shared metadata sources for the document and its dependencies.
  * @returns the Slot `inject` factory: bound actions in, face out. The slot's session id is unused because the address carries its own.
  */
 export function textFace(
   read: ReadWorkspaceFilePage,
   readAll: ReadDocumentBytes,
-  write: WriteWorkspaceFile,
+  resources: Resources,
 ): (sessionId: SessionId, actions: BoundActions<TextStore>) => TextInjected {
   return (_sessionId: SessionId, actions: BoundActions<TextStore>): TextInjected => {
     const tabs = new Map<TabId, TabReads>()
@@ -151,10 +117,14 @@ export function textFace(
     const readsOf = (tabId: TabId, signal: AbortSignal): TabReads => {
       const held = tabs.get(tabId)
       if (held !== undefined) return held
-      const created: TabReads = { generation: 0, version: undefined, mode: 'text-pages', draft: 0 }
+      const created: TabReads = {
+        generation: 0, version: undefined, mode: 'text-pages',
+        group: new ResourceGroup(resources, () => { actions.resourceChanged(tabId) }),
+      }
       tabs.set(tabId, created)
       signal.addEventListener('abort', () => {
         created.controller?.abort()
+        created.group.close()
         tabs.delete(tabId)
         actions.forget(tabId)
       }, { once: true })
@@ -233,57 +203,14 @@ export function textFace(
       if (mode === 'text-pages') loadPage(tabId, file, 1, signal, observedVersion)
       else loadAll(tabId, file, signal, observedVersion)
     }
-    const openDraft = (tabId: TabId, file: SessionFile, signal: AbortSignal): void => {
-      if (signal.aborted) return
-      const reads = readsOf(tabId, signal)
-      const token = ++reads.draft
-      actions.editOpening(tabId)
-      void readAll(file, signal).then((result) => {
-        if (signal.aborted || reads.draft !== token) return
-        if (!result.ok) {
-          actions.editFailed(tabId, result.error)
-          return
-        }
-        // `readAll` already decoded the base64 payload; text decoding never throws.
-        actions.editOpened(tabId, decodeDocumentText(result.value), result.value.version)
-      }, (error: unknown) => {
-        if (signal.aborted || reads.draft !== token) return
-        actions.editFailed(tabId, Object.assign(
-          new Error(error instanceof Error ? error.message : String(error), { cause: error }),
-          { name: 'RemoteError', isDSHRemoteError: true as const, code: 'gateway/internal' as const, details: {} },
-        ))
-      })
-    }
-    const saveDraft = (
-      tabId: TabId, file: SessionFile, text: string, expectedVersion: string | undefined, signal: AbortSignal,
-    ): void => {
-      if (signal.aborted) return
-      const reads = readsOf(tabId, signal)
-      const token = ++reads.draft
-      actions.saving(tabId)
-      void write(file, text, expectedVersion, signal).then((result) => {
-        // A session the reader closed while the save was in flight keeps its own
-        // outcome: it is not editing any more, so there is nothing to report to.
-        if (signal.aborted || reads.draft !== token) return
-        if (!result.ok) {
-          actions.saveFailed(tabId, result.error, result.error.code === 'workspace-file/stale-version')
-          return
-        }
-        actions.saved(tabId, text, result.value.version)
-        // The preview behind the editor still describes the file as it was.
-        restart(tabId, file, signal, result.value.version)
-      })
-    }
     return {
-      loadPage, reloadPages: restart, loadAll, openDraft, saveDraft,
-      closeDraft: (tabId) => {
-        // Retire an outstanding read or save before the session goes, so neither
-        // can reopen a session the reader has already left.
-        const held = tabs.get(tabId)
-        /* v8 ignore next -- a session exists only after a read armed the tab */
-        if (held !== undefined) held.draft += 1
-        actions.editClosed(tabId)
+      addResource: (tabId, address, signal) => {
+        if (!signal.aborted) readsOf(tabId, signal).group.add(address)
       },
+      setResources: (tabId, addresses, signal) => {
+        if (!signal.aborted) readsOf(tabId, signal).group.set(addresses)
+      },
+      loadPage, reloadPages: restart, loadAll,
       prepareRenderer: (tabId, signal, rendererId, observedVersion, reload = false) => {
         if (signal.aborted) return
         modeOf(tabId, signal, 'renderer', rendererId)

@@ -6,7 +6,7 @@
  */
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { Button, IconChecklistOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconChecklistOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { TaskReportEventData } from '@deepseek-ai/dsh-task-report/types'
 import { selectTaskReport } from './turn-report.ts'
@@ -29,7 +29,7 @@ export function TaskReportCard({ turn, seq, openFile, t }: TaskReportCardProps):
 
   return (
     <div className={css.row}>
-      <span className={css.glyph}><IconChecklistOutline14 size={14} /></span>
+      <span className={css.glyph}><IconChecklistOutlineRegular /></span>
       <span className={css.title}>{t('row.title')}</span>
       <span className={css.facts}>{facts.join(' · ')}</span>
       {path === undefined

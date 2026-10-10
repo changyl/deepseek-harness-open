@@ -10,14 +10,19 @@ import type { AgentDefinitionCandidate } from '@deepseek-ai/dsh-agent-definition
 import type { SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 import { MockAdapter } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import {
-  AGENT_CATALOG_PLUGIN,
   agentCatalogMessage,
-  renderAgentCatalog,
   agentCatalogEntries,
   isAgentCatalogSource,
   visibleAgentCatalog,
 } from '../src/agent-catalog.ts'
 import { callSubagent, modelSelectionSetupAgent, setup, text } from './harness.ts'
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /** Test-only context producer whose messages must not read as the agent catalog. */
+    'agent-definitions-spec-context': { kind: 'agent-definitions-spec-context' }
+  }
+}
 
 interface StubDefinition {
   name: string
@@ -143,8 +148,7 @@ async function proposeRejectedStep(ctx: Context, agent: Agent): Promise<PreStepD
 function publishedCatalogs(agent: Agent): string[] {
   return agent.session.snapshotEvents()
     .filter((event): event is Extract<SessionEvent, { type: 'user/message' }> => event.type === 'user/message'
-      && event.data.source.kind === 'plugin'
-      && (event.data.source as { plugin?: unknown }).plugin === AGENT_CATALOG_PLUGIN)
+      && event.data.source.kind === 'agent-catalog')
     .map(event => event.data.content
       .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
       .map(block => block.text)
@@ -434,8 +438,8 @@ describe('dsh-tool-subagent agent catalog', () => {
         ...decision,
         messages: [
           ...decision.messages,
-          createUserMessage({ content: [{ type: 'text', text: 'unrelated' }], source: { kind: 'plugin', plugin: 'other' } }),
-          agentCatalogMessage(renderAgentCatalog([])),
+          createUserMessage({ content: [{ type: 'text', text: 'unrelated' }], source: { kind: 'agent-definitions-spec-context' } }),
+          agentCatalogMessage([]),
         ],
       }
     })
@@ -450,7 +454,7 @@ describe('dsh-tool-subagent agent catalog', () => {
     const agent = agentForCwd(process.cwd())
     openMessageTurn(agent.session)
     await fireStep(ctx, agent, 1, 1)
-    const identical = renderAgentCatalog(agentCatalogEntries([candidateOf(REVIEWER)], 500))
+    const identical = agentCatalogEntries([candidateOf(REVIEWER)], 500)
     ctx.on('agent/pre-step', async (_payload, next): Promise<PreStepDecision> => {
       const decision = await next()
       if (decision.kind === 'reject') return decision
@@ -464,7 +468,7 @@ describe('dsh-tool-subagent agent catalog', () => {
     const ctx = await setup({ provider: 'mock', agentCatalog: true, beforeTool: definitionsHook([REVIEWER]) })
     const agent = agentForCwd(process.cwd())
     openMessageTurn(agent.session)
-    const identical = renderAgentCatalog(agentCatalogEntries([candidateOf(REVIEWER)], 500))
+    const identical = agentCatalogEntries([candidateOf(REVIEWER)], 500)
     ctx.on('agent/pre-step', async (_payload, next): Promise<PreStepDecision> => {
       const decision = await next()
       if (decision.kind === 'reject') return decision
@@ -483,7 +487,7 @@ describe('dsh-tool-subagent agent catalog', () => {
       if (decision.kind === 'reject') return decision
       return {
         ...decision,
-        messages: [...decision.messages, agentCatalogMessage(renderAgentCatalog([{ name: 'ghost', description: 'Gone.' }]))],
+        messages: [...decision.messages, agentCatalogMessage([{ name: 'ghost', description: 'Gone.' }])],
       }
     })
     await fireStep(ctx, agent, 1, 1)
@@ -496,12 +500,11 @@ describe('dsh-tool-subagent agent catalog', () => {
     openMessageTurn(agent.session)
     await fireStep(ctx, agent, 1, 1)
     const initial = agent.session.snapshotEvents().find(event => event.type === 'user/message'
-      && event.data.source.kind === 'plugin'
-      && (event.data.source as { plugin?: unknown }).plugin === AGENT_CATALOG_PLUGIN)
+      && event.data.source.kind === 'agent-catalog')
     if (initial === undefined) throw new Error('expected an initial catalog')
     agent.session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'compacted history' }],
-      source: { kind: 'plugin', plugin: 'compact' },
+      source: { kind: 'agent-definitions-spec-context' },
     }), {
       surfaceOp: { op: 'replace', startSeq: initial.seq, endSeq: initial.seq },
       sourceEventSeqs: [initial.seq],
@@ -525,30 +528,29 @@ describe('dsh-tool-subagent agent catalog', () => {
 })
 
 describe('agent catalog helpers', () => {
-  it('classifies only plugin sources carrying the catalog id', () => {
+  it('classifies only sources declaring the catalog kind', () => {
     expect(isAgentCatalogSource(null)).toBe(false)
     expect(isAgentCatalogSource('plugin')).toBe(false)
-    expect(isAgentCatalogSource({ kind: 'plugin', plugin: 'other' })).toBe(false)
-    expect(isAgentCatalogSource({ kind: 'plugin', plugin: AGENT_CATALOG_PLUGIN })).toBe(true)
+    expect(isAgentCatalogSource({ kind: 'agent-definitions-spec-context' })).toBe(false)
+    expect(isAgentCatalogSource({ kind: 'agent-catalog', form: 'catalog', entries: [] })).toBe(true)
   })
 
   it('reports no digest while a published catalog is hidden', () => {
     const agent = agentForCwd(process.cwd())
     openMessageTurn(agent.session)
-    const catalog = agentCatalogMessage(renderAgentCatalog([]))
+    const catalog = agentCatalogMessage([])
     agent.session.append('user/message', catalog, { surfaceOp: 'append' })
     expect(visibleAgentCatalog(agent).published).toBe(true)
     expect(visibleAgentCatalog(agent).digest).toBeDefined()
     const initial = agent.session.snapshotEvents().find(event => event.type === 'user/message'
-      && event.data.source.kind === 'plugin'
-      && (event.data.source as { plugin?: unknown }).plugin === AGENT_CATALOG_PLUGIN)
+      && event.data.source.kind === 'agent-catalog')
     if (initial === undefined) throw new Error('expected a published catalog')
     // A log-only event newer than the catalog forces the backward scan past a
     // non-message event before it reaches the hidden catalog.
     agent.session.append('turn/start', { turn: 2 })
     agent.session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'compacted history' }],
-      source: { kind: 'plugin', plugin: 'compact' },
+      source: { kind: 'agent-definitions-spec-context' },
     }), {
       surfaceOp: { op: 'replace', startSeq: initial.seq, endSeq: initial.seq },
       sourceEventSeqs: [initial.seq],

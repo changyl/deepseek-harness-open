@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-usage-settings-section.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-usage-settings-section.md
-2026-09-16-usage-settings-section.md: 7b6d24152a98473f344ffbf9142e511494a5ffff
-2026-09-16-usage-settings-section.zh.md: a7b154c5ae9c111de4ffc4259a175f5019e5d7f7
+/agent-note-render-token-usage-as-a-web-settings-section:
+  en: e092036ab0d10033
+  zh: 1cccc72a0737fdb8
+/agent-note-render-token-usage-as-a-web-settings-section/problem:
+  en: 9347dac25d107cbc
+  zh: c4276cf01bc6b04d
+/agent-note-render-token-usage-as-a-web-settings-section/decision:
+  en: ff6c6f10550da4b9
+  zh: 81d189d16ce55236
+/agent-note-render-token-usage-as-a-web-settings-section/alternatives-considered:
+  en: dd999ab015b83cce
+  zh: c78980e516684468
+/agent-note-render-token-usage-as-a-web-settings-section/consequences:
+  en: c06f829ea00d42df
+  zh: 539375c062ca0860
+/agent-note-render-token-usage-as-a-web-settings-section/deferred:
+  en: 4ef605eb8a1bc0b9
+  zh: 6ad42c546456a791
+/agent-note-render-token-usage-as-a-web-settings-section/testing:
+  en: a8f051f5164c1df9
+  zh: e3c27cd06d543232

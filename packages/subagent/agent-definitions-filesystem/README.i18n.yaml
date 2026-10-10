@@ -1,6 +1,67 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/subagent/agent-definitions-filesystem/README.md
-README.md: a44ec02de1b54f5500f17feabee56d5b455e0a3b
-README.zh.md: 6efd3a8f93f1baef17f7cf94a95221b23bb2753b
+/:
+  en: ed6f02798cc26a89
+  zh: b6ec8179eee32e96
+/deepseek-ai-dsh-agent-definitions-filesystem:
+  en: de1d366a17a6feeb
+  zh: 2c494a0089ddc173
+/deepseek-ai-dsh-agent-definitions-filesystem/summary:
+  en: a97cabc1dd972fbf
+  zh: 2f465671bf549f5c
+/deepseek-ai-dsh-agent-definitions-filesystem/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package:
+  en: d6378b3324bd266a
+  zh: 3979dc77eacdc418
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package/when-to-choose-it:
+  en: 3025e7a440a27b8f
+  zh: 58bb52c572806aea
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package/definition-format:
+  en: 0b3c51e953af1fed
+  zh: 28ba1d4585f70cdf
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package/roots-and-priority:
+  en: 6d52bf4bd08a8cad
+  zh: 2992527f40828abe
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package/mount-and-configure:
+  en: c5fc411e3959abe4
+  zh: 2b970e3553645088
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package/observable-success-and-failures:
+  en: 782cbdedb08aa81a
+  zh: f148b106efd02b2f
+/deepseek-ai-dsh-agent-definitions-filesystem/use-this-package/filesystem-access:
+  en: adc6fa1b5d8cdffe
+  zh: 7a868b414e17a60b
+/deepseek-ai-dsh-agent-definitions-filesystem/understand-the-implementation:
+  en: 4794e150d4c74118
+  zh: 49a32e741bec1717
+/deepseek-ai-dsh-agent-definitions-filesystem/understand-the-implementation/design-concept:
+  en: 26c0de810d4d3a92
+  zh: 46dfff80f161e35a
+/deepseek-ai-dsh-agent-definitions-filesystem/understand-the-implementation/source-map:
+  en: b96705a5187223e8
+  zh: 9db17a338a9e9fab
+/deepseek-ai-dsh-agent-definitions-filesystem/understand-the-implementation/discovery-flow:
+  en: 3f0f3003a80e65fd
+  zh: 00ce8de10cead9ea
+/deepseek-ai-dsh-agent-definitions-filesystem/understand-the-implementation/loading-a-selected-definition:
+  en: 08e18839970e9047
+  zh: cb3e0c723f49ab9a
+/deepseek-ai-dsh-agent-definitions-filesystem/further-exploration:
+  en: 31f9885e2c952422
+  zh: 3d1b99246d351198
+/deepseek-ai-dsh-agent-definitions-filesystem/model-experience:
+  en: 2a3af129eaae09ec
+  zh: ea6886af6f9e4cc2
+/deepseek-ai-dsh-agent-definitions-filesystem/model-experience/kv-cache-effect:
+  en: 9d05e84f9df12fca
+  zh: b3c1d16fbbe5400e
+/deepseek-ai-dsh-agent-definitions-filesystem/known-limitations-and-deferred-work:
+  en: 35648f6827d81895
+  zh: 6d7e8d6b645a53e1
+/deepseek-ai-dsh-agent-definitions-filesystem/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

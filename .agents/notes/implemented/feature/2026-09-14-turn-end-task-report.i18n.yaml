@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-14-turn-end-task-report.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-14-turn-end-task-report.md
-2026-09-14-turn-end-task-report.md: 54b4ea2b8b68cd13c4a6f9e65012606ab68ebb72
-2026-09-14-turn-end-task-report.zh.md: 8110cf92c3ea4d5894b4ade33f06556b6e0408ab
+/agent-note-turn-end-task-report:
+  en: 8d597765ad6df01a
+  zh: 323ee0db495e8d69
+/agent-note-turn-end-task-report/problem:
+  en: c1a75caa507adc86
+  zh: ba3d74b10cbdbc02
+/agent-note-turn-end-task-report/decision:
+  en: d44f32e0913688f8
+  zh: 08f2313124b33db2
+/agent-note-turn-end-task-report/decision/the-evidence-is-the-turn-s-own-window:
+  en: 2722467c3142548a
+  zh: 47b44ad1fdd2efd3
+/agent-note-turn-end-task-report/decision/one-event-log-only-and-bounded:
+  en: 93addf6ac550270a
+  zh: 45f8001025fe5c33
+/agent-note-turn-end-task-report/decision/the-card-is-a-turn-scoped-fold-not-a-new-surface:
+  en: 35ed42cd4d0aeebb
+  zh: 994f378a57227d20
+/agent-note-turn-end-task-report/decision/enabled-in-the-web-bundle-only:
+  en: 4ebab5fe633ba958
+  zh: 3d135caaf1c5d906
+/agent-note-turn-end-task-report/alternatives-considered:
+  en: 65847d376aff0c06
+  zh: 71f4271ee8c41f9d
+/agent-note-turn-end-task-report/consequences:
+  en: 0ea3ec9c30775bdf
+  zh: 5403065a08f238ab

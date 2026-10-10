@@ -25,7 +25,7 @@ import type { TextPreviewInjected } from './TextPreview.tsx'
 import { TextTitle } from './TextTitle.tsx'
 import { TEXTPREVIEW_ID, textDefinition } from './definition.ts'
 import { textFace } from './face.ts'
-import { createReadPage, createWriteFile, documentFileBytes } from './rpc.ts'
+import { createReadPage } from './rpc.ts'
 import { createTextStore } from './store.ts'
 import { en, zh } from './locales.ts'
 import { DocumentPreviewRegistry } from './document/registry.ts'
@@ -37,6 +37,7 @@ import { apply as registerImage } from './image/index.ts'
 import { apply as registerPdf } from './pdf/index.ts'
 import { apply as registerCode } from './code/index.ts'
 import { apply as registerOffice } from './office/index.ts'
+import { apply as registerExcel } from './excel/index.ts'
 import { Config } from '../config.ts'
 
 // Values stay package-private unless another package needs them; the plugin
@@ -45,11 +46,10 @@ import { Config } from '../config.ts'
 export type { SidebarDocumentPreviewKey } from './locales.ts'
 export type { TextPreviewProps } from './TextPreview.tsx'
 export type { TextInjected } from './face.ts'
-export type { ReadDocumentBytes, DocumentFileBytes, ReadWorkspaceFilePage, SessionFile, WorkspaceFilesEditRemote, WorkspaceFilesReadRemote, WriteWorkspaceFile } from './rpc.ts'
-export type { TextPage, TextState, TextStore, TextTabEdit, TextTabState } from './store.ts'
+export type { ReadDocumentBytes, DocumentFileBytes, ReadWorkspaceFilePage, SessionFile, WorkspaceFilesReadRemote } from './rpc.ts'
+export type { TextPage, TextState, TextStore, TextTabState } from './store.ts'
 export type { DocumentContent, DocumentPreviewProps, DocumentTextPage } from './document/contract.ts'
 export type { DocumentLoadMode, DocumentPreviewDefinition } from './document/registry.ts'
-export type { SessionFileChange, SessionFileChanges, SessionFileReview } from './session-file-changes.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -77,13 +77,13 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /**
  * Required browser services: the tab registry, the slot registry, copy, and the
- * Remote carrier with its `workspaceFiles` namespace.
+ * workspace Remote for bytes and paged text reads.
  */
-export const inject = ['slots', 'locale', 'sidebarRightTabs', 'remote', 'remote.workspaceFiles']
+export const inject = ['slots', 'locale', 'sidebarRightTabs', 'remote', 'remote.workspaceFiles', 'configForms', 'resources']
 
 /**
  * Client plugin body: register the type, its dictionaries, its body, and its chip title.
- * @param ctx - client root context carrying the registry, the slots, copy, and the Remote face.
+ * @param ctx - client root context carrying the registry, slots, copy, and file readers.
  */
 export function apply(ctx: ClientContext): void {
   const config = Config((globalThis as { __DSH_DOCUMENT_PREVIEW_CONFIG__?: unknown }).__DSH_DOCUMENT_PREVIEW_CONFIG__ ?? {})
@@ -96,11 +96,8 @@ export function apply(ctx: ClientContext): void {
   const store = createTextStore()
   const face = textFace(
     createReadPage(ctx.remote),
-    async (file, signal) => {
-      const result = await ctx.remote.workspaceFiles.readAll(file.sessionId, file.path, signal)
-      return result.ok ? { ok: true, value: documentFileBytes(result.value) } : result
-    },
-    createWriteFile(ctx.remote),
+    (file, signal) => ctx.remote.workspaceFiles.readBytes(file.sessionId, file.path, {}, signal),
+    ctx.resources,
   )
   const source = { getSnapshot: previews.getSnapshot, subscribe: previews.subscribe }
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
@@ -108,24 +105,12 @@ export function apply(ctx: ClientContext): void {
       name: 'sidebar.right.pane.tab', key: TEXTPREVIEW_ID, locale: NS, store,
       children: {
         'sidebar.right.tab.document': { kind: 'keyed', scope: 'session', inject: { hooks: { tabInfo: documentTabInfoFactory } } },
+        'sidebar.right.tab.document.actions': { kind: 'list', scope: 'session' },
+        'sidebar.right.tab.document.unpreviewable': { kind: 'list', scope: 'session' },
+        'sidebar.right.tab.document.action': { kind: 'keyed', scope: 'session', inject: { hooks: { tabInfo: documentTabInfoFactory } } },
       },
       inject: (sessionId, actions): TextPreviewInjected => ({
-        ...face(sessionId, actions),
-        // The change index belongs to whichever plugin derives a Turn's
-        // changes; a composition without it answers undefined and the tab
-        // stays on the whole file.
-        readFileChange: (address, seq) => ctx.get('sessionFileChanges')?.hunksFor(address, seq),
-        // The change index belongs to whichever plugin derives a Turn's changes;
-        // it also owns the route call, so a composition without it has no change
-        // view to act on in the first place.
-        /* v8 ignore next -- the controls exist only where this service answered hunks */
-        reviewChange: (action, change) => ctx.get('sessionFileChanges')?.review(sessionId, action, [change])
-          ?? Promise.resolve('Change review is unavailable in this composition.'),
-        readReview: (address, seq) => ctx.get('sessionFileChanges')?.reviewOf(address, seq),
-        readNeighbourChange: (address, seq, direction) =>
-          ctx.get('sessionFileChanges')?.neighbourChange(address, seq, direction),
-        readHunkRange: (address, seq) => ctx.get('sessionFileChanges')?.hunkRange(address, seq),
-        hooks: { documentPreviews: source },
+        ...face(sessionId, actions), hooks: { documentPreviews: source },
       }),
     },
     TextPreview,
@@ -139,6 +124,9 @@ export function apply(ctx: ClientContext): void {
   registerHtml(ctx)
   registerImage(ctx)
   registerPdf(ctx)
-  registerCode(ctx)
   registerOffice(ctx, config.office)
+  registerExcel(ctx, config.excel)
+  registerCode(ctx)
 }
+
+export type { SessionFileChange, SessionFileChanges, SessionFileReview } from './session-file-changes.ts'

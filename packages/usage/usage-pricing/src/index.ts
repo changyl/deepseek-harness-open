@@ -1,17 +1,14 @@
 /**
  * Deployment-owned pricing table for the usage seam. The plugin registers one
- * `UsagePricing` on `ctx.usage` from its composed configuration and, when a
- * settings provider is mounted, re-reads that table whenever the `usage-pricing`
- * namespace commits. Prices are deployment data: the harness ships no default
- * rate card, and a route this table does not name stays unpriced.
+ * `UsagePricing` on `ctx.usage` from its composed configuration. Prices are
+ * deployment data: the harness ships no default rate card, and a route this
+ * table does not name stays unpriced.
  *
  * @module @deepseek-ai/dsh-usage-pricing
  */
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-// Declaration merge for ctx.settings; the plugin only reads it when a provider is mounted.
-import type {} from '@deepseek-ai/dsh-settings'
 import type { UsagePricing, UsageRoutePrice, UsageRouteRef } from '@deepseek-ai/dsh-usage'
 
 /** Cordis plugin name. */
@@ -65,13 +62,6 @@ export const Config: z<Config> = z.object({
   version: z.string().required(),
   routes: z.array(routeConfig).default([]),
 })
-
-/**
- * Settings namespace owning the runtime-editable rate card. The namespace
- * grammar admits lowercase words and single hyphens only, so the dotted name
- * the usage seam uses elsewhere is spelled `usage-pricing` here.
- */
-export const PRICING_NAMESPACE = 'usage-pricing'
 
 /** Key one route's price is looked up by. */
 const routeKey = (provider: string, model: string): string => `${provider}\u0000${model}`
@@ -164,19 +154,14 @@ export class UsagePricingTable implements UsagePricing {
 }
 
 /**
- * Register the composed table on the usage service, and let a mounted
- * settings provider override it at runtime.
+ * Register the composed table on the usage service. The composed `Config` is
+ * the deployment's rate card: the settings UI edits that plugin configuration
+ * in the profile patch, and the Loader re-applies this plugin, so no separate
+ * runtime override exists.
  * @param ctx - host context carrying the usage service.
  * @param config - validated plugin configuration.
  */
 export function apply(ctx: Context, config: Config): void {
   const table = new UsagePricingTable(config)
   ctx.effect(() => ctx.usage.registerPricing(table), 'usage-pricing.register')
-  ctx.inject(['settings'], (settingsCtx) => {
-    const scope = settingsCtx.settings.register(PRICING_NAMESPACE, Config, { base: config })
-    table.adopt(scope.get())
-    ctx.effect(() => scope.watch((next) => {
-      table.adopt(next)
-    }), 'usage-pricing.settings')
-  })
 }

@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-project-board-settings-section.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-project-board-settings-section.md
-2026-09-16-project-board-settings-section.md: 70451c1d062405b96485236eb9f4d38cb06bae7f
-2026-09-16-project-board-settings-section.zh.md: 5462c1eea99a1b1b41d0a6cd096b6667356defa9
+/agent-note-render-the-durable-project-board-as-a-web-settings-section:
+  en: 4bd99dbec297aceb
+  zh: 22d0d9d516e61584
+/agent-note-render-the-durable-project-board-as-a-web-settings-section/problem:
+  en: e00f7b27e8ab3f92
+  zh: 0b62d56d6cfd72d0
+/agent-note-render-the-durable-project-board-as-a-web-settings-section/decision:
+  en: 9ffeaa5442baabf7
+  zh: 2c819edfd9a83362
+/agent-note-render-the-durable-project-board-as-a-web-settings-section/alternatives-considered:
+  en: 7a2a212ecfd8b1e5
+  zh: c67865e47add930a
+/agent-note-render-the-durable-project-board-as-a-web-settings-section/consequences:
+  en: ecdab8dcb3d71507
+  zh: 2ae8bb120cd5936a
+/agent-note-render-the-durable-project-board-as-a-web-settings-section/deferred:
+  en: 2cb2c34f371c233e
+  zh: fcc7744b017cb049
+/agent-note-render-the-durable-project-board-as-a-web-settings-section/testing:
+  en: 87912bd484e9b1e0
+  zh: c5500ca4081a0600

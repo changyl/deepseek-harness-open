@@ -1,41 +1,60 @@
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import type { ReactNode } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import clsx from 'clsx'
+import { structuredPatch } from 'diff'
 import { FoldToggle } from './FoldToggle.tsx'
 import { writeClipboard } from './clipboard.ts'
-import { buildDiffRows, copyDiffText, type DiffHunk, type DiffRow } from './diff-hunks.ts'
-import { grammarLoadCount, highlightLines, subscribeGrammarLoaded, type HighlightSpan } from './markdown/highlight.ts'
-import { useViewportHighlighting } from './markdown/useViewportHighlighting.ts'
+import { CodeToolbar, type CodeToolbarLabels } from './CodeToolbar.tsx'
+import { languageForPath } from './code-highlighting.ts'
+import cardCss from './CodeCard.module.css'
 import css from './DiffBlock.module.css'
 
 /** Output lines shown before the height cap collapses the middle. */
 export const DEFAULT_DIFF_MAX_LINES = 16
 
+/**
+ * One file change in the form {@link DiffBlock} renders. It is declared here
+ * so this primitive stays independent of the tool contract.
+ */
+export interface DiffHunk {
+  /** The changed file's path, drawn verbatim as the hunk's header (the tool's model-facing path). */
+  path: string
+  /** Prior content including context, or `null` when no prior content is available. */
+  oldText: string | null
+  /** Content after the change, including any shared context. */
+  newText: string
+}
+
 export interface DiffBlockProps {
   /** One entry per applied hunk, in file order; empty renders nothing. */
-  diffs: readonly DiffHunk[]
+  diffs: DiffHunk[]
   /** Localized chrome supplied by the owning render site. */
   labels: DiffBlockLabels
   /** Height cap in body lines before the middle collapses (default {@link DEFAULT_DIFF_MAX_LINES}). */
   maxLines?: number | undefined
   /** Extra class merged onto the wrapper (callers position; this component draws). */
   className?: string | undefined
-  /**
-   * Grammar hint for the changed file, as the owning render site derives it
-   * from the path. Absent, unknown, or not-yet-loaded renders the plain body.
-   */
-  lang?: string | undefined
 }
 
-/** Localized chrome for {@link DiffBlock} and {@link DiffSplitBlock}. */
-export interface DiffBlockLabels {
+/** Localized chrome for {@link DiffBlock}. */
+export interface DiffBlockLabels extends CodeToolbarLabels {
   copy: string
   copied: string
   collapseAria: string
   expandAria: (hidden: number) => string
   collapse: string
   expand: (hidden: number) => string
-  files: (count: number) => string
+}
+
+/** A single rendered body line and its role, so the height cap slices a flat list. */
+interface DiffRow {
+  kind: 'path' | 'del' | 'add' | 'context' | 'gap'
+  text: string
+}
+
+/** Local exhaustiveness helper — this package does not depend on `dsh-llm`. */
+/* v8 ignore next 3 -- closed-union backstop; only reached if a row kind is forged */
+function assertNever(value: never): never {
+  throw new Error(`unreachable diff row kind: ${String(value)}`)
 }
 
 /** The dim class per row kind (path/gap chrome vs the diff's own +/- colors). */
@@ -47,17 +66,98 @@ const ROW_CLASS: Record<DiffRow['kind'], string | undefined> = {
   gap: css.gap,
 }
 
+/** Bound synchronous edit-graph search; one replacement consumes two edits. */
+const MAX_DIFF_EDIT_LENGTH = 256
+
+/** Derive exact local patches or a whole-fragment replacement when search exceeds the limit. */
+function localHunks(diff: DiffHunk) {
+  const oldLines = contentLines(diff.oldText ?? '')
+  const newLines = contentLines(diff.newText)
+  const normalize = (lines: string[]): string => lines.map(line => `${line}\n`).join('')
+  return structuredPatch('', '', normalize(oldLines), normalize(newLines),
+    undefined, undefined, { context: 3, maxEditLength: MAX_DIFF_EDIT_LENGTH })?.hunks
+    ?? [{ lines: [...oldLines.map(line => `-${line}`), ...newLines.map(line => `+${line}`)] }]
+}
+
 /**
- * One row's own text: the grammar's runs when the row carries them, bare text
- * otherwise. A row with no runs draws exactly what it drew before a language
- * was available, so an unsupported or still-loading grammar degrades to plain
- * instead of to nothing.
- * @param props - the row's text and its optional runs.
- * @returns the row's text content.
+ * Count displayed additions and deletions. Exact patches exclude shared context;
+ * comparisons exceeding the edit limit count both complete fragments as replaced.
+ * Text follows {@link contentLines}'s terminator rule.
+ * @param diffs - the hunks to count.
+ * @returns the +/- totals for tool summaries.
  */
-export function DiffLineText({ text, spans }: { text: string; spans?: readonly HighlightSpan[] | undefined }): ReactNode {
-  if (spans === undefined) return text
-  return spans.map((span, index) => <span key={index} style={span.style}>{span.text}</span>)
+export function diffTotals(diffs: DiffHunk[]): { added: number; removed: number } {
+  let added = 0
+  let removed = 0
+  for (const diff of diffs) {
+    for (const hunk of localHunks(diff)) {
+      for (const line of hunk.lines) {
+        if (line.startsWith('+')) added++
+        if (line.startsWith('-')) removed++
+      }
+    }
+  }
+  return { added, removed }
+}
+
+/**
+ * Flatten local patches into rows.
+ * A path header opens each new file. A `⋯` gap separates consecutive same-file
+ * fragments and distant patches within a fragment.
+ * @param diffs - the hunks to render.
+ * @returns the body rows.
+ */
+function buildRows(diffs: DiffHunk[]): DiffRow[] {
+  const rows: DiffRow[] = []
+  let prevPath: string | undefined
+  for (const diff of diffs) {
+    if (diff.path !== prevPath) rows.push({ kind: 'path', text: diff.path })
+    else rows.push({ kind: 'gap', text: '⋯' })
+    prevPath = diff.path
+    for (const [index, hunk] of localHunks(diff).entries()) {
+      if (index > 0) rows.push({ kind: 'gap', text: '⋯' })
+      for (const line of hunk.lines) {
+        const kind = line.startsWith('-') ? 'del' : line.startsWith('+') ? 'add' : 'context'
+        rows.push({ kind, text: line.slice(1) })
+      }
+    }
+  }
+  return rows
+}
+
+/**
+ * Split a side's text into its content lines. Empty text is zero lines (a full
+ * deletion's `newText` or a create's absent `oldText` side draws nothing), and a
+ * single trailing newline is a line terminator rather than an extra empty line —
+ * the same terminator rule TerminalBlock applies to command output. An interior
+ * blank line (a genuine `\n\n`) survives.
+ * @param text - the removed or added side's text.
+ * @returns the content lines, without the terminating newline.
+ */
+function contentLines(text: string): string[] {
+  if (text === '') return []
+  const body = text.endsWith('\n') ? text.slice(0, -1) : text
+  return body.split('\n')
+}
+
+/**
+ * Copy the full local diff, including folded rows: removed/added lines have
+ * `- `/`+ ` prefixes, context has two spaces, and paths and gaps stay verbatim.
+ * @param rows - the flattened body rows.
+ * @returns the diff as plain text.
+ */
+function copyText(rows: DiffRow[]): string {
+  return rows.map((row) => {
+    switch (row.kind) {
+      case 'del': return `- ${row.text}`
+      case 'add': return `+ ${row.text}`
+      case 'context': return `  ${row.text}`
+      case 'path': return row.text
+      case 'gap': return row.text
+      /* v8 ignore next -- closed-union backstop; only reached if a row kind is forged */
+      default: return assertNever(row.kind)
+    }
+  }).join('\n')
 }
 
 /**
@@ -65,23 +165,17 @@ export function DiffLineText({ text, spans }: { text: string; spans?: readonly H
  * @param props - see {@link DiffBlockProps}.
  * @returns the diff block element.
  */
-export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className, lang }: DiffBlockProps) {
-  const rootRef = useRef<HTMLDivElement>(null)
-  const highlighting = useViewportHighlighting(rootRef, lang)
-  // Re-render when a lazy grammar finishes loading, so a diff that drew plain
-  // while its language's grammar imported picks up highlighting. The snapshot
-  // value is opaque; only its change across renders drives the memo.
-  const loaded = useSyncExternalStore(subscribeGrammarLoaded, grammarLoadCount, grammarLoadCount)
-  const { rows, added, removed, files } = useMemo(
-    () => buildDiffRows(diffs, highlighting ? text => highlightLines(text, lang) : undefined),
-    [diffs, highlighting, lang, loaded],
-  )
+export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, className }: DiffBlockProps) {
+  const rows = useMemo(() => buildRows(diffs), [diffs])
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [wrapped, setWrapped] = useState(false)
+  const firstLanguage = diffs[0] === undefined ? undefined : languageForPath(diffs[0].path)
+  const language = diffs.every(diff => languageForPath(diff.path) === firstLanguage) ? firstLanguage : undefined
 
   const onCopy = useCallback(() => {
     if (copied) return
-    void writeClipboard(copyDiffText(rows)).then((ok) => {
+    void writeClipboard(copyText(rows)).then((ok) => {
       if (!ok) return
       setCopied(true)
       window.setTimeout(() => { setCopied(false) }, 1000)
@@ -101,24 +195,14 @@ export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, cl
   const head = capped ? rows.slice(0, headLines) : rows
   const tail = capped ? rows.slice(rows.length - tailLines) : []
 
-  const row = (entry: DiffRow, index: number): ReactNode => (
-    <div key={index} className={clsx(css.line, ROW_CLASS[entry.kind])} data-diff-hunk={entry.hunk}>
-      <DiffLineText text={entry.text} spans={entry.spans} />
-    </div>
-  )
-
   return (
-    <div
-      ref={rootRef}
-      className={clsx(css.block, className)}
-      data-diff=""
-      data-diff-highlight={highlighting ? '' : undefined}
-    >
-      <button type="button" className={css.copyButton} onClick={onCopy}>
-        {copied ? labels.copied : labels.copy}
-      </button>
+    <div className={clsx(cardCss.card, css.block, className)} data-diff="" data-code-wrap={wrapped}>
+      <CodeToolbar lang={language} labels={labels} copyLabel={labels.copy} copiedLabel={labels.copied}
+        copied={copied} wrapped={wrapped} onCopy={onCopy} onWrap={() => { setWrapped(value => !value) }} />
       <div className={css.body}>
-        {head.map(row)}
+        {head.map((row, index) => (
+          <div key={index} className={clsx(css.line, ROW_CLASS[row.kind])}>{row.text}</div>
+        ))}
         {hidden > 0 && (
           <FoldToggle
             className={css.expand}
@@ -128,9 +212,10 @@ export function DiffBlock({ diffs, labels, maxLines = DEFAULT_DIFF_MAX_LINES, cl
             onToggle={onToggle}
           />
         )}
-        {tail.map(row)}
+        {tail.map((row, index) => (
+          <div key={index} className={clsx(css.line, ROW_CLASS[row.kind])}>{row.text}</div>
+        ))}
       </div>
-      <div className={css.footer}>└ +{added} -{removed} · {labels.files(files)}</div>
     </div>
   )
 }

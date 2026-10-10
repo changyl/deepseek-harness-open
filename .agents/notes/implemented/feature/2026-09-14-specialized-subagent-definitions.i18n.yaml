@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-14-specialized-subagent-definitions.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-14-specialized-subagent-definitions.md
-2026-09-14-specialized-subagent-definitions.md: 8b9a30adca08bde9281cfa8469c74b010f212e67
-2026-09-14-specialized-subagent-definitions.zh.md: 2ee62de2420230cb52a2b89f08cdbd49ae3547f4
+/agent-note-specialized-subagent-definitions:
+  en: 0ed70c2ede6193c8
+  zh: af8b139f545e9012
+/agent-note-specialized-subagent-definitions/problem:
+  en: 8347b8fc769b018c
+  zh: a9a52c5522bb0623
+/agent-note-specialized-subagent-definitions/decision:
+  en: 0c41ac3c8ff44e6b
+  zh: 15ffdad18c61243b
+/agent-note-specialized-subagent-definitions/decision/one-flat-markdown-file-per-specialist:
+  en: 4971118435677863
+  zh: bff055ee5111961c
+/agent-note-specialized-subagent-definitions/decision/the-registry-is-host-plane-a-preset-contributes-only-providers:
+  en: bea3eb09a6b6b51b
+  zh: c22544b2845b271f
+/agent-note-specialized-subagent-definitions/decision/a-definition-maps-onto-the-existing-start-request-and-only-narrows:
+  en: 96fd9ec7616021c7
+  zh: 2e7995aa649b09a7
+/agent-note-specialized-subagent-definitions/decision/the-model-learns-names-from-a-durable-catalog:
+  en: dc8cef8d303518a6
+  zh: 9f93c59b3b18552c
+/agent-note-specialized-subagent-definitions/decision/only-in-process-backends-host-definitions:
+  en: 8fd73abe8d8108cf
+  zh: b2d1bdd6df3ab031
+/agent-note-specialized-subagent-definitions/alternatives-considered:
+  en: a0ab7d97ce5a4be7
+  zh: c641064c7738b1e0
+/agent-note-specialized-subagent-definitions/consequences:
+  en: 8fb5145f4e50daaa
+  zh: ddb70636bbb051ab

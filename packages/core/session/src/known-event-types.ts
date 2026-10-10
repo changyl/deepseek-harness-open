@@ -35,6 +35,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'compaction/start',
   'compaction/summary',
   'deliverables/presented',
+  'developer/message',
   'feedback/message-delete',
   'feedback/message-put',
   'feedback/record',
@@ -79,6 +80,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'turn/start',
   'user/message',
   'web/deepseek-search-llm-request',
+  'working-directory/change',
   'workspace/changes',
 ])
 

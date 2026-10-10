@@ -36,7 +36,7 @@ kind: "package-reference"
 
 `renderNote(entries, maxTasksListed)` 渲染标题行、每个被列出任务一行，以及在上界截断列表时的一行 `- N further linked task(s) are not listed.`；空列表返回 undefined。
 
-监听器以 `{ prepend: true }` 挂在 `agent/pre-step` waterfall 上：它先 `await next()`，当该决定是 `reject` 或本次调用信号已中止时原样返回该决定，否则追加一条插件来源的消息。仅当文本与本节实例上次发送的说明不同时才发送，因此看板未变时不产生任何开销。该消息携带 `source.kind === 'plugin'`、本插件名，以及 `form: 'snapshot'`，其 section 文本与发送内容一致，因此会话日志记录下模型读到的内容。
+监听器以 `{ prepend: true }` 挂在 `agent/pre-step` waterfall 上：它先 `await next()`，当该决定是 `reject` 或本次调用信号已中止时原样返回该决定，否则追加一条插件来源的消息。仅当文本与本节实例上次发送的说明不同时才发送，因此看板未变时不产生任何开销。该消息携带 `source.kind === 'project-context'` 与 `form: 'snapshot'`，其 section 文本与发送内容一致，因此会话日志记录下模型读到的内容。
 
 <a id="further-exploration"></a>
 ## 延伸阅读

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-21-tool-scheduler-registry-symbol.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-21-tool-scheduler-registry-symbol.md
-2026-09-21-tool-scheduler-registry-symbol.md: 339f3327d983e9b1824930687943ce192319d157
-2026-09-21-tool-scheduler-registry-symbol.zh.md: 5e573cd481da0be57418c56775843fbe5312ad78
+/agent-note-reach-the-tool-scheduler-through-the-symbol-registry:
+  en: f5f3965648f8cecc
+  zh: ccbb2f88a809c32e
+/agent-note-reach-the-tool-scheduler-through-the-symbol-registry/problem:
+  en: a83bd71ce746a992
+  zh: fdfa5d6639254e5b
+/agent-note-reach-the-tool-scheduler-through-the-symbol-registry/decision:
+  en: 5fd9a402f0cd19fc
+  zh: d5330972d09583ee
+/agent-note-reach-the-tool-scheduler-through-the-symbol-registry/alternatives-considered:
+  en: ff28ad2ecbccf9ac
+  zh: 16a91e0e6147c79c
+/agent-note-reach-the-tool-scheduler-through-the-symbol-registry/consequences:
+  en: f7e6cb9661a920f3
+  zh: bd6a0729deca6de6

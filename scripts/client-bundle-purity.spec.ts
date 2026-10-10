@@ -39,7 +39,7 @@ interface InputIsolationPlugin {
 const REQUESTING_PACKAGE = '@deepseek-ai/dsh-client-ui-conversation'
 
 function clientConfigs(id = REQUESTING_PACKAGE) {
-  return clientBundle(id, ['lib/types/index.js', 'lib/types/invariant.js'])(
+  return clientBundle(id, ['lib/types/index.js'])(
     { env: { DSH_BUILD_FACE: 'client' } },
   ).filter(config => config.platform === 'browser')
 }
@@ -89,8 +89,6 @@ function clientSourceMapPath(packagePath: string): string {
 }
 
 function purityResolveId(id = REQUESTING_PACKAGE): ResolveId {
-  // libEntry is spelled at every call site (no default) so the
-  // package-invariants text check can see the invariant entry per package.
   const configs = clientConfigs(id)
   const plugins = (configs[0] as { plugins: { name: string; resolveId?: unknown }[] }).plugins
   const gate = plugins.find(p => p.name === 'dsh-client-bundle-purity')
@@ -141,7 +139,12 @@ describe('client bundle purity gate', () => {
     expect(() => resolveId('@deepseek-ai/dsh-token-meter')).toThrow(/purity/)
     expect(() => resolveId('@deepseek-ai/dsh-token-meter/client/internal')).toThrow(/purity/)
     expect(resolveId('@deepseek-ai/dsh-host-open-in-app/shared')).toBeNull()
+    expect(resolveId('@deepseek-ai/dsh-native-command/types')).toBeNull()
+    expect(() => resolveId('@deepseek-ai/dsh-native-command')).toThrow('client bundle purity')
     expect(() => resolveId('@deepseek-ai/dsh-host-open-in-app')).toThrow(/purity/)
+    expect(resolveId('@deepseek-ai/dsh-plugin-manager/registry')).toBeNull()
+    expect(() => resolveId('@deepseek-ai/dsh-plugin-manager')).toThrow(/purity/)
+    expect(() => resolveId('@deepseek-ai/dsh-plugin-manager/registry/internal')).toThrow(/purity/)
   })
 
   it('admits only the pure spill notice entry, not its Host policy', () => {
@@ -264,6 +267,15 @@ describe('client bundle experimental input isolation', () => {
     await expect(bundle(owner, config(kind))).rejects.toThrow(/client bundle isolation.*experimental/)
     expect(existsSync(join(owner, 'lib/client.js'))).toBe(false)
     expect(existsSync(join(owner, 'lib/index.js'))).toBe(false)
+  })
+
+  it.each(['static', 'dynamic'] as const)('keeps retained-name experimental %s inputs outside ordinary artifacts', async (kind) => {
+    const { root, owner, entry, prototype } = fixture()
+    const name = '@deepseek-ai/dsh-tool-terminal'
+    writeFileSync(join(root, 'prototype/package.json'), JSON.stringify({ name, type: 'module' }))
+    writeFileSync(entry, `export { marker } from ${JSON.stringify(importPath(entry, prototype))}\n`)
+    await expect(bundle(owner, config(kind))).rejects.toThrow(/client bundle isolation.*experimental/)
+    await expect(bundle(owner, config(kind, name))).resolves.toContain('experimental sentinel')
   })
 
   it('proves the static library otherwise hides the experimental input in its emitted JavaScript', async () => {

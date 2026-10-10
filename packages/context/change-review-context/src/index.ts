@@ -11,14 +11,25 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type { PreStepDecision } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-change-review'
 
-/** Plugin name, which also marks this plugin's own injected messages. */
+/** Plugin name, which is also the source `kind` of its own injected messages. */
 export const name = 'change-review-context'
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /**
+     * One rendered review note, and this producer's own kind: the walk that
+     * finds this plugin's last note matches on it.
+     */
+    'change-review-context': { kind: 'change-review-context' } & ContextFormed
+  }
+}
 
 /** The agent registry that owns pre-step processing. */
 export const inject = ['agents']
@@ -50,7 +61,7 @@ export function unreportedDecisions(session: Session): ReportedDecision[] {
     if (event === undefined) continue
     if (event.type === 'session/end-seed') break
     if (event.type === 'user/message') {
-      if (event.data.source.kind === 'plugin' && event.data.source.plugin === name) break
+      if (event.data.source.kind === name) break
       continue
     }
     if (event.type !== 'change/review') continue
@@ -103,8 +114,8 @@ export function apply(ctx: Context): void {
         ...decision.messages,
         createUserMessage({
           content: [{ type: 'text', text }],
-          source: { kind: 'plugin', plugin: name, form: 'snapshot', sections: [{ name, text }] },
-        }) as UserMessage,
+          source: { kind: name, form: 'snapshot', sections: [{ name, text }] },
+        }),
       ],
     }
   }, { prepend: true })

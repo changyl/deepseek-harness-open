@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for authoring-an-agent-definition.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/cookbook/authoring-an-agent-definition.md
-authoring-an-agent-definition.md: 05b29448f24b4755982770875dfa44f80de67e77
-authoring-an-agent-definition.zh.md: 23736695a943026617b7dac029c710dbcd3d17af
+/cookbook-authoring-an-agent-definition:
+  en: 750e80d4ffda0a40
+  zh: e03aa66c57c1eee9
+/cookbook-authoring-an-agent-definition/1-choose-the-root-that-owns-the-definition:
+  en: cc260d7d68414d97
+  zh: 0cff95a02e3c532a
+/cookbook-authoring-an-agent-definition/2-write-the-definition-file:
+  en: 143e39cab02c6ccd
+  zh: 0ed0fef89d4f9ed7
+/cookbook-authoring-an-agent-definition/3-fill-the-frontmatter:
+  en: c98560733d6c27de
+  zh: 4a953e14a5485983
+/cookbook-authoring-an-agent-definition/4-write-the-body-as-the-child-persona:
+  en: bb02786398a1d8ae
+  zh: e2b5a91302a00150
+/cookbook-authoring-an-agent-definition/5-narrow-never-grant:
+  en: 63691ae6383a0b0d
+  zh: 13bc251678a3790a
+/cookbook-authoring-an-agent-definition/6-let-the-model-discover-and-select-it:
+  en: d45d1333f4bc8a2e
+  zh: 6e4406ef0cc09398
+/cookbook-authoring-an-agent-definition/7-verify:
+  en: fbee7c2654288d64
+  zh: 0a660f5030564368

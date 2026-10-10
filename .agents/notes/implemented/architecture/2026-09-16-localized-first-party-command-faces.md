@@ -10,9 +10,9 @@ The composer's localized-row mechanism is opt-in per definition: [`ui-commands`]
 
 ## Decision
 
-This change applies the rule the [composer menu decision](../feature/2026-09-08-composer-menu-sections-and-localized-rows.md) recorded — a localized first-party command needs its identity mapping, dictionary entries, glyph, and menu position — to those three definitions. [`resolution.ts`](../../../../packages/client/ui-commands/src/client/resolution.ts) maps `usage`, `effectiveness`, and `project` to `@deepseek-ai/dsh-command-usage`, `@deepseek-ai/dsh-command-effectiveness`, and `@deepseek-ai/dsh-command-project`; [`locales.ts`](../../../../packages/client/ui-commands/src/client/locales.ts) gains `label`, `description`, and `token` entries for each in both dictionaries; and [`presentation.ts`](../../../../packages/client/ui-commands/src/client/presentation.ts) gives them `IconGaugeOutline16`, `IconDataOutline16`, and `IconChecklistOutline14`.
+This change applies the rule the composer menu decision recorded — a localized first-party command needs its identity mapping, dictionary entries, glyph, and menu position — to those three definitions. [`resolution.ts`](../../../../packages/client/ui-commands/src/client/resolution.ts) maps `usage`, `effectiveness`, and `project` to `@deepseek-ai/dsh-command-usage`, `@deepseek-ai/dsh-command-effectiveness`, and `@deepseek-ai/dsh-command-project`; [`locales.ts`](../../../../packages/client/ui-commands/src/client/locales.ts) gains `label`, `description`, and `token` entries for each in both dictionaries; and [`presentation.ts`](../../../../packages/client/ui-commands/src/client/presentation.ts) gives them `IconGaugeOutline16`, `IconDataOutline16`, and `IconChecklistOutline14`.
 
-Selection stays keyed by `definitionId`, so a scoped composition that registers its own `usage`, `effectiveness`, or `project` row keeps its own copy and inherits neither the dictionary face nor a built-in alias; the [command identity decision](../architecture/2026-09-10-command-identities-and-composer-file-action.md) owns that rule and the reason a command name cannot carry identity.
+Selection stays keyed by `definitionId`, so a scoped composition that registers its own `usage`, `effectiveness`, or `project` row keeps its own copy and inherits neither the dictionary face nor a built-in alias; the [command identity decision](../archived/architecture/2026-09-10-command-identities-and-composer-file-action.md) owns that rule and the reason a command name cannot carry identity.
 
 The `token` entries add a second typed spelling per command — `用量`, `有效性`, and `项目` beside the English names — because a menu pick inserts the locale's token and the alias table resolves either spelling back to the same definition. Resolution still tries an exact name match before any alias, so a same-named override answers to its own spelling.
 
@@ -24,7 +24,7 @@ None of the three rows joins `SECTION_ROWS`. That list is the top of the Command
 
 **Localize the titles only.** A row with a Chinese title and an English description reads as half-translated, and `builtinRowFace` reads the title, description, and glyph from one table; splitting that table would let a row keep whichever part a later edit forgot.
 
-**Localize `/report` in the same change.** `/report` registers in [`packages/session/task-report`](../../../../packages/session/task-report/README.md) with no `definitionId`, so no client mapping can name its definition; giving it a face here would need a name-keyed exception, which the [command identity decision](../architecture/2026-09-10-command-identities-and-composer-file-action.md) rejected. That package has to declare an id first.
+**Localize `/report` in the same change.** `/report` registers in [`packages/session/task-report`](../../../../packages/session/task-report/README.md) with no `definitionId`, so no client mapping can name its definition; giving it a face here would need a name-keyed exception, which the [command identity decision](../archived/architecture/2026-09-10-command-identities-and-composer-file-action.md) rejected. That package has to declare an id first.
 
 ## Consequences
 

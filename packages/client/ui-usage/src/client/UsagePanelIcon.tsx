@@ -1,4 +1,4 @@
-import { IconGaugeOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconGaugeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 
 /**
@@ -7,5 +7,5 @@ import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
  * @returns the usage glyph at that size.
  */
 export function UsagePanelIcon({ size }: PropsRuntime<'sidebar.panellist'>) {
-  return <IconGaugeOutline16 size={size} />
+  return <IconGaugeOutlineRegular size={size} />
 }

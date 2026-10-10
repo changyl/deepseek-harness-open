@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { UsageReportWire, UsageRouteTotalsWire } from '@deepseek-ai/dsh-api-usage/types'
-import { Button, IconRefreshOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS } from './locales.ts'
 import css from './UsagePanel.module.css'
@@ -84,7 +84,7 @@ export function UsagePanel(props: UsagePanelProps) {
         <p className={css.error} role="alert">{t('failed')}</p>
         <p className={css.reason}>{t('failed.reason', { reason: state.reason })}</p>
         <div>
-          <Button size="sm" variant="outline" icon={<IconRefreshOutline16 />} onClick={reload}>
+          <Button size="sm" variant="outline" icon={<IconRefreshOutlineRegular />} onClick={reload}>
             {t('refresh')}
           </Button>
         </div>
@@ -100,7 +100,7 @@ export function UsagePanel(props: UsagePanelProps) {
         <Button
           size="sm"
           variant="outline"
-          icon={<IconRefreshOutline16 />}
+          icon={<IconRefreshOutlineRegular />}
           disabled={pending}
           onClick={reload}
         >

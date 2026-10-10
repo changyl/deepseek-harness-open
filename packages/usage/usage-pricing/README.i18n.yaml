@@ -1,6 +1,67 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/usage/usage-pricing/README.md
-README.md: 543cffcf4aafdfdce44ee3664a24eba49138df95
-README.zh.md: 83f6873e77b5c9a165c69e24d55860cf97626a53
+/:
+  en: dd6ef232cbec7c85
+  zh: 00ab357f566b1de7
+/deepseek-ai-dsh-usage-pricing:
+  en: 8b2f57444cacbfa7
+  zh: 8e8b766ec30623a7
+/deepseek-ai-dsh-usage-pricing/summary:
+  en: 60dd8eaebe6d6a15
+  zh: 18a73f5f2239e2a5
+/deepseek-ai-dsh-usage-pricing/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-usage-pricing/use-this-package:
+  en: e6f0e997db57378f
+  zh: b6e8b04256352934
+/deepseek-ai-dsh-usage-pricing/use-this-package/composition:
+  en: 1ff253c3946b4ebe
+  zh: 103f66630a01e5f8
+/deepseek-ai-dsh-usage-pricing/use-this-package/configuration:
+  en: 14df73b15dcff7e1
+  zh: 10c12b6a7180a797
+/deepseek-ai-dsh-usage-pricing/use-this-package/route-rates:
+  en: 0a48240c1751b4a9
+  zh: 1d29bf04a4f1d911
+/deepseek-ai-dsh-usage-pricing/use-this-package/runtime-rate-changes:
+  en: 585144c36a089af6
+  zh: b497c286326a3e78
+/deepseek-ai-dsh-usage-pricing/use-this-package/failures-and-recovery:
+  en: d38cdb2dc9140e81
+  zh: 9873f308633ca814
+/deepseek-ai-dsh-usage-pricing/understand-the-implementation:
+  en: 6de7c3350a531370
+  zh: ffbd42b08b5597e7
+/deepseek-ai-dsh-usage-pricing/understand-the-implementation/design-concept:
+  en: ad5f7f7e9bd5ffb8
+  zh: e165977415186202
+/deepseek-ai-dsh-usage-pricing/understand-the-implementation/source-map:
+  en: 508a10caa9d814c3
+  zh: d587a7eefddbdb02
+/deepseek-ai-dsh-usage-pricing/further-exploration:
+  en: c85bd84e896509e8
+  zh: 297749d2d743a777
+/deepseek-ai-dsh-usage-pricing/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-usage-pricing/model-experience/deployment-rate-card:
+  en: 93284d9008832e3c
+  zh: eac3553d35e5d2e2
+/deepseek-ai-dsh-usage-pricing/model-experience/deployment-rate-card/what-the-model-sees:
+  en: fabbb104d5383a7b
+  zh: c11ea1da10c9c857
+/deepseek-ai-dsh-usage-pricing/model-experience/deployment-rate-card/token-effect:
+  en: 25bf351fb4a6c4b1
+  zh: cf39a83db799d041
+/deepseek-ai-dsh-usage-pricing/model-experience/deployment-rate-card/kv-cache-effect:
+  en: a3a7484fe9ed4b46
+  zh: aa2bf55ad66d573e
+/deepseek-ai-dsh-usage-pricing/known-limitations-and-deferred-work:
+  en: 9d84cc4608e84f3a
+  zh: ea1c1b97d298bcc5
+/deepseek-ai-dsh-usage-pricing/known-limitations-and-deferred-work/dev-note:
+  en: ace67c66ade2c63e
+  zh: 0c2657d618be9429

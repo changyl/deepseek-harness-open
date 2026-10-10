@@ -8,7 +8,7 @@ Status: implemented
 
 `SessionQueryEngine.readSession(id)` 是统计界面的规范日志读取器：用量账本通过它重新折叠一个会话，有效性报告通过它折叠整个语料库，轮次任务报告通过它读取自己的会话。它通过 `Session.create` 重构存储日志以复用恢复的回放校验，而 `Session.create` 运行在 snapshot 模式，其种子契约只有被继承前缀：种子化头部要求 `inheritedEventCount === seed.length`，否则构造器抛出 "seeded session constructor seed must equal its inherited prefix"。
 
-语料库提供的是完整存储日志加上从带标记的 `session/end-seed {inherited: true}` 推导出的切点——即标记自身的 seq，正如[end-seed 日志边界](../architecture/2026-07-30-session-end-seed-log-boundary.zh.md)所定义。因此对任何在切点之后写入过事件的种子化会话，该断言永远不成立，而每个 subagent 会话恰恰如此：活跃子会话在自己的切点追加标记，随后写入自己的事件。在任何运行过 subagent 的部署上，第一个冷的种子化会话就会让重构失败并拖垮整次聚合查询——`/usage`、设置页的用量与有效性区块、subagent 会话的任务报告全部以同一个内部错误失败，而同一批会话经观察路径读取完全正常，因为那条路径通过 `sessions.prepare` 携带日志的别名状态做恢复。
+语料库提供的是完整存储日志加上从带标记的 `session/end-seed {inherited: true}` 推导出的切点——即标记自身的 seq，正如[end-seed 日志边界](../../archived/architecture/2026-07-30-session-end-seed-log-boundary.md)所定义。因此对任何在切点之后写入过事件的种子化会话，该断言永远不成立，而每个 subagent 会话恰恰如此：活跃子会话在自己的切点追加标记，随后写入自己的事件。在任何运行过 subagent 的部署上，第一个冷的种子化会话就会让重构失败并拖垮整次聚合查询——`/usage`、设置页的用量与有效性区块、subagent 会话的任务报告全部以同一个内部错误失败，而同一批会话经观察路径读取完全正常，因为那条路径通过 `sessions.prepare` 携带日志的别名状态做恢复。
 
 来自本机（发布此修复的机器）的证据：74 份存储日志中，19 份种子化日志全部违反 snapshot 契约，55 份非种子化日志全部读取正常。
 

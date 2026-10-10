@@ -13,11 +13,18 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import type { PreStepDecision } from '@deepseek-ai/dsh-agent'
 import type { ProjectStore, ProjectView, TaskView } from '@deepseek-ai/dsh-project'
 import type { Session } from '@deepseek-ai/dsh-session'
 
-/** Plugin name, which also marks this plugin's own injected messages. */
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'project-context': { kind: 'project-context' } & ContextFormed
+  }
+}
+
+/** Plugin name, which is also the source `kind` of its own injected messages. */
 export const name = 'project-context'
 
 /** The agent registry that owns pre-step processing, and the board it is read from. */
@@ -108,7 +115,7 @@ export function apply(ctx: Context, config: Config): void {
         ...decision.messages,
         createUserMessage({
           content: [{ type: 'text', text }],
-          source: { kind: 'plugin', plugin: name, form: 'snapshot', sections: [{ name, text }] },
+          source: { kind: name, form: 'snapshot', sections: [{ name, text }] },
         }),
       ],
     }

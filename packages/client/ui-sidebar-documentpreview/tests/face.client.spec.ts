@@ -9,16 +9,12 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { sessionFileAddress } from '@deepseek-ai/dsh-util-workspace-path'
-import type {
-  WorkspaceFileBytes,
-  WorkspaceFileText,
-  WorkspaceFileWriteResult,
-} from '@deepseek-ai/dsh-api-workspace-files/types'
+import type { WorkspaceFileText } from '@deepseek-ai/dsh-api-workspace-files/types'
 import { textFace } from '../src/client/face.ts'
-import type { DocumentFileBytes, ReadDocumentBytes, ReadWorkspaceFilePage, WriteWorkspaceFile } from '../src/client/rpc.ts'
-import { documentFileBytes, hostFileOf } from '../src/client/rpc.ts'
+import type { DocumentFileBytes, ReadDocumentBytes, ReadWorkspaceFilePage } from '../src/client/rpc.ts'
+import { hostFileOf } from '../src/client/rpc.ts'
 import { createTextStore } from '../src/client/store.ts'
-import { ABSOLUTE_PATH, FILE, PATH, SESSION, failure, page, wholeFailure, wholeText, written } from './fixtures.client.ts'
+import { ABSOLUTE_PATH, FILE, PATH, SESSION, createResources, failure, page } from './fixtures.client.ts'
 import type { TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
 
 const TAB_1 = 'tab-1' as TabId
@@ -88,20 +84,18 @@ function bench(sessionId = 'other-session' as SessionId) {
   const whole = readQueue<DocumentFileBytes>()
   let sequence = 0
   const bytes = vi.fn<ReadDocumentBytes>(() => whole.request(++sequence))
-  const writes = readQueue<WorkspaceFileWriteResult>()
-  let writeSequence = 0
-  const write = vi.fn<WriteWorkspaceFile>(() => writes.request(++writeSequence))
   const controller = new AbortController()
   onTestFinished(async () => {
     controller.abort()
     const remaining = pending.splice(0)
     for (const call of remaining) call.resolve(failure('workspace-file/outside-workspace', { path: PATH }))
-    await Promise.all([...remaining.map(call => call.promise), whole.close(), writes.close()])
+    await Promise.all([...remaining.map(call => call.promise), whole.close()])
   })
   // The store's own `forget`, counted: the record's end must forget a tab exactly once.
   const forget = vi.fn(instance.actions.forget)
   // Injected for another session on purpose: the address's session must win.
-  const face = textFace(read, bytes, write)(sessionId, { ...instance.actions, forget })
+  const resources = createResources()
+  const face = textFace(read, bytes, resources)(sessionId, { ...instance.actions, forget })
   /** Settle the oldest outstanding read, or the oldest one for `offset`. */
   const settle = async (result: RemoteResult<WorkspaceFileText>, offset?: number): Promise<void> => {
     const at = offset === undefined ? 0 : pending.findIndex(call => call.offset === offset)
@@ -111,14 +105,8 @@ function bench(sessionId = 'other-session' as SessionId) {
     await call.promise
   }
   return {
-    instance, read, write, face, forget, settle, bytes, controller,
-    settleWrite: writes.settle,
-    outstandingWrites: writes.outstanding,
+    instance, read, face, forget, settle, bytes, controller, resources,
     settleAll: whole.settle,
-    // The whole-read contract now yields decoded bytes; the editing specs still
-    // author wire results, so they settle through the production converter.
-    settleAllWire: (result: RemoteResult<WorkspaceFileBytes>, key?: number) => whole.settle(
-      result.ok ? { ok: true, value: documentFileBytes(result.value) } : result, key),
     outstandingAll: whole.outstanding,
     outstanding: () => pending.map(call => call.offset),
     tab: () => instance.getSnapshot().byTab[TAB_1],
@@ -133,6 +121,19 @@ const settlements = [
 ] as const
 
 describe('textFace', () => {
+  it('subscribes to a dependency once and stops accepting members after the tab ends', () => {
+    const { face, resources, controller, forget } = bench()
+    const source = vi.spyOn(resources, 'source')
+    const address = sessionFileAddress(SESSION, 'style.css')
+    face.addResource(TAB_1, address, controller.signal)
+    face.addResource(TAB_1, address, controller.signal)
+    expect(source).toHaveBeenCalledExactlyOnceWith(address)
+    controller.abort()
+    expect(forget).toHaveBeenCalledExactlyOnceWith(TAB_1)
+    face.addResource(TAB_1, sessionFileAddress(SESSION, 'other.css'), controller.signal)
+    expect(source).toHaveBeenCalledTimes(1)
+  })
+
   it('marks the read in flight, then keeps the page', async () => {
     const { read, face, settle, tab } = bench()
     const controller = new AbortController()
@@ -236,6 +237,7 @@ describe('textFace', () => {
     expect(tab()?.complete).toBeUndefined()
     await settleAll(result)
     expect(tab()).toMatchObject({ mode: 'bytes-complete', loading: false, complete: result.value, version: 'v1', eof: true, pages: {} })
+    expect(tab()?.complete?.data).toBe(result.value.data)
   })
 
   it('records a complete-read failure and clears it when the read is retried', async () => {
@@ -411,153 +413,12 @@ describe('textFace', () => {
   })
 })
 
-
-describe('textFace — editing', () => {
-  it('seeds the draft from a whole-file read, never from the pages on screen', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    expect(b.tab()).toMatchObject({ editLoading: true, edit: undefined })
-    expect(b.read).not.toHaveBeenCalled()
-    await b.settleAllWire(wholeText('# one\n', 'v7'))
-    expect(b.tab()?.edit).toEqual({
-      text: '# one\n', saved: '# one\n', version: 'v7', saving: false, failure: undefined, conflict: false,
-    })
-    expect(b.bytes).toHaveBeenCalledExactlyOnceWith(FILE, b.controller.signal)
-  })
-
-  it('reports a draft the Host refused, and opens no session over it', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeFailure('workspace-file/too-large', { path: PATH, limit: 10 }))
-    expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined })
-    expect(b.tab()?.failure).toMatchObject({ code: 'workspace-file/too-large' })
-  })
-
-  it.each([new Error('draft read broke'), 'draft read broke'])('reports a draft read refused on the wire: %s', async (thrown) => {
-    const b = bench()
-    // A transport-level rejection, not a declared failure: the read itself broke.
-    b.bytes.mockRejectedValueOnce(thrown)
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await Promise.resolve()
-    await Promise.resolve()
-    expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined })
-    expect(b.tab()?.failure).toMatchObject({ code: 'gateway/internal', message: 'draft read broke' })
-  })
-
-  it('retires a draft read that settles after the reader left, so it cannot reopen the session', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    b.face.closeDraft(TAB_1)
-    expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined })
-    await b.settleAllWire(wholeText('late\n'))
-    expect(b.tab()?.edit).toBeUndefined()
-  })
-
-  it('retires a draft read that fails on the wire after the reader left, so it reports nothing', async () => {
-    const b = bench()
-    b.bytes.mockRejectedValueOnce(new Error('draft read broke'))
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    b.face.closeDraft(TAB_1)
-    await Promise.resolve()
-    await Promise.resolve()
-    expect(b.tab()).toMatchObject({ editLoading: false, edit: undefined, failure: undefined })
-  })
-
-  it('reads and writes nothing for a tab whose session already ended', () => {
-    const b = bench()
-    const signal = b.controller.signal
-    b.controller.abort()
-    b.face.openDraft(TAB_1, FILE, signal)
-    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', signal)
-    expect(b.bytes).not.toHaveBeenCalled()
-    expect(b.write).not.toHaveBeenCalled()
-    expect(b.instance.getSnapshot().byTab[TAB_1]).toBeUndefined()
-  })
-
-  it('sends the draft with the version it was read from, then makes that write the clean baseline', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    b.instance.actions.drafted(TAB_1, 'two\n')
-    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', b.controller.signal)
-    expect(b.tab()?.edit?.saving).toBe(true)
-    expect(b.write).toHaveBeenCalledExactlyOnceWith(FILE, 'two\n', 'v1', b.controller.signal)
-    await b.settleWrite(written('two\n', 'v2'))
-    expect(b.tab()?.edit).toMatchObject({
-      text: 'two\n', saved: 'two\n', version: 'v2', saving: false, failure: undefined, conflict: false,
-    })
-    // The pages behind the editor still describe the file before the write.
-    expect(b.read).toHaveBeenCalledWith(FILE.sessionId, FILE.path, 1, b.controller.signal)
-  })
-
-  it('keeps the keystrokes typed while the save was in flight, so the tab is dirty again', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', b.controller.signal)
-    // The settlement must not write the draft back: it describes an older moment.
-    b.instance.actions.drafted(TAB_1, 'two\nthree\n')
-    await b.settleWrite(written('two\n', 'v2'))
-    expect(b.tab()?.edit).toMatchObject({ text: 'two\nthree\n', saved: 'two\n', version: 'v2', saving: false })
-  })
-
-  it('travels without a guard when the reader chooses to overwrite', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    b.face.saveDraft(TAB_1, FILE, 'mine\n', undefined, b.controller.signal)
-    expect(b.write).toHaveBeenCalledExactlyOnceWith(FILE, 'mine\n', undefined, b.controller.signal)
-  })
-
-  it('flags a stale refusal as a conflict and leaves the preview alone', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', b.controller.signal)
-    await b.settleWrite(wholeFailure('workspace-file/stale-version', { path: PATH, expectedVersion: 'v1' }))
-    expect(b.tab()?.edit).toMatchObject({ saving: false, conflict: true, saved: 'one\n' })
-    expect(b.tab()?.edit?.failure).toMatchObject({ code: 'workspace-file/stale-version' })
-    expect(b.read).not.toHaveBeenCalled()
-  })
-
-  it('reports every other refusal as a plain failure, with no conflict to resolve', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', b.controller.signal)
-    await b.settleWrite(wholeFailure('workspace-file/read-only', { path: PATH, mode: 'read-only' }))
-    expect(b.tab()?.edit).toMatchObject({ saving: false, conflict: false })
-    expect(b.tab()?.edit?.failure).toMatchObject({ code: 'workspace-file/read-only' })
-  })
-
-  it('writes nothing when a save settles after the reader left the editor', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    b.face.saveDraft(TAB_1, FILE, 'two\n', 'v1', b.controller.signal)
-    b.face.closeDraft(TAB_1)
-    await b.settleWrite(written('two\n', 'v2'))
-    expect(b.tab()?.edit).toBeUndefined()
-    expect(b.read).not.toHaveBeenCalled()
-  })
-
-  it('re-reads the draft whole when a conflict is resolved by reloading', async () => {
-    const b = bench()
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('one\n', 'v1'))
-    // The reader's second read sees what the other writer left behind.
-    b.face.openDraft(TAB_1, FILE, b.controller.signal)
-    await b.settleAllWire(wholeText('theirs\n', 'v9'))
-    expect(b.tab()?.edit).toMatchObject({ text: 'theirs\n', saved: 'theirs\n', version: 'v9', conflict: false })
-  })
-})
-
 it.each([new Error('invalid bytes'), 'invalid bytes'])('reports an active complete-read decoding failure: %s', async (failure) => {
   const instance = createTextStore().create()
   const controller = new AbortController()
   const read = vi.fn<ReadDocumentBytes>().mockRejectedValue(failure)
   try {
-    textFace(vi.fn(), read, vi.fn<WriteWorkspaceFile>())(SESSION, instance.actions).loadAll(TAB_1, FILE, controller.signal)
+    textFace(vi.fn(), read, createResources())(SESSION, instance.actions).loadAll(TAB_1, FILE, controller.signal)
     await Promise.resolve()
     expect(instance.getSnapshot().byTab[TAB_1]?.failure).toMatchObject({ code: 'gateway/internal', message: 'invalid bytes' })
   } finally { controller.abort() }
@@ -567,7 +428,7 @@ it('ignores a complete-read rejection after renderer-owned loading takes over', 
   const instance = createTextStore().create()
   const controller = new AbortController()
   const pending = Promise.withResolvers<Awaited<ReturnType<ReadDocumentBytes>>>()
-  const face = textFace(vi.fn(), () => pending.promise, vi.fn<WriteWorkspaceFile>())(SESSION, instance.actions)
+  const face = textFace(vi.fn(), () => pending.promise, createResources())(SESSION, instance.actions)
   try {
     face.loadAll(TAB_1, FILE, controller.signal)
     face.prepareRenderer(TAB_1, controller.signal, 'office')

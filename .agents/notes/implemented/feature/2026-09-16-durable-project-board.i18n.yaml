@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-durable-project-board.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-16-durable-project-board.md
-2026-09-16-durable-project-board.md: e404f461064866c6639d8c7e8f7d59b7527a3b04
-2026-09-16-durable-project-board.zh.md: eb01b37430636c2f117b55fd025aa40f36f6aa50
+/agent-note-keep-project-work-on-a-durable-board:
+  en: 07d7f9fccf387773
+  zh: eaeadd4efb6095f8
+/agent-note-keep-project-work-on-a-durable-board/problem:
+  en: 7ea4c7a9c6bc7fb6
+  zh: 790b7ae9db146d17
+/agent-note-keep-project-work-on-a-durable-board/decision:
+  en: 1300689c050fb4ff
+  zh: 2f3c8b81e840b501
+/agent-note-keep-project-work-on-a-durable-board/alternatives-considered:
+  en: 7220b4fe5d3316e8
+  zh: 45512982caf4c33a
+/agent-note-keep-project-work-on-a-durable-board/consequences:
+  en: c84348f1e00f0f5f
+  zh: 19876b1575cbb3d8
+/agent-note-keep-project-work-on-a-durable-board/deferred:
+  en: 10f08601cd5b5d29
+  zh: aac168950a8da615
+/agent-note-keep-project-work-on-a-durable-board/testing:
+  en: 63d09ddf5935d56b
+  zh: 753822b1d41c74f7

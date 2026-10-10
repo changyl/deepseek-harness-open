@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The `api/` group provides the application's Remote layer: a Client environment can call the business capabilities running on the Host — manage goals, run commands, list the plugin inventory, discover file and session references — as typed method calls, and receive the results or forwarded Host events. `remotes` decides which capabilities are exposed and how each call reaches the right session's agent; `gateway` carries the calls and their results between Client and Host. The stack runs over the application's shared Connection; streaming session data is deliberately outside it.
+The `api/` group provides the application's Remote layer: a Client environment can call the business capabilities running on the Host — manage goals, run commands, list the plugin inventory, discover file and session references — as typed method calls, receive results or streams, send uplink items on an open stream, and observe forwarded Host events. `remotes` decides which capabilities are exposed and how each call reaches the right session's agent; `gateway` carries the calls and their results between Client and Host. The stack runs over the application's shared Connection; streaming session data is deliberately outside it.
 
 ## Table of Contents
 
@@ -27,7 +27,8 @@ The packages below provide the Remote layer; the package READMEs own the exhaust
 | Package | Role | ctx key |
 |---|---|---|
 | [`remotes/`](remotes/README.md) | Chooses which Host capabilities and events the Client can consume. | — |
-| [`gateway/`](gateway/README.md) | Carries typed unary calls, multiplexed streams, and forwarded Host events. | `ctx.typertGateway` / `ctx.remote` |
+| [`gateway/`](gateway/README.md) | Carries typed unary calls, multiplexed streams with their Client uplinks, and forwarded Host events. | `ctx.typertGateway` / `ctx.remote` |
+| [`job-controller/`](job-controller/README.md) | Streams one background job's observation record to the Client. | `ctx.jobController` / `ctx.remote.job` |
 | [`session-controller/`](session-controller/README.md) | Owns Session commands, history streams, live control state, and Agent/Session identity policy. | `ctx.sessionController` / `ctx.remote.session` |
 | [`settings-controller/`](settings-controller/README.md) | Owns the configuration-surface reads and writes over the settings-domain seams. | `ctx.settingsController`, `ctx.credentialsController` / `ctx.remote.settings`, `ctx.remote.credentials` |
 | [`workspace-controller/`](workspace-controller/README.md) | Owns Workspace mutations and the complete Client Workspace projection. | `ctx.workspaceController` / `ctx.remote.workspace` |
@@ -37,7 +38,7 @@ The packages below provide the Remote layer; the package READMEs own the exhaust
 | [`project/`](project/README.md) | Owns the read-only `project` Remote namespace over the durable project board: a bounded listing with workable counts and one project's status lanes. | `ctx.projectController` / `ctx.remote.project` |
 | [`effectiveness/`](effectiveness/README.md) | Owns the read-only `effectiveness` Remote namespace over the cross-session outcome-signal report. | `ctx.effectivenessController` / `ctx.remote.effectiveness` |
 
-Remote calls run Client → Host over the application's shared Connection. API Gateway owns Remote transport, while the controller packages own Session, configuration-surface, and Workspace behavior. Feature packages register exact Connection Fetch routes for responses that do not fit Remote invocation, such as streamed downloads.
+Remote calls run Client → Host over the application's shared Connection; stream items flow Host → Client on the Gateway mux, and a stream's uplink items flow Client → Host on the same logical stream. API Gateway owns Remote transport, while the controller packages own Session, configuration-surface, and Workspace behavior. Feature packages register exact Connection Fetch routes for responses that do not fit Remote invocation, such as streamed downloads.
 
 -----
 

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-21-messages-unpaired-tool-history.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-21-messages-unpaired-tool-history.md
-2026-09-21-messages-unpaired-tool-history.md: 224e1d195f5ace2e75d9635f2aa98c5d3a757af8
-2026-09-21-messages-unpaired-tool-history.zh.md: 83254395064e128696e1ea11e211c36ec9af7ee5
+/agent-note-project-unpaired-tool-calls-out-of-messages-history:
+  en: 94688de7a676b59d
+  zh: f9ed7cde4d3bea2f
+/agent-note-project-unpaired-tool-calls-out-of-messages-history/problem:
+  en: 6fd5b3d0d13f4e51
+  zh: dbab31692e1fdc0e
+/agent-note-project-unpaired-tool-calls-out-of-messages-history/decision:
+  en: 201cbcd7130e4850
+  zh: 3eafac0c1ac5d8e0
+/agent-note-project-unpaired-tool-calls-out-of-messages-history/alternatives-considered:
+  en: f685dc112c38238f
+  zh: 947e51c69e118d17
+/agent-note-project-unpaired-tool-calls-out-of-messages-history/consequences:
+  en: 92e82b0ce8f82d7c
+  zh: 7504a7620c2e3186

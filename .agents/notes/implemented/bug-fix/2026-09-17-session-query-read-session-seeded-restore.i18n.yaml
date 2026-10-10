@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-17-session-query-read-session-seeded-restore.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-17-session-query-read-session-seeded-restore.md
-2026-09-17-session-query-read-session-seeded-restore.md: 3ffed782e6b8a15e286f55f14fa8e414d8b9a815
-2026-09-17-session-query-read-session-seeded-restore.zh.md: 5be257f4543e0a669c2a4851d62a957e567590f5
+/agent-note-readsession-validates-a-seeded-log-through-the-restore-contract:
+  en: e6c22d2f49c0c7c1
+  zh: 39d10c6c3c7a2eca
+/agent-note-readsession-validates-a-seeded-log-through-the-restore-contract/problem:
+  en: 42eab17ae18d45a3
+  zh: 6a22d061f0ae9e64
+/agent-note-readsession-validates-a-seeded-log-through-the-restore-contract/decision:
+  en: 6fa4500f6e2ef361
+  zh: 69bedb197df10972
+/agent-note-readsession-validates-a-seeded-log-through-the-restore-contract/alternatives-considered:
+  en: 64d22a2f4d4f1292
+  zh: 4976fd9eb3942e4b
+/agent-note-readsession-validates-a-seeded-log-through-the-restore-contract/consequences:
+  en: cfdf70d4be64dd3c
+  zh: 70835e2b31b6e036

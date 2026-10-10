@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-project-board-remote-namespace.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-16-project-board-remote-namespace.md
-2026-09-16-project-board-remote-namespace.md: d2ac83f052bdd69bad5e00d1c678bc92f6c0ca46
-2026-09-16-project-board-remote-namespace.zh.md: 5af6fe7def36b464f9c09d0cdb55554aacdb7d2e
+/agent-note-publish-the-project-board-as-a-remote-namespace:
+  en: 4fbe82c939148521
+  zh: 986d08d82c12e5cf
+/agent-note-publish-the-project-board-as-a-remote-namespace/problem:
+  en: cc4c434002c7ca89
+  zh: 555e4ec24d9b1877
+/agent-note-publish-the-project-board-as-a-remote-namespace/decision:
+  en: ac5b7ee0a0dc1e20
+  zh: ee3d8a0181e8b21d
+/agent-note-publish-the-project-board-as-a-remote-namespace/alternatives-considered:
+  en: c4383ff6d287147a
+  zh: 4e8a88ac03333603
+/agent-note-publish-the-project-board-as-a-remote-namespace/consequences:
+  en: 0873a03cebed51fc
+  zh: 6ebc681fdf13a042
+/agent-note-publish-the-project-board-as-a-remote-namespace/deferred:
+  en: 9a76bb41e39d3d08
+  zh: c410d3b80ed6ce82
+/agent-note-publish-the-project-board-as-a-remote-namespace/testing:
+  en: 3787b9e5a2eea19f
+  zh: 3132982a671460c6

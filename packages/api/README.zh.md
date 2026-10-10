@@ -9,7 +9,7 @@ kind: "package-group"
 
 ## 概述
 
-`api/` 组提供应用的 Remote 层：Client 环境可以调用运行在 Host 上的业务能力——管理目标、运行命令、查看插件清单、发现文件与会话引用——调用方式是类型化方法，并接收结果或转发的 Host 事件。`remotes` 决定暴露哪些能力、以及每次调用如何到达正确会话的 agent；`gateway` 在 Client 与 Host 之间承载调用及其结果。技术栈运行在应用共享的 Connection 之上；流式会话数据刻意不在其中。
+`api/` 组提供应用的 Remote 层：Client 环境可以调用运行在 Host 上的业务能力——管理目标、运行命令、查看插件清单、发现文件与会话引用——调用方式是类型化方法，可接收结果或流、在已打开的流上发送上行项，并观察转发的 Host 事件。`remotes` 决定暴露哪些能力、以及每次调用如何到达正确会话的 agent；`gateway` 在 Client 与 Host 之间承载调用及其结果。技术栈运行在应用共享的 Connection 之上；流式会话数据刻意不在其中。
 
 ## 目录
 
@@ -27,7 +27,8 @@ kind: "package-group"
 | 包 | 职责 | ctx key |
 |---|---|---|
 | [`remotes/`](remotes/README.zh.md) | 决定 Client 可以消费哪些 Host 能力与事件。 | — |
-| [`gateway/`](gateway/README.zh.md) | 承载类型化一元调用、多路复用流与转发的 Host 事件。 | `ctx.typertGateway` / `ctx.remote` |
+| [`gateway/`](gateway/README.zh.md) | 承载类型化一元调用、带 Client 上行的多路复用流，以及转发的 Host 事件。 | `ctx.typertGateway` / `ctx.remote` |
+| [`job-controller/`](job-controller/README.zh.md) | 把一个后台任务的观测 record 流式送到 Client。 | `ctx.jobController` / `ctx.remote.job` |
 | [`session-controller/`](session-controller/README.zh.md) | 拥有会话命令、历史记录流、实时控制状态与 Agent/Session 身份策略。 | `ctx.sessionController` / `ctx.remote.session` |
 | [`settings-controller/`](settings-controller/README.zh.md) | 拥有 settings 域各 seam 之上的配置界面读写。 | `ctx.settingsController`、`ctx.credentialsController` / `ctx.remote.settings`、`ctx.remote.credentials` |
 | [`workspace-controller/`](workspace-controller/README.zh.md) | 拥有 Workspace 变更与完整 Client Workspace 投影。 | `ctx.workspaceController` / `ctx.remote.workspace` |
@@ -37,7 +38,7 @@ kind: "package-group"
 | [`project/`](project/README.zh.md) | 拥有持久项目看板之上的只读 `project` Remote 命名空间：一份有界列表（含可开工计数）与单个项目的状态泳道。 | `ctx.projectController` / `ctx.remote.project` |
 | [`effectiveness/`](effectiveness/README.zh.md) | 拥有跨会话结果信号报告之上的只读 `effectiveness` Remote 命名空间。 | `ctx.effectivenessController` / `ctx.remote.effectiveness` |
 
-Remote 调用沿 Client → Host 方向运行在应用共享的 Connection 之上。API Gateway 拥有 Remote 传输，各控制器包分别拥有 Session、配置界面与 Workspace 行为。流式下载等不适合 Remote 调用的响应由功能包注册精确的 Connection Fetch 路由。
+Remote 调用沿 Client → Host 方向运行在应用共享的 Connection 之上；流项沿 Host → Client 方向经 Gateway mux 传输，流的上行项则沿 Client → Host 方向走同一条逻辑流。API Gateway 拥有 Remote 传输，各控制器包分别拥有 Session、配置界面与 Workspace 行为。流式下载等不适合 Remote 调用的响应由功能包注册精确的 Connection Fetch 路由。
 
 -----
 

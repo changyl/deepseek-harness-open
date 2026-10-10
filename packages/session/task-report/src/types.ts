@@ -9,9 +9,9 @@
 export interface TaskReportChange {
   /** Path as the change recorded it: absolute, or relative to the workspace. */
   readonly path: string
-  /** `create` when the recorded hunk had no previous text, `update` otherwise. */
+  /** `create` when the mutation created the file, `update` otherwise. */
   readonly kind: 'create' | 'update'
-  /** Lines in the recorded new text. */
+  /** Lines in the recorded new text; zero when a create reported none. */
   readonly added: number
   /** Lines in the recorded previous text; zero for a create. */
   readonly removed: number

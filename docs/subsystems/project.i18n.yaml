@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for project.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/project.md
-project.md: 19f5470214eefa34b58fcb58d96398e070fc576a
-project.zh.md: 136a7b954d8a9add0e84ad7f3c7f60d0aca6dbb3
+/project:
+  en: 64eff0d15303ab9e
+  zh: 264f005056f051ab
+/project/durable-shape:
+  en: 171b258c28c0f9ba
+  zh: 19de7e69588074dd
+/project/views-and-the-board:
+  en: 4b90f9b6fd7748ca
+  zh: 6ddb53edc746606b
+/project/compare-and-set-revisions:
+  en: 00bfa845534871e7
+  zh: 3f57e554ebdb7637
+/project/dependency-and-status-rules:
+  en: 9c836ce0208958c4
+  zh: 420585a0d62fcd75
+/project/error-codes:
+  en: 35ad8ac706ccc3f1
+  zh: fc8d22a2da7c7706
+/project/the-model-facing-tool:
+  en: cdd745f825a480c8
+  zh: 684ab7aab09f74f9
+/project/packages:
+  en: a47329f33bb9201b
+  zh: 2ed352460ff79713

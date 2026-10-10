@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for usage.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/usage.md
-usage.md: 3d64e22decc176cec03521ec7b20b8176b835ce8
-usage.zh.md: fc6309fff15a49a3591457b3845309dfc91c8e4d
+/token-usage-and-cost:
+  en: 29bf4189d85fe6a9
+  zh: 727452a7a6074378
+/token-usage-and-cost/report-contract:
+  en: 0d7a161c2f07ad4a
+  zh: 8bc8d2cb0b1d1cec
+/token-usage-and-cost/token-buckets:
+  en: 2b2c62b67dbb32b1
+  zh: 6b58a91ade5856f2
+/token-usage-and-cost/counts:
+  en: 7419a44a28f714d4
+  zh: 5c96d024377f04cf
+/token-usage-and-cost/cost:
+  en: 7a1075d0a8ecfb64
+  zh: a9a1a453acf7ffc6
+/token-usage-and-cost/pricing-contract:
+  en: d5a89ee2dd1dcf74
+  zh: 585d4eb460fcaa8f
+/token-usage-and-cost/provider-contract:
+  en: 1eaf7f29e28c5d2c
+  zh: db32837f4ae490f5
+/token-usage-and-cost/ctx-usage:
+  en: f5470239219c0fe9
+  zh: ed3de773311ae4eb
+/token-usage-and-cost/packages:
+  en: 6f49bbc6d548d310
+  zh: a2742052fdafcc0d

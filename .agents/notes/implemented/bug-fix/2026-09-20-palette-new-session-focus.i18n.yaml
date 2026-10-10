@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-palette-new-session-focus.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-20-palette-new-session-focus.md
-2026-09-20-palette-new-session-focus.md: 68e18093ad44318cdcbfa286e184ff487576d5f2
-2026-09-20-palette-new-session-focus.zh.md: d173794633b25d2b52ba843490e4e88372fb0bbf
+/agent-note-new-session-from-the-command-palette:
+  en: cd583764af6f5b79
+  zh: 91233fabb1c77105
+/agent-note-new-session-from-the-command-palette/problem:
+  en: 53d1c5372c5f9dc9
+  zh: 611b09a537f6e69e
+/agent-note-new-session-from-the-command-palette/decision:
+  en: 20902eca4a64a7b8
+  zh: b2ab9418ba448888
+/agent-note-new-session-from-the-command-palette/alternatives-considered:
+  en: f8d46d46009e9883
+  zh: 812106b4822755ce
+/agent-note-new-session-from-the-command-palette/consequences:
+  en: 900f9d1f1f7d8f77
+  zh: 43f7f288f10a3c5f

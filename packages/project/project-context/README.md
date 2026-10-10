@@ -36,7 +36,7 @@ The note reports the tasks whose `sessionIds` name this session, in store order:
 
 `renderNote(entries, maxTasksListed)` renders the heading, one line per listed task, and a `- N further linked task(s) are not listed.` line when the bound cut the list; it returns undefined for an empty list.
 
-The listener runs `{ prepend: true }` on the `agent/pre-step` waterfall: it awaits `next()` first, returns that decision unchanged when it is a `reject` or the call's signal is aborted, and otherwise appends one plugin-sourced message. The message is sent only when its text differs from the last note this instance sent, so an unchanged board costs nothing. It carries `source.kind === 'plugin'`, this plugin's name, and `form: 'snapshot'` with the same text as its section, so the session log records what the model read.
+The listener runs `{ prepend: true }` on the `agent/pre-step` waterfall: it awaits `next()` first, returns that decision unchanged when it is a `reject` or the call's signal is aborted, and otherwise appends one plugin-sourced message. The message is sent only when its text differs from the last note this instance sent, so an unchanged board costs nothing. It carries `source.kind === 'project-context'` and `form: 'snapshot'` with the same text as its section, so the session log records what the model read.
 
 <a id="further-exploration"></a>
 ## Further Exploration
