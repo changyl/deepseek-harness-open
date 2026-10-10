@@ -255,11 +255,19 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
 
   /**
    * Return DOM focus to one session's composer, for a surface whose pick left
-   * the caret nowhere. A session with no composer bound is left alone.
+   * the caret nowhere. The session's own bound hook wins, because a surface
+   * that picked from outside the composer's fiber has no Conversation face of
+   * its own; a session that bound none is reached through its own binding.
    * @param sessionId - the session whose composer takes focus.
    */
   focusComposer(sessionId: SessionId): void {
-    this.focusHooks.get(sessionId)?.()
+    const bound = this.focusHooks.get(sessionId)
+    if (bound !== undefined) {
+      bound()
+      return
+    }
+    const binding = this.sessions().binding(sessionId)
+    binding?.ctx.get('conversation')?.input.for(binding.ctx).focus()
   }
 
   /**

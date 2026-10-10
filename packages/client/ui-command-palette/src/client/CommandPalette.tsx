@@ -10,7 +10,7 @@ import { Fragment, useEffect, useRef } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import clsx from 'clsx'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
-import { IconCodeOutlineRegular, IconNewChatOutlineRegular, IconSearchOutlineRegular, IconStopFillRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCodeOutlineRegular, IconNewChatOutlineRegular, IconSearchOutlineRegular, IconStopFillRegular, MenuSurface, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { filterEntries, type PaletteEntryKind, type PaletteState } from './palette.ts'
 import css from './CommandPalette.module.css'
@@ -143,7 +143,7 @@ export function CommandPalette({
         {state.status === 'ready' && rows.length === 0 && (
           <div className={css.status}>{t('palette.status.empty')}</div>
         )}
-        <div ref={listRef} id={LIST_ID} role="listbox" aria-label={t('palette.listbox')} className={css.list}>
+        <MenuSurface ref={listRef} id={LIST_ID} role="listbox" aria-label={t('palette.listbox')} className={css.list}>
           {rows.map((entry, index) => (
             <Fragment key={entry.id}>
               {entry.section !== undefined && entry.section !== rows[index - 1]?.section && (
@@ -164,7 +164,7 @@ export function CommandPalette({
               </div>
             </Fragment>
           ))}
-        </div>
+        </MenuSurface>
       </div>
     </Modal>
   )
